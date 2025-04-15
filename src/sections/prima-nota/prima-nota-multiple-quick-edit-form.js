@@ -12,6 +12,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Autocomplete from '@mui/material/Autocomplete';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 
 import { useSnackbar } from 'src/components/snackbar';
 
@@ -20,21 +22,22 @@ import { useSettingsContext } from '../../components/settings';
 
 // ----------------------------------------------------------------------
 
-const STATUS_VALUES = [{name:'In Revisione', value:'pending'}, {name:'Completata', value:'completed'}, {name:'Da Controllare', value:'toCheck'}]
-
+const STATUS_VALUES = [{name:'In Revisione', value:'pending'}, {name:'Completata', value:'completed'}, {name:'Da Controllare', value:'toCheck'}];
+const PAYMENT_METHODS = ['Bonifico', 'Carte di Credito', 'Cbill', 'F24', 'PayPal', 'Addebito Diretto SEPA', 'POS', 'Altro'];
 
 export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onClose, onUpdate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [categoryList, setCategoryList] = useState([]);
   const [subjectList, setSubjectList] = useState([]);
-  const [detailsList, setDetailsList] = useState([])
+  const [detailsList, setDetailsList] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
 
-  const [status, setStatus] = useState('completed')
+  const [status, setStatus] = useState('completed');
+  const [paymentType, setPaymentType] = useState(null);
 
-  const { db } = useSettingsContext()
+  const { db } = useSettingsContext();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,8 +78,9 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
         category: selectedCategory,
         subject: selectedSubject,
         details: selectedDetail,
-        status
-      }
+        status,
+        paymentType
+      };
 
       const response = await axios.post('/api/prima-nota/edit-multi', data);
 
@@ -88,10 +92,10 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
         setSelectedSubject(null);
         setSelectedDetail(null);
         setStatus('completed');
-      }else{
+        setPaymentType('');
+      } else {
         enqueueSnackbar('Errore durante l\'aggiornamento delle transazioni', { variant: 'error' });
       }
-
 
       setIsLoading(false);
     } catch (error) {
@@ -103,7 +107,7 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
     setSelectedCategory(newValue.id);
     const response = await axios.post(endpoints.subject.list, { db, categoryId: newValue.id });
     if (response.status === 200) {
-      setSubjectList(response.data.data)
+      setSubjectList(response.data.data);
     }
   };
 
@@ -111,17 +115,21 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
     setSelectedSubject(newValue.id);
     const response = await axios.post(endpoints.detail.list, { db, subjectId: newValue.id });
     if (response.status === 200) {
-      setDetailsList(response.data.data)
+      setDetailsList(response.data.data);
     }
-  }
+  };
 
   const handleDetailsChange = (newValue) => {
     setSelectedDetail(newValue.id);
-  }
+  };
 
-  const handleStatusChange = ( event ) => {
-    setStatus(event.target.value)
-  }
+  const handleStatusChange = (event) => {
+    setStatus(event.target.value);
+  };
+
+  const handlePaymentTypeChange = (event) => {
+    setPaymentType(event.target.value);
+  };
 
   return (
     <Dialog
@@ -136,6 +144,8 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
       <DialogTitle>Modifica multipla</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ width: '100%', mb: { xs: 3, md: 0 } }}>
+        <FormControl sx={{ mt: 2 }}>
+          <InputLabel>Stato</InputLabel>
           <Select
             name="status"
             label="Stato"
@@ -152,6 +162,7 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
               </MenuItem>
             ))}
           </Select>
+          </FormControl>
 
           <Autocomplete
             name="category"
@@ -234,6 +245,26 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
               <TextField {...params} label="Dettagli" placeholder="Seleziona un dettaglio" />
             )}
           />
+
+          <FormControl>
+            <InputLabel>Metodo di Pagamento</InputLabel>
+            <Select
+              name="paymentType"
+              label="Metodo di pagamento"
+              InputLabelProps={{ shrink: true }}
+              onChange={handlePaymentTypeChange}
+              sx={{ maxWidth: '100%' }}
+              defaultValue={paymentType}
+              value={paymentType}
+              variant="outlined"
+            >
+              {PAYMENT_METHODS.map((method, index) => (
+                <MenuItem key={`payment-${index}`} value={method}>
+                  {method}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Stack>
       </DialogContent>
 

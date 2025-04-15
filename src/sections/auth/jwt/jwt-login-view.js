@@ -23,12 +23,20 @@ import { useAuthContext } from 'src/auth/hooks';
 import { PATH_AFTER_LOGIN } from 'src/config-global';
 
 import Iconify from 'src/components/iconify';
-import FormProvider, { RHFTextField } from 'src/components/hook-form';
+import FormProvider, { RHFSelect, RHFTextField } from 'src/components/hook-form';
+import MenuItem from '@mui/material/MenuItem';
+import { useSettingsContext } from '../../../components/settings';
 
 // ----------------------------------------------------------------------
 
 export default function JwtLoginView() {
   const { login } = useAuthContext();
+  const settings = useSettingsContext()
+
+  const DB = [
+    { value: 'db1', label: 'Guido' },
+    { value: 'db2', label: 'Marta' },
+  ]
 
   const router = useRouter();
 
@@ -41,13 +49,14 @@ export default function JwtLoginView() {
   const password = useBoolean();
 
   const LoginSchema = Yup.object().shape({
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
-    password: Yup.string().required('Password is required'),
+    db: Yup.string().required('Database è un campo obbligatorio'),
+    email: Yup.string().required('Email è un campo obbligatorio').email('Email deve essere un indirizzo email valido'),
+    password: Yup.string().required('Password è un campo obbligatorio'),
   });
 
   const defaultValues = {
-    email: 'demo@minimals.cc',
-    password: 'demo1234',
+    email: '',
+    password: '',
   };
 
   const methods = useForm({
@@ -58,12 +67,13 @@ export default function JwtLoginView() {
   const {
     reset,
     handleSubmit,
+    setValue,
     formState: { isSubmitting },
   } = methods;
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      await login?.(data.email, data.password);
+      await login?.(data.email, data.password, data.db);
 
       router.push(returnTo || PATH_AFTER_LOGIN);
     } catch (error) {
@@ -75,21 +85,29 @@ export default function JwtLoginView() {
 
   const renderHead = (
     <Stack spacing={2} sx={{ mb: 5 }}>
-      <Typography variant="h4">Sign in to Minimal</Typography>
-
-      <Stack direction="row" spacing={0.5}>
-        <Typography variant="body2">New user?</Typography>
-
-        <Link component={RouterLink} href={paths.auth.jwt.register} variant="subtitle2">
-          Create an account
-        </Link>
-      </Stack>
+      <Typography variant="h4">Accedi</Typography>
     </Stack>
   );
 
   const renderForm = (
     <Stack spacing={2.5}>
       {!!errorMsg && <Alert severity="error">{errorMsg}</Alert>}
+
+      <RHFSelect
+        name="db"
+        label="Database"
+        options={DB}
+        onChange={(event)=>{
+          settings.onChangeDb(event.target.value)
+          setValue('db', event.target.value)
+        }}
+      >
+        {DB.map((value, index)=>(
+          <MenuItem key={index} value={value.value}>
+            {value.label}
+          </MenuItem>
+        ))}
+      </RHFSelect>
 
       <RHFTextField name="email" label="Email address" />
 
@@ -109,7 +127,7 @@ export default function JwtLoginView() {
       />
 
       <Link variant="body2" color="inherit" underline="always" sx={{ alignSelf: 'flex-end' }}>
-        Forgot password?
+        Password dimenticata?
       </Link>
 
       <LoadingButton
@@ -120,7 +138,7 @@ export default function JwtLoginView() {
         variant="contained"
         loading={isSubmitting}
       >
-        Login
+        Accedi
       </LoadingButton>
     </Stack>
   );
@@ -128,11 +146,6 @@ export default function JwtLoginView() {
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
       {renderHead}
-
-      <Alert severity="info" sx={{ mb: 3 }}>
-        Use email : <strong>demo@minimals.cc</strong> / password :<strong> demo1234</strong>
-      </Alert>
-
       {renderForm}
     </FormProvider>
   );

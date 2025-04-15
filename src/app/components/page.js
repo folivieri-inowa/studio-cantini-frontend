@@ -3,7 +3,7 @@ import ComponentsView from 'src/sections/_examples/view';
 // ----------------------------------------------------------------------
 
 export const metadata = {
-  title: 'Components',
+  title: 'Components'
 };
 
 export default function ComponentsPage() {

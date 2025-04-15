@@ -33,6 +33,7 @@ export default function TableHeadCustom({
   onSelectAllRows,
   sx,
 }) {
+
   return (
     <TableHead sx={sx}>
       <TableRow>
@@ -58,7 +59,9 @@ export default function TableHeadCustom({
                 hideSortIcon
                 active={orderBy === headCell.id}
                 direction={orderBy === headCell.id ? order : 'asc'}
-                onClick={() => onSort(headCell.id)}
+                onClick={() => {
+                  onSort(headCell.id);
+                }}
               >
                 {headCell.label}
 

@@ -11,14 +11,18 @@ export default function TablePaginationCustom({
   dense,
   onChangeDense,
   rowsPerPageOptions = [5, 10, 25],
+  rowsPerPage= 50,
+  callbackRowsPerPage,
   sx,
   ...other
 }) {
+
   return (
     <Box sx={{ position: 'relative', ...sx }}>
       <TablePagination
-        rowsPerPageOptions={rowsPerPageOptions}
+        rowsPerPageOptions={[5, 25, 50, { value: -1, label: 'Tutte' }]}
         component="div"
+        rowsPerPage={rowsPerPage}
         {...other}
         sx={{
           borderTopColor: 'transparent',
@@ -45,6 +49,9 @@ export default function TablePaginationCustom({
 
 TablePaginationCustom.propTypes = {
   dense: PropTypes.bool,
+  callbackRowsPerPage: PropTypes.func,
+  rowsPerPageDefault: PropTypes.number,
+  rowsPerPage: PropTypes.number,
   onChangeDense: PropTypes.func,
   rowsPerPageOptions: PropTypes.arrayOf(PropTypes.number),
   sx: PropTypes.object,

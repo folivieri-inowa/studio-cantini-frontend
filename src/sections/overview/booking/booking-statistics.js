@@ -14,7 +14,7 @@ import CustomPopover, { usePopover } from 'src/components/custom-popover';
 // ----------------------------------------------------------------------
 
 export default function BookingStatistics({ title, subheader, chart, ...other }) {
-  const { categories, colors, series, options } = chart;
+  const { categories, colors, series, options, test } = chart;
 
   const popover = usePopover();
 
@@ -53,7 +53,7 @@ export default function BookingStatistics({ title, subheader, chart, ...other })
           title={title}
           subheader={subheader}
           action={
-            <ButtonBase
+            series.length ? (<ButtonBase
               onClick={popover.onOpen}
               sx={{
                 pl: 1,
@@ -71,11 +71,11 @@ export default function BookingStatistics({ title, subheader, chart, ...other })
                 icon={popover.open ? 'eva:arrow-ios-upward-fill' : 'eva:arrow-ios-downward-fill'}
                 sx={{ ml: 0.5 }}
               />
-            </ButtonBase>
+            </ButtonBase>) : null
           }
         />
 
-        {series.map((item) => (
+        {series.length ? series.map((item) => (
           <Box key={item.type} sx={{ mt: 3, mx: 3 }}>
             {item.type === seriesData && (
               <Chart
@@ -88,11 +88,20 @@ export default function BookingStatistics({ title, subheader, chart, ...other })
               />
             )}
           </Box>
-        ))}
+        )) : (
+          <Chart
+            dir="ltr"
+            type="bar"
+            series={series.data}
+            options={chartOptions}
+            width="100%"
+            height={364}
+          />
+        )}
       </Card>
 
       <CustomPopover open={popover.open} onClose={popover.onClose} sx={{ width: 140 }}>
-        {series.map((option) => (
+        {series.length ? series.map((option) => (
           <MenuItem
             key={option.type}
             selected={option.type === seriesData}
@@ -100,7 +109,7 @@ export default function BookingStatistics({ title, subheader, chart, ...other })
           >
             {option.type}
           </MenuItem>
-        ))}
+        )) : null}
       </CustomPopover>
     </>
   );

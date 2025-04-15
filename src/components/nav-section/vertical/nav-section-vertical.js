@@ -17,6 +17,7 @@ function NavSectionVertical({ data, slotProps, ...other }) {
           key={group.subheader || index}
           subheader={group.subheader}
           items={group.items}
+          roles={group.roles}
           slotProps={slotProps}
         />
       ))}
@@ -33,7 +34,7 @@ export default memo(NavSectionVertical);
 
 // ----------------------------------------------------------------------
 
-function Group({ subheader, items, slotProps }) {
+function Group({ subheader, items, roles, slotProps }) {
   const [open, setOpen] = useState(true);
 
   const handleToggle = useCallback(() => {
@@ -44,9 +45,14 @@ function Group({ subheader, items, slotProps }) {
     <NavList key={list.title} data={list} depth={1} slotProps={slotProps} />
   ));
 
+  const isRoleAuthorized = () => {
+    if (!roles) return true;
+    return roles.includes(`${slotProps.currentRole}`)
+  }
+
   return (
     <Stack sx={{ px: 2 }}>
-      {subheader ? (
+      {subheader && isRoleAuthorized() ? (
         <>
           <ListSubheader
             disableGutters
@@ -85,5 +91,6 @@ function Group({ subheader, items, slotProps }) {
 Group.propTypes = {
   items: PropTypes.array,
   subheader: PropTypes.string,
+  roles: PropTypes.array,
   slotProps: PropTypes.object,
 };

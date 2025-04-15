@@ -88,7 +88,7 @@ export default function OverviewBookingView() {
               />
             </Grid>
 
-            <Grid xs={12}>
+            <Grid size={12}>
               <BookingStatistics
                 title="Statistics"
                 subheader="(+43% Sold | +12% Canceled) than last year"

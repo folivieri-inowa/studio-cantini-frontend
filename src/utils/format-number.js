@@ -6,6 +6,15 @@ export function fNumber(number) {
   return numeral(number).format();
 }
 
+export function fCurrencyEur(number) {
+  const format = number ? numeral(number).format('0,0.00') : '0,00';
+
+  // Modifica il formato: sostituisci la virgola con il punto per le migliaia, e il punto con la virgola per i decimali
+  const euroFormatted = format.replace(',', 'X').replace('.', ',').replace('X', '.');
+
+  return `€${euroFormatted}`;
+}
+
 export function fCurrency(number) {
   const format = number ? numeral(number).format('$0,0.00') : '';
 

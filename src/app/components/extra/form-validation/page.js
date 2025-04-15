@@ -3,7 +3,7 @@ import FormValidationView from 'src/sections/_examples/extra/form-validation-vie
 // ----------------------------------------------------------------------
 
 export const metadata = {
-  title: 'Components: Form Validation',
+  title: 'Components: Form Validation'
 };
 
 export default function FormValidationPage() {

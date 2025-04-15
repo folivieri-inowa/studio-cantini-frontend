@@ -1,5 +1,9 @@
 module.exports = {
   trailingSlash: true,
+  output: 'standalone',
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   modularizeImports: {
     '@mui/material': {
       transform: '@mui/material/{{member}}',

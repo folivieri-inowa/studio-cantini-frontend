@@ -1,24 +1,18 @@
 import PropTypes from 'prop-types';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-
-import { paths } from 'src/routes/paths';
-import { RouterLink } from 'src/routes/components';
 
 import { useResponsive } from 'src/hooks/use-responsive';
 
 import { bgGradient } from 'src/theme/css';
-import { useAuthContext } from 'src/auth/hooks';
 
 import Logo from 'src/components/logo';
 
 // ----------------------------------------------------------------------
-
+/*
 const METHODS = [
   {
     id: 'jwt',
@@ -45,13 +39,15 @@ const METHODS = [
     icon: '/assets/icons/auth/ic_auth0.svg',
   },
 ];
+*/
 
 export default function AuthClassicLayout({ children, image, title }) {
-  const { method } = useAuthContext();
+  // const { method } = useAuthContext();
 
   const theme = useTheme();
 
-  const mdUp = useResponsive('up', 'md');
+  // const mdUp = useResponsive('up', 'md');
+  const smDown = useResponsive('down', 'sm'); // Verifica se è "sm" o più piccolo
 
   const renderLogo = (
     <Logo
@@ -81,7 +77,7 @@ export default function AuthClassicLayout({ children, image, title }) {
   const renderSection = (
     <Stack
       flexGrow={1}
-      spacing={10}
+      spacing={3}
       alignItems="center"
       justifyContent="center"
       sx={{
@@ -92,11 +88,12 @@ export default function AuthClassicLayout({ children, image, title }) {
           ),
           imgUrl: '/assets/background/overlay_2.jpg',
         }),
+        mt: { xs: 15 },
       }}
     >
-      <Typography variant="h3" sx={{ maxWidth: 480, textAlign: 'center' }}>
-        {title || 'Hi, Welcome back'}
-      </Typography>
+      <Stack spacing={2} sx={{ textAlign: 'center' }}>
+        <Logo url="/logo/Studio.png" sx={{width: '100%', height: "120px"}}/>
+      </Stack>
 
       <Box
         component="img"
@@ -111,7 +108,7 @@ export default function AuthClassicLayout({ children, image, title }) {
         }}
       />
 
-      <Stack direction="row" spacing={2}>
+      {/* <Stack direction="row" spacing={2}>
         {METHODS.map((option) => (
           <Tooltip key={option.label} title={option.label}>
             <Link component={RouterLink} href={option.path}>
@@ -130,21 +127,22 @@ export default function AuthClassicLayout({ children, image, title }) {
             </Link>
           </Tooltip>
         ))}
-      </Stack>
+      </Stack> */}
     </Stack>
   );
 
   return (
     <Stack
       component="main"
-      direction="row"
+      direction={smDown ? 'column' : 'row'} // Cambia direzione per sm o inferiore
       sx={{
         minHeight: '100vh',
+        alignItems: smDown ? 'center' : 'stretch', // Centra contenuto verticalmente in modalità sm
       }}
     >
       {renderLogo}
 
-      {mdUp && renderSection}
+      {renderSection}
 
       {renderContent}
     </Stack>

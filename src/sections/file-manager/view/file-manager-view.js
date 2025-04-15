@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
@@ -18,107 +16,71 @@ import { _allFiles, FILE_TYPE_OPTIONS } from 'src/_mock';
 import Iconify from 'src/components/iconify';
 import EmptyContent from 'src/components/empty-content';
 import { fileFormat } from 'src/components/file-thumbnail';
-import { ConfirmDialog } from 'src/components/custom-dialog';
 import { useSettingsContext } from 'src/components/settings';
 import { useTable, getComparator } from 'src/components/table';
 
-import FileManagerTable from '../file-manager-table';
-import FileManagerFilters from '../file-manager-filters';
 import FileManagerGridView from '../file-manager-grid-view';
 import FileManagerFiltersResult from '../file-manager-filters-result';
 import FileManagerNewFolderDialog from '../file-manager-new-folder-dialog';
-
+import { useGetFileManager } from '../../../api/file-manager';
 // ----------------------------------------------------------------------
 
 const defaultFilters = {
   name: '',
   type: [],
-  startDate: null,
-  endDate: null,
 };
 
 // ----------------------------------------------------------------------
 
 export default function FileManagerView() {
   const table = useTable({ defaultRowsPerPage: 10 });
+  const { db } = useSettingsContext();
+
+  const { fileManager } = useGetFileManager(db)
+
+  if (fileManager) {
+    console.log("fileManager", fileManager);
+  }
 
   const settings = useSettingsContext();
 
   const openDateRange = useBoolean();
 
-  const confirm = useBoolean();
-
   const upload = useBoolean();
 
-  const [view, setView] = useState('list');
-
-  const [tableData, setTableData] = useState(_allFiles);
+  const [tableData, setTableData] = useState(fileManager);
 
   const [filters, setFilters] = useState(defaultFilters);
-
-  const dateError =
-    filters.startDate && filters.endDate
-      ? filters.startDate.getTime() > filters.endDate.getTime()
-      : false;
 
   const dataFiltered = applyFilter({
     inputData: tableData,
     comparator: getComparator(table.order, table.orderBy),
-    filters,
-    dateError,
+    filters
   });
+   const dataInPage = dataFiltered.slice(
+     table.page * table.rowsPerPage,
+     table.page * table.rowsPerPage + table.rowsPerPage
+   );
 
-  const dataInPage = dataFiltered.slice(
-    table.page * table.rowsPerPage,
-    table.page * table.rowsPerPage + table.rowsPerPage
-  );
+   const canReset =
+     !!filters.name || !!filters.type.length || (!!filters.startDate && !!filters.endDate);
 
-  const canReset =
-    !!filters.name || !!filters.type.length || (!!filters.startDate && !!filters.endDate);
+   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
 
-  const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
+   const handleFilters = useCallback(
+     (name, value) => {
+       table.onResetPage();
+       setFilters((prevState) => ({
+         ...prevState,
+         [name]: value,
+       }));
+     },
+     [table]
+   );
 
-  const handleChangeView = useCallback((event, newView) => {
-    if (newView !== null) {
-      setView(newView);
-    }
-  }, []);
-
-  const handleFilters = useCallback(
-    (name, value) => {
-      table.onResetPage();
-      setFilters((prevState) => ({
-        ...prevState,
-        [name]: value,
-      }));
-    },
-    [table]
-  );
-
-  const handleDeleteItem = useCallback(
-    (id) => {
-      const deleteRow = tableData.filter((row) => row.id !== id);
-      setTableData(deleteRow);
-
-      table.onUpdatePageDeleteRow(dataInPage.length);
-    },
-    [dataInPage.length, table, tableData]
-  );
-
-  const handleDeleteItems = useCallback(() => {
-    const deleteRows = tableData.filter((row) => !table.selected.includes(row.id));
-    setTableData(deleteRows);
-
-    table.onUpdatePageDeleteRows({
-      totalRows: tableData.length,
-      totalRowsInPage: dataInPage.length,
-      totalRowsFiltered: dataFiltered.length,
-    });
-  }, [dataFiltered.length, dataInPage.length, table, tableData]);
-
-  const handleResetFilters = useCallback(() => {
-    setFilters(defaultFilters);
-  }, []);
+   const handleResetFilters = useCallback(() => {
+     setFilters(defaultFilters);
+   }, []);
 
   const renderFilters = (
     <Stack
@@ -126,7 +88,7 @@ export default function FileManagerView() {
       direction={{ xs: 'column', md: 'row' }}
       alignItems={{ xs: 'flex-end', md: 'center' }}
     >
-      <FileManagerFilters
+      {/* <FileManagerFilters
         openDateRange={openDateRange.value}
         onCloseDateRange={openDateRange.onFalse}
         onOpenDateRange={openDateRange.onTrue}
@@ -136,29 +98,19 @@ export default function FileManagerView() {
         //
         dateError={dateError}
         typeOptions={FILE_TYPE_OPTIONS}
-      />
-
-      <ToggleButtonGroup size="small" value={view} exclusive onChange={handleChangeView}>
-        <ToggleButton value="list">
-          <Iconify icon="solar:list-bold" />
-        </ToggleButton>
-
-        <ToggleButton value="grid">
-          <Iconify icon="mingcute:dot-grid-fill" />
-        </ToggleButton>
-      </ToggleButtonGroup>
+      /> */}
     </Stack>
   );
 
   const renderResults = (
     <FileManagerFiltersResult
       filters={filters}
-      onResetFilters={handleResetFilters}
+      // onResetFilters={handleResetFilters}
       //
-      canReset={canReset}
-      onFilters={handleFilters}
+      // canReset={canReset}
+      // onFilters={handleFilters}
       //
-      results={dataFiltered.length}
+      // results={dataFiltered.length}
     />
   );
 
@@ -166,13 +118,13 @@ export default function FileManagerView() {
     <>
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="h4">File Manager</Typography>
+          <Typography variant="h4">Archivio File</Typography>
           <Button
             variant="contained"
             startIcon={<Iconify icon="eva:cloud-upload-fill" />}
             onClick={upload.onTrue}
           >
-            Upload
+            Carica File
           </Button>
         </Stack>
 
@@ -196,61 +148,22 @@ export default function FileManagerView() {
             }}
           />
         ) : (
-          <>
-            {view === 'list' ? (
-              <FileManagerTable
-                table={table}
-                tableData={tableData}
-                dataFiltered={dataFiltered}
-                onDeleteRow={handleDeleteItem}
-                notFound={notFound}
-                onOpenConfirm={confirm.onTrue}
-              />
-            ) : (
-              <FileManagerGridView
-                table={table}
-                data={tableData}
-                dataFiltered={dataFiltered}
-                onDeleteItem={handleDeleteItem}
-                onOpenConfirm={confirm.onTrue}
-              />
-            )}
-          </>
+          <FileManagerGridView
+            fileManager={fileManager}
+            table={table}
+            data={tableData}
+            dataFiltered={dataFiltered}
+          />
         )}
       </Container>
-
-      <FileManagerNewFolderDialog open={upload.value} onClose={upload.onFalse} />
-
-      <ConfirmDialog
-        open={confirm.value}
-        onClose={confirm.onFalse}
-        title="Delete"
-        content={
-          <>
-            Are you sure want to delete <strong> {table.selected.length} </strong> items?
-          </>
-        }
-        action={
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => {
-              handleDeleteItems();
-              confirm.onFalse();
-            }}
-          >
-            Delete
-          </Button>
-        }
-      />
     </>
   );
 }
 
 // ----------------------------------------------------------------------
 
-function applyFilter({ inputData, comparator, filters, dateError }) {
-  const { name, type, startDate, endDate } = filters;
+function applyFilter({ inputData, comparator, filters }) {
+  const { name, type } = filters;
 
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
@@ -270,16 +183,6 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
 
   if (type.length) {
     inputData = inputData.filter((file) => type.includes(fileFormat(file.type)));
-  }
-
-  if (!dateError) {
-    if (startDate && endDate) {
-      inputData = inputData.filter(
-        (file) =>
-          fTimestamp(file.createdAt) >= fTimestamp(startDate) &&
-          fTimestamp(file.createdAt) <= fTimestamp(endDate)
-      );
-    }
   }
 
   return inputData;

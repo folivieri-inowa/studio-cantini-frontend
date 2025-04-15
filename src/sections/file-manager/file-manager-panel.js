@@ -17,8 +17,6 @@ export default function FileManagerPanel({
   subTitle,
   link,
   onOpen,
-  collapse,
-  onCollapse,
   sx,
   ...other
 }) {
@@ -28,7 +26,7 @@ export default function FileManagerPanel({
         <Stack direction="row" alignItems="center" spacing={1} flexGrow={1}>
           <Typography variant="h6"> {title} </Typography>
 
-          <IconButton
+          {/* <IconButton
             size="small"
             color="primary"
             onClick={onOpen}
@@ -43,7 +41,7 @@ export default function FileManagerPanel({
             }}
           >
             <Iconify icon="mingcute:add-line" />
-          </IconButton>
+          </IconButton> */}
         </Stack>
 
         <Box sx={{ typography: 'body2', color: 'text.disabled', mt: 0.5 }}>{subTitle}</Box>
@@ -60,20 +58,12 @@ export default function FileManagerPanel({
           View All
         </Button>
       )}
-
-      {onCollapse && (
-        <IconButton onClick={onCollapse}>
-          <Iconify icon={collapse ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-upward-fill'} />
-        </IconButton>
-      )}
     </Stack>
   );
 }
 
 FileManagerPanel.propTypes = {
-  collapse: PropTypes.bool,
   link: PropTypes.string,
-  onCollapse: PropTypes.func,
   onOpen: PropTypes.func,
   subTitle: PropTypes.string,
   sx: PropTypes.object,

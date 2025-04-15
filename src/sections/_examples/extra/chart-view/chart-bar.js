@@ -4,14 +4,14 @@ import Chart, { useChart } from 'src/components/chart';
 
 // ----------------------------------------------------------------------
 
-export default function ChartBar({ series }) {
+export default function ChartBar({ series, categories }) {
   const chartOptions = useChart({
     stroke: { show: false },
     plotOptions: {
-      bar: { horizontal: true, barHeight: '30%' },
+      bar: { horizontal: true, barHeight: '35%' },
     },
     xaxis: {
-      categories: [
+      categories: categories || [
         'Italy',
         'Japan',
         'China',
@@ -40,4 +40,5 @@ export default function ChartBar({ series }) {
 
 ChartBar.propTypes = {
   series: PropTypes.array,
+  categories: PropTypes.array,
 };

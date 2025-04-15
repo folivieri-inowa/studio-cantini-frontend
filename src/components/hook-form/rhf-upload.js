@@ -16,7 +16,15 @@ export function RHFUploadAvatar({ name, ...other }) {
       control={control}
       render={({ field, fieldState: { error } }) => (
         <div>
-          <UploadAvatar error={!!error} file={field.value} {...other} />
+          <UploadAvatar
+            accept={{
+              'image/*': [],
+            }}
+            error={!!error}
+            file={field.value}
+            {...other}
+          />
+
 
           {!!error && (
             <FormHelperText error sx={{ px: 2, textAlign: 'center' }}>
@@ -55,7 +63,7 @@ RHFUploadBox.propTypes = {
 
 // ----------------------------------------------------------------------
 
-export function RHFUpload({ name, multiple, helperText, ...other }) {
+export function RHFUpload({ name, multiple, helperText, accept = 'image/*', ...other }) {
   const { control } = useFormContext();
 
   return (
@@ -66,7 +74,7 @@ export function RHFUpload({ name, multiple, helperText, ...other }) {
         multiple ? (
           <Upload
             multiple
-            accept={{ 'image/*': [] }}
+            accept={{ '*/*': [] }}
             files={field.value}
             error={!!error}
             helperText={
@@ -80,7 +88,7 @@ export function RHFUpload({ name, multiple, helperText, ...other }) {
           />
         ) : (
           <Upload
-            accept={{ 'image/*': [] }}
+            accept={{ '*/*': [] }}
             file={field.value}
             error={!!error}
             helperText={
@@ -102,4 +110,5 @@ RHFUpload.propTypes = {
   helperText: PropTypes.string,
   multiple: PropTypes.bool,
   name: PropTypes.string,
+  accept: PropTypes.string,
 };

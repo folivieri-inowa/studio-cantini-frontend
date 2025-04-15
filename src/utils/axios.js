@@ -26,6 +26,38 @@ export const fetcher = async (args) => {
 // ----------------------------------------------------------------------
 
 export const endpoints = {
+  prima_nota: {
+    list: '/api/prima-nota/list',
+    filtered_list: '/api/prima-nota/filtered_list',
+    details: '/api/prima-nota/details',
+  },
+  owner: {
+    list: '/api/owner/list'
+  },
+  category: {
+    list: '/api/category/list'
+  },
+  subject: {
+    list: '/api/subject/list'
+  },
+  detail: {
+    list: '/api/detail/list'
+  },
+  file_manager: {
+    list: '/api/file-manager/list',
+  },
+
+  // ----------------------------------------------------------------------
+  report: {
+    master: '/api/report/master/',
+    category: {
+      details: '/api/report/category/details',
+      subject: {
+        details: '/api/report/category/subject/details',
+      }
+    }
+  },
+  // ----------------------------------------------------------------------
   chat: '/api/chat',
   kanban: '/api/kanban',
   calendar: '/api/calendar',

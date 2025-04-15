@@ -81,6 +81,8 @@ export default function ProductListView() {
 
   const confirm = useBoolean();
 
+  table.rowsPerPage = 50
+
   useEffect(() => {
     if (products.length) {
       setTableData(products);

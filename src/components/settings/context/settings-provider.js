@@ -28,6 +28,30 @@ export function SettingsProvider({ children, defaultSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isArabic]);
 
+  // Database select
+  const onChangeDb = useCallback(
+    (db) => {
+      update('db', db);
+    },
+    [update]
+  );
+
+  // Year select
+  const onChangeYear = useCallback(
+    (year) => {
+      update('year', year);
+    },
+    [update]
+  );
+
+  // Owner select
+  const onChangeOwner = useCallback(
+    (owner) => {
+      update('owner', owner);
+    },
+    [update]
+  );
+
   // Direction by lang
   const onChangeDirectionByLang = useCallback(
     (lang) => {
@@ -53,6 +77,12 @@ export function SettingsProvider({ children, defaultSettings }) {
       onUpdate: update,
       // Direction
       onChangeDirectionByLang,
+      // Database select
+      onChangeDb,
+      // Year select
+      onChangeYear,
+      // Owner select
+      onChangeOwner,
       // Reset
       canReset,
       onReset: reset,
@@ -61,16 +91,7 @@ export function SettingsProvider({ children, defaultSettings }) {
       onToggle: onToggleDrawer,
       onClose: onCloseDrawer,
     }),
-    [
-      reset,
-      update,
-      state,
-      canReset,
-      openDrawer,
-      onCloseDrawer,
-      onToggleDrawer,
-      onChangeDirectionByLang,
-    ]
+    [state, update, onChangeDirectionByLang, onChangeDb, onChangeYear, onChangeOwner, canReset, reset, openDrawer, onToggleDrawer, onCloseDrawer]
   );
 
   return <SettingsContext.Provider value={memoizedValue}>{children}</SettingsContext.Provider>;

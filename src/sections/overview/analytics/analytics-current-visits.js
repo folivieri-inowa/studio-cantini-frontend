@@ -4,7 +4,7 @@ import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import { styled, useTheme } from '@mui/material/styles';
 
-import { fNumber } from 'src/utils/format-number';
+import { fCurrency, fCurrencyEur, fNumber } from 'src/utils/format-number';
 
 import Chart, { useChart } from 'src/components/chart';
 
@@ -60,7 +60,7 @@ export default function AnalyticsCurrentVisits({ title, subheader, chart, ...oth
     tooltip: {
       fillSeriesColor: false,
       y: {
-        formatter: (value) => fNumber(value),
+        formatter: (value) => fCurrencyEur(value),
         title: {
           formatter: (seriesName) => `${seriesName}`,
         },

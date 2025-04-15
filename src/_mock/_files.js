@@ -120,4 +120,4 @@ export const _files = FILES.map((name, index) => ({
   isFavorited: _mock.boolean(index + 1),
 }));
 
-export const _allFiles = [..._folders, ..._files];
+export const _allFiles = [..._folders];

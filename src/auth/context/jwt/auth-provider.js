@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
 
         const response = await axios.get(endpoints.auth.me);
 
-        const { user } = response.data;
+        const { user } = response.data.data;
 
         dispatch({
           type: 'INITIAL',
@@ -100,15 +100,16 @@ export function AuthProvider({ children }) {
   }, [initialize]);
 
   // LOGIN
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, db) => {
     const data = {
       email,
       password,
+      db
     };
 
     const response = await axios.post(endpoints.auth.login, data);
 
-    const { accessToken, user } = response.data;
+    const { accessToken, user } = response.data.data;
 
     setSession(accessToken);
 
@@ -151,10 +152,20 @@ export function AuthProvider({ children }) {
 
   // LOGOUT
   const logout = useCallback(async () => {
+    // Clear session
     setSession(null);
+
+    // Dispatch logout action
     dispatch({
       type: 'LOGOUT',
     });
+
+    // Clear local storage or session storage if used
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Reload the page to clear any cached data
+    window.location.reload();
   }, []);
 
   // ----------------------------------------------------------------------

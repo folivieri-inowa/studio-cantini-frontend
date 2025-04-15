@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 
-import { fPercent, fCurrency } from 'src/utils/format-number';
+import { fPercent, fCurrency, fCurrencyEur } from 'src/utils/format-number';
 
 import { bgGradient } from 'src/theme/css';
 
@@ -101,7 +101,7 @@ export default function BankingWidgetSummary({
       <Stack spacing={1} sx={{ p: 3 }}>
         <Typography variant="subtitle2">{title}</Typography>
 
-        <Typography variant="h3">{fCurrency(total)}</Typography>
+        <Typography variant="h3">{fCurrencyEur(total)}</Typography>
 
         <Stack
           spacing={0.5}
@@ -117,7 +117,7 @@ export default function BankingWidgetSummary({
             {fPercent(percent)}
           </Box>
 
-          <Box sx={{ opacity: 0.8 }}>than last month</Box>
+          <Box sx={{ opacity: 0.8 }}>rispetto il mese precedente</Box>
         </Stack>
       </Stack>
 

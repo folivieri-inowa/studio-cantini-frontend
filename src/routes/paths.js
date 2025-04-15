@@ -92,20 +92,36 @@ export const paths = {
   // DASHBOARD
   dashboard: {
     root: ROOTS.DASHBOARD,
-    mail: `${ROOTS.DASHBOARD}/mail`,
-    chat: `${ROOTS.DASHBOARD}/chat`,
     blank: `${ROOTS.DASHBOARD}/blank`,
-    kanban: `${ROOTS.DASHBOARD}/kanban`,
-    calendar: `${ROOTS.DASHBOARD}/calendar`,
     fileManager: `${ROOTS.DASHBOARD}/file-manager`,
-    permission: `${ROOTS.DASHBOARD}/permission`,
-    general: {
-      app: `${ROOTS.DASHBOARD}/app`,
-      ecommerce: `${ROOTS.DASHBOARD}/ecommerce`,
-      analytics: `${ROOTS.DASHBOARD}/analytics`,
-      banking: `${ROOTS.DASHBOARD}/banking`,
-      booking: `${ROOTS.DASHBOARD}/booking`,
-      file: `${ROOTS.DASHBOARD}/file`,
+    master: {
+      category: {
+        details: (data) => `${ROOTS.DASHBOARD}/master/category/${data.id}`
+      },
+    },
+    prima_nota: {
+      root: `${ROOTS.DASHBOARD}/prima-nota`,
+      new: `${ROOTS.DASHBOARD}/prima-nota/new`,
+      details: (id) => `${ROOTS.DASHBOARD}/prima-nota/${id}`,
+      edit: (id) => `${ROOTS.DASHBOARD}/prima-nota/${id}/edit`,
+    },
+    owner: {
+      root: `${ROOTS.DASHBOARD}/owner`,
+      new: `${ROOTS.DASHBOARD}/owner/new`,
+      details: (id) => `${ROOTS.DASHBOARD}/owner/${id}`,
+      edit: (id) => `${ROOTS.DASHBOARD}/owner/${id}/edit`,
+    },
+    category: {
+      root: `${ROOTS.DASHBOARD}/category`,
+      new: `${ROOTS.DASHBOARD}/category/new`,
+      details: (data) => `${ROOTS.DASHBOARD}/category/${data.id}?owner=${data.owner}&year=${data.year}`,
+      edit: (id) => `${ROOTS.DASHBOARD}/category/${id}/edit`,
+    },
+    subject: {
+      root: `${ROOTS.DASHBOARD}/subject`,
+      new: `${ROOTS.DASHBOARD}/subject/new`,
+      details: (id) => `${ROOTS.DASHBOARD}/subject/${id}`,
+      edit: (id) => `${ROOTS.DASHBOARD}/subject/${id}/edit`,
     },
     user: {
       root: `${ROOTS.DASHBOARD}/user`,
@@ -118,63 +134,6 @@ export const paths = {
       demo: {
         edit: `${ROOTS.DASHBOARD}/user/${MOCK_ID}/edit`,
       },
-    },
-    product: {
-      root: `${ROOTS.DASHBOARD}/product`,
-      new: `${ROOTS.DASHBOARD}/product/new`,
-      details: (id) => `${ROOTS.DASHBOARD}/product/${id}`,
-      edit: (id) => `${ROOTS.DASHBOARD}/product/${id}/edit`,
-      demo: {
-        details: `${ROOTS.DASHBOARD}/product/${MOCK_ID}`,
-        edit: `${ROOTS.DASHBOARD}/product/${MOCK_ID}/edit`,
-      },
-    },
-    invoice: {
-      root: `${ROOTS.DASHBOARD}/invoice`,
-      new: `${ROOTS.DASHBOARD}/invoice/new`,
-      details: (id) => `${ROOTS.DASHBOARD}/invoice/${id}`,
-      edit: (id) => `${ROOTS.DASHBOARD}/invoice/${id}/edit`,
-      demo: {
-        details: `${ROOTS.DASHBOARD}/invoice/${MOCK_ID}`,
-        edit: `${ROOTS.DASHBOARD}/invoice/${MOCK_ID}/edit`,
-      },
-    },
-    post: {
-      root: `${ROOTS.DASHBOARD}/post`,
-      new: `${ROOTS.DASHBOARD}/post/new`,
-      details: (title) => `${ROOTS.DASHBOARD}/post/${paramCase(title)}`,
-      edit: (title) => `${ROOTS.DASHBOARD}/post/${paramCase(title)}/edit`,
-      demo: {
-        details: `${ROOTS.DASHBOARD}/post/${paramCase(MOCK_TITLE)}`,
-        edit: `${ROOTS.DASHBOARD}/post/${paramCase(MOCK_TITLE)}/edit`,
-      },
-    },
-    order: {
-      root: `${ROOTS.DASHBOARD}/order`,
-      details: (id) => `${ROOTS.DASHBOARD}/order/${id}`,
-      demo: {
-        details: `${ROOTS.DASHBOARD}/order/${MOCK_ID}`,
-      },
-    },
-    job: {
-      root: `${ROOTS.DASHBOARD}/job`,
-      new: `${ROOTS.DASHBOARD}/job/new`,
-      details: (id) => `${ROOTS.DASHBOARD}/job/${id}`,
-      edit: (id) => `${ROOTS.DASHBOARD}/job/${id}/edit`,
-      demo: {
-        details: `${ROOTS.DASHBOARD}/job/${MOCK_ID}`,
-        edit: `${ROOTS.DASHBOARD}/job/${MOCK_ID}/edit`,
-      },
-    },
-    tour: {
-      root: `${ROOTS.DASHBOARD}/tour`,
-      new: `${ROOTS.DASHBOARD}/tour/new`,
-      details: (id) => `${ROOTS.DASHBOARD}/tour/${id}`,
-      edit: (id) => `${ROOTS.DASHBOARD}/tour/${id}/edit`,
-      demo: {
-        details: `${ROOTS.DASHBOARD}/tour/${MOCK_ID}`,
-        edit: `${ROOTS.DASHBOARD}/tour/${MOCK_ID}/edit`,
-      },
-    },
+    }
   },
 };

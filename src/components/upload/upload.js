@@ -50,20 +50,9 @@ export default function Upload({
     <Stack spacing={3} alignItems="center" justifyContent="center" flexWrap="wrap">
       <UploadIllustration sx={{ width: 1, maxWidth: 200 }} />
       <Stack spacing={1} sx={{ textAlign: 'center' }}>
-        <Typography variant="h6">Drop or Select file</Typography>
+        <Typography variant="h6">Trascina o seleziona un documento</Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Drop files here or click
-          <Box
-            component="span"
-            sx={{
-              mx: 0.5,
-              color: 'primary.main',
-              textDecoration: 'underline',
-            }}
-          >
-            browse
-          </Box>
-          thorough your machine
+          Trascina un file qui o clicca per caricare
         </Typography>
       </Stack>
     </Stack>
@@ -102,7 +91,7 @@ export default function Upload({
       <Stack direction="row" justifyContent="flex-end" spacing={1.5}>
         {onRemoveAll && (
           <Button color="inherit" variant="outlined" size="small" onClick={onRemoveAll}>
-            Remove All
+            Rimuovi tutti
           </Button>
         )}
 
@@ -113,7 +102,7 @@ export default function Upload({
             onClick={onUpload}
             startIcon={<Iconify icon="eva:cloud-upload-fill" />}
           >
-            Upload
+            Carica
           </Button>
         )}
       </Stack>

@@ -84,6 +84,8 @@ export default function UserListView() {
     filters,
   });
 
+  table.rowsPerPage = 50
+
   const dataInPage = dataFiltered.slice(
     table.page * table.rowsPerPage,
     table.page * table.rowsPerPage + table.rowsPerPage

@@ -266,7 +266,12 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
         </Stack>
 
         <Stack spacing={2}>
-          <RHFTextField name="description" label="Descrizione" InputLabelProps={{ shrink: true }} />
+          <RHFTextField 
+            name="description" 
+            label="Descrizione" 
+            multiline
+            rows={2}
+            InputLabelProps={{ shrink: true }} />
         </Stack>
 
         <Stack direction={{ sm: 'column', md: 'row' }} spacing={2}>

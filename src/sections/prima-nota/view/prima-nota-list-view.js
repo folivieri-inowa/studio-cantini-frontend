@@ -426,8 +426,8 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
       date: '',
       amount: '',
       paymentType: '',
-      description: ''
-
+      description: '',
+      commissions: 0 // nuovo campo commissioni
     }),
     []
   );
@@ -452,7 +452,8 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
         date: selectedRow.date,
         amount: selectedRow.amount,
         paymentType: selectedRow.paymenttype,
-        description: selectedRow.description
+        description: selectedRow.description,
+        commissions: selectedRow.commissions || '' // valorizza se presente
       })
     }
   }, [owners, reset, selectedRow]);
@@ -498,7 +499,8 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
         formData.append('file', data.file[0]); // Il file viene inviato normalmente
       }
 
-      formData.append('metadata', JSON.stringify({ db, id: selectedRow.id }));
+      // aggiungi commissioni nei metadata
+      formData.append('metadata', JSON.stringify({ db, id: selectedRow.id, commissions: data.commissions }));
 
       const response = await axios.post('/api/prima-nota/import/associated', formData);
       if (response.status === 200) {
@@ -597,12 +599,34 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
               />
             </Stack>
 
+            {/* Campo commissioni */}
+            
             <Stack spacing={2}>
               <RHFTextField
                 name="description"
                 label="Descrizione"
                 InputLabelProps={{ shrink: true }}
                 disabled
+              />
+            </Stack>
+
+            <Stack spacing={2}>
+              <RHFTextField
+                type="number"
+                name="commissions"
+                label="Commissioni"
+                placeholder="-0.00"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Box sx={{ typography: 'subtitle2', color: 'text.disabled' }}>€</Box>
+                    </InputAdornment>
+                  ),
+                }}
+                onChange={(e) => {
+                  const newValue = e.target.value < 0 ? e.target.value : e.target.value * -1;
+                  setValue('commissions', newValue);
+                }}
               />
             </Stack>
 

@@ -46,6 +46,7 @@ const TABLE_HEAD = [
   { id: 'name', label: 'Nome Titolare Conto' },
   { id: 'cc', label: 'Numero Conto Corrente' },
   { id: 'iban', label: 'IBAN' },
+  { id: 'initialBalance', label: 'Saldo Iniziale' },
   { id: '', width: 88 },
 ];
 
@@ -53,6 +54,7 @@ const defaultFilters = {
   name: '',
   cc: '',
   iban: '',
+  initialBalance: '',
 };
 
 // ----------------------------------------------------------------------

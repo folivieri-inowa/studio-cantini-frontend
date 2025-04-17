@@ -16,7 +16,7 @@ import OwnerQuickEditForm from './owner-quick-edit-form';
 // ----------------------------------------------------------------------
 
 export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate }) {
-  const { name, cc, iban } = row;
+  const { name, cc, iban, initialBalance } = row;
 
   const confirm = useBoolean();
   const quickEdit = useBoolean();
@@ -29,6 +29,8 @@ export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{cc}</TableCell>
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{iban}</TableCell>
+        
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>{initialBalance}</TableCell>
 
         <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Tooltip title="Modifica rapida" placement="top" arrow>

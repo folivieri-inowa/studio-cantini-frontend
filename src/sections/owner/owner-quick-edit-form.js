@@ -32,6 +32,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
       name: currentOwner?.name || '',
       cc: currentOwner?.cc || '',
       iban: currentOwner?.iban || '',
+      initialBalance: currentOwner?.initialBalance || '',
     }),
     [currentOwner]
   );
@@ -53,8 +54,9 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
       name: currentOwner?.name || '',
       cc: currentOwner?.cc || '',
       iban: currentOwner?.iban || '',
+      initialBalance: currentOwner?.initialBalance || '',
     })
-  }, [currentOwner?.id, currentOwner?.cc, currentOwner?.iban, currentOwner?.name, reset])
+  }, [currentOwner?.id, currentOwner?.cc, currentOwner?.iban, currentOwner?.name, currentOwner?.initialBalance, reset])
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -96,6 +98,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
             <RHFTextField name="name" label="Nome Titolare Conto" />
             <RHFTextField name="cc" label="Numero Conto Corrente" />
             <RHFTextField name="iban" label="IBAN" />
+            <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
           </Stack>
         </DialogContent>
 

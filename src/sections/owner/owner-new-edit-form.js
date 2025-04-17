@@ -35,6 +35,7 @@ export default function OwnerNewEditForm({ ownerData }) {
       name: ownerData?.name || '',
       cc: ownerData?.cc || '',
       iban: ownerData?.iban || '',
+      initialBalance: ownerData?.initialBalance || '',
     }),
     [ownerData]
   );
@@ -80,6 +81,7 @@ export default function OwnerNewEditForm({ ownerData }) {
                 <RHFTextField name="cc" label="Numero del conto" />
                 <RHFTextField name="iban" label="IBAN" />
               </Stack>
+              <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
             </Stack>
 
             <Stack alignItems="flex-end" sx={{ mt: 3 }}>

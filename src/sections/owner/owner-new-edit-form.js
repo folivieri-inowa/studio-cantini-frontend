@@ -1,7 +1,7 @@
 import * as Yup from 'yup';
 import { useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Card from '@mui/material/Card';
@@ -9,6 +9,7 @@ import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import LoadingButton from '@mui/lab/LoadingButton';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { useRouter } from 'src/routes/hooks';
 
@@ -27,6 +28,7 @@ export default function OwnerNewEditForm({ ownerData }) {
 
   const NewUserSchema = Yup.object().shape({
     name: Yup.string().required('Nome Titolare conto è un campo obbligatorio'),
+    balanceDate: Yup.date().nullable(),
   });
 
   const defaultValues = useMemo(
@@ -36,6 +38,7 @@ export default function OwnerNewEditForm({ ownerData }) {
       cc: ownerData?.cc || '',
       iban: ownerData?.iban || '',
       initialBalance: ownerData?.initialBalance || '',
+      balanceDate: ownerData?.balanceDate || null,
     }),
     [ownerData]
   );
@@ -56,7 +59,19 @@ export default function OwnerNewEditForm({ ownerData }) {
       await new Promise((resolve) => setTimeout(resolve, 500));
       reset();
 
-      const response = await axios.post('/api/owner/create', {...data, db});
+      // Normalizza la data impostando l'ora a mezzogiorno per evitare problemi di fuso orario
+      let balanceDate = null;
+      if (data.balanceDate) {
+        const date = new Date(data.balanceDate);
+        date.setHours(12, 0, 0, 0);
+        balanceDate = date;
+      }
+
+      const response = await axios.post('/api/owner/create', {
+        ...data, 
+        db,
+        balanceDate
+      });
 
       if (response.status === 200) {
         router.push(endpoint.dashboard.owner.root);
@@ -81,7 +96,31 @@ export default function OwnerNewEditForm({ ownerData }) {
                 <RHFTextField name="cc" label="Numero del conto" />
                 <RHFTextField name="iban" label="IBAN" />
               </Stack>
-              <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
+              
+              <Stack direction="row" spacing={2}>
+                <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
+                
+                <Controller
+                  name="balanceDate"
+                  control={methods.control}
+                  render={({ field, fieldState: { error } }) => (
+                    <DatePicker
+                      label="Data Saldo"
+                      value={field.value ? new Date(field.value) : null}
+                      onChange={(newValue) => {
+                        field.onChange(newValue);
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!error,
+                          helperText: error?.message,
+                        },
+                      }}
+                    />
+                  )}
+                />
+              </Stack>
             </Stack>
 
             <Stack alignItems="flex-end" sx={{ mt: 3 }}>

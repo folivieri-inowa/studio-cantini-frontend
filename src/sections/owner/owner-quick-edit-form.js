@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 import PropTypes from 'prop-types';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useMemo, useEffect } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -11,8 +11,10 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { useSnackbar } from 'src/components/snackbar';
+import { useBoolean } from 'src/hooks/use-boolean';
 import FormProvider, { RHFTextField } from 'src/components/hook-form';
 
 import axios from '../../utils/axios';
@@ -22,23 +24,37 @@ import axios from '../../utils/axios';
 export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpdate }) {
   const { enqueueSnackbar } = useSnackbar();
 
-  const NewUserSchema = Yup.object().shape({
-    name: Yup.string().required('Nome titolare è un campo obbligatorio'),
+  const loading = useBoolean();
+
+  const NewOwnerSchema = Yup.object().shape({
+    name: Yup.string().required('Il nome è richiesto'),
+    cc: Yup.string().required('Il numero di conto corrente è richiesto'),
+    iban: Yup.string(),
+    initialBalance: Yup.number().required('Il saldo iniziale è richiesto'),
+    balanceDate: Yup.date().nullable(),
   });
 
   const defaultValues = useMemo(
     () => ({
-      id: currentOwner?.id || null,
       name: currentOwner?.name || '',
       cc: currentOwner?.cc || '',
       iban: currentOwner?.iban || '',
-      initialBalance: currentOwner?.initialBalance || '',
+      initialBalance: currentOwner?.initialBalance || 0,
+      balanceDate: currentOwner?.balanceDate
+        ? (() => {
+            // Correzione per compensare il problema del fuso orario
+            const date = new Date(currentOwner.balanceDate);
+            // Imposta l'ora a mezzogiorno per evitare problemi di fuso orario
+            date.setHours(12, 0, 0, 0);
+            return date;
+          })()
+        : null,
     }),
     [currentOwner]
   );
 
   const methods = useForm({
-    resolver: yupResolver(NewUserSchema),
+    resolver: yupResolver(NewOwnerSchema),
     defaultValues,
   });
 
@@ -49,56 +65,93 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
   } = methods;
 
   useEffect(() => {
-    reset({
-      id: currentOwner?.id || null,
-      name: currentOwner?.name || '',
-      cc: currentOwner?.cc || '',
-      iban: currentOwner?.iban || '',
-      initialBalance: currentOwner?.initialBalance || '',
-    })
-  }, [currentOwner?.id, currentOwner?.cc, currentOwner?.iban, currentOwner?.name, currentOwner?.initialBalance, reset])
+    if (currentOwner) {
+      reset(defaultValues);
+    }
+  }, [currentOwner, defaultValues, reset]);
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const response = await axios.post('/api/owner/edit', data);
-
-      if (response.status === 200) {
-        onClose();
-        reset();
-        onUpdate(data);
-        enqueueSnackbar('Aggiornamento completato!');
-      }else{
-        enqueueSnackbar('Si è verificato un errore');
+      loading.onTrue();
+      
+      // Normalizza la data impostando l'ora a mezzogiorno per evitare problemi di fuso orario
+      let balanceDate = null;
+      if (data.balanceDate) {
+        const date = new Date(data.balanceDate);
+        date.setHours(12, 0, 0, 0);
+        balanceDate = date;
       }
+
+      await axios.post('/api/owner/edit', {
+        id: currentOwner.id,
+        name: data.name,
+        cc: data.cc,
+        iban: data.iban,
+        initialBalance: data.initialBalance,
+        balanceDate: balanceDate,
+      });
+
+      onUpdate({
+        ...currentOwner,
+        name: data.name,
+        cc: data.cc,
+        iban: data.iban,
+        initialBalance: data.initialBalance,
+        balanceDate: balanceDate,
+      });
+
+      enqueueSnackbar('Aggiornamento avvenuto con successo!');
+      onClose();
     } catch (error) {
-      console.error(error);
+      enqueueSnackbar('Errore, riprova più tardi', { variant: 'error' });
+    } finally {
+      loading.onFalse();
     }
   });
 
   return (
     <Dialog
       fullWidth
-      maxWidth={false}
+      maxWidth="xs"
       open={open}
       onClose={onClose}
-      slotProps={{
-        paper: {
-          sx: { maxWidth: 720 },
-        },
+      PaperProps={{
+        sx: { maxWidth: 460 },
       }}
     >
       <FormProvider methods={methods} onSubmit={onSubmit}>
-        <DialogTitle>Modifica rapida</DialogTitle>
+        <DialogTitle>Modifica Rapida</DialogTitle>
 
         <DialogContent>
-          <Stack spacing={3} sx={{ py: 3 }}>
-            <RHFTextField name="id" sx={{ display: "none"}} />
+          <Stack spacing={3} direction={{ xs: 'column', sm: 'column' }} sx={{ py: 2.5 }}>
             <RHFTextField name="name" label="Nome Titolare Conto" />
             <RHFTextField name="cc" label="Numero Conto Corrente" />
             <RHFTextField name="iban" label="IBAN" />
-            <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
+            
+            <Stack direction="row" spacing={2}>
+              <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
+              
+              <Controller
+                name="balanceDate"
+                control={methods.control}
+                render={({ field, fieldState: { error } }) => (
+                  <DatePicker
+                    label="Data Saldo"
+                    value={field.value ? new Date(field.value) : null}
+                    onChange={(newValue) => {
+                      field.onChange(newValue);
+                    }}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        error: !!error,
+                        helperText: error?.message,
+                      },
+                    }}
+                  />
+                )}
+              />
+            </Stack>
           </Stack>
         </DialogContent>
 
@@ -107,7 +160,11 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
             Annulla
           </Button>
 
-          <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
+          <LoadingButton
+            type="submit"
+            variant="contained"
+            loading={loading.value && isSubmitting}
+          >
             Aggiorna
           </LoadingButton>
         </DialogActions>

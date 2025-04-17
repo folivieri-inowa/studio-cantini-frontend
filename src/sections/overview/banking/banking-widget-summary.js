@@ -21,6 +21,7 @@ export default function BankingWidgetSummary({
   percent,
   color = 'primary',
   chart,
+  description,
   sx,
   ...other
 }) {
@@ -103,22 +104,28 @@ export default function BankingWidgetSummary({
 
         <Typography variant="h3">{fCurrencyEur(total)}</Typography>
 
-        <Stack
-          spacing={0.5}
-          direction="row"
-          flexWrap="wrap"
-          alignItems="center"
-          sx={{ typography: 'body2' }}
-        >
-          <Iconify icon={percent < 0 ? 'eva:trending-down-fill' : 'eva:trending-up-fill'} />
+        {description ? (
+          <Typography variant="body2" sx={{ opacity: 0.8 }}>
+            {description}
+          </Typography>
+        ) : (
+          <Stack
+            spacing={0.5}
+            direction="row"
+            flexWrap="wrap"
+            alignItems="center"
+            sx={{ typography: 'body2' }}
+          >
+            <Iconify icon={percent < 0 ? 'eva:trending-down-fill' : 'eva:trending-up-fill'} />
 
-          <Box sx={{ typography: 'subtitle2' }}>
-            {percent > 0 && '+'}
-            {fPercent(percent)}
-          </Box>
+            <Box sx={{ typography: 'subtitle2' }}>
+              {percent > 0 && '+'}
+              {fPercent(percent)}
+            </Box>
 
-          <Box sx={{ opacity: 0.8 }}>rispetto il mese precedente</Box>
-        </Stack>
+            <Box sx={{ opacity: 0.8 }}>rispetto il mese precedente</Box>
+          </Stack>
+        )}
       </Stack>
 
       <Chart
@@ -136,6 +143,7 @@ export default function BankingWidgetSummary({
 BankingWidgetSummary.propTypes = {
   chart: PropTypes.object,
   color: PropTypes.string,
+  description: PropTypes.string,
   icon: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
   percent: PropTypes.number,
   sx: PropTypes.object,

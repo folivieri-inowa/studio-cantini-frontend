@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import PropTypes from 'prop-types';
+import { useEffect, useMemo } from 'react';
 
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -14,6 +15,8 @@ import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import CustomPopover, { usePopover } from 'src/components/custom-popover';
+import { useSettingsContext } from 'src/components/settings';
+import { useGetOwners } from '../../api/owner';
 
 import { fCurrencyEur } from '../../utils/format-number';
 import PrimaNotaSplitForm from './prima-nota-split-form';
@@ -37,13 +40,43 @@ export default function PrimaNotaTableRow({
     description,
     amount,
     ownername,
+    ownerid,
     status,
   } = row;
+
+  const settings = useSettingsContext();
+  const { owners } = useGetOwners(settings.db);
 
   const popover = usePopover();
   const splitPopover = usePopover();
   const deletePopover = usePopover();
   const editPopover = usePopover();
+
+  // Mappa di colori fissi per ciascun owner basata sull'indice
+  // Questo garantisce che ogni owner abbia un colore diverso e che resti costante
+  const ownerColorMap = useMemo(() => {
+    const colors = [
+      'primary',   // Blu
+      'secondary', // Viola
+      'error',     // Rosso
+      'warning',   // Arancione
+      'success',   // Verde
+      'info'       // Azzurro
+    ];
+    
+    const colorMap = {};
+    
+    // Se abbiamo gli owners dal backend, assegniamo i colori in modo sistematico
+    if (owners && owners.length) {
+      owners.forEach((owner, index) => {
+        // Assegna un colore dall'array colors basato sull'indice dell'owner
+        // Questo garantisce che ogni owner abbia un colore diverso
+        colorMap[owner.id] = colors[index % colors.length];
+      });
+    }
+    
+    return colorMap;
+  }, [owners]);
 
   const getStatusColor = (prop) => {
     switch (prop) {
@@ -56,6 +89,10 @@ export default function PrimaNotaTableRow({
       default:
         return 'info';
     }
+  }
+
+  const getOwnerColor = (ownerId) => {
+    return ownerColorMap[ownerId] || 'info';
   }
 
   const getStatusLabel = (prop) => {
@@ -87,7 +124,7 @@ export default function PrimaNotaTableRow({
         </TableCell>
 
         <TableCell>
-          <Label variant="soft" color="info">
+          <Label variant="soft" color={getOwnerColor(ownerid)}>
             {ownername}
           </Label>
         </TableCell>

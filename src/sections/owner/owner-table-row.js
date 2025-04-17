@@ -5,6 +5,7 @@ import Tooltip from '@mui/material/Tooltip';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
@@ -16,7 +17,7 @@ import OwnerQuickEditForm from './owner-quick-edit-form';
 // ----------------------------------------------------------------------
 
 export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate }) {
-  const { name, cc, iban, initialBalance } = row;
+  const { name, cc, iban, initialBalance, balanceDate } = row;
 
   const confirm = useBoolean();
   const quickEdit = useBoolean();
@@ -24,13 +25,19 @@ export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate
   return (
     <>
       <TableRow hover selected={selected}>
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{name}</TableCell>
+        <TableCell>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <div>{name}</div>
+          </Stack>
+        </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{cc}</TableCell>
+        <TableCell>{cc}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{iban}</TableCell>
+        <TableCell>{iban}</TableCell>
         
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{initialBalance}</TableCell>
+        <TableCell>{initialBalance ? `€ ${initialBalance.toLocaleString()}` : '-'}</TableCell>
+        
+        <TableCell>{balanceDate ? new Date(balanceDate).toLocaleDateString() : '-'}</TableCell>
 
         <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Tooltip title="Modifica rapida" placement="top" arrow>

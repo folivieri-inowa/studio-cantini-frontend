@@ -63,6 +63,98 @@ export default function MasterAnalyticsView() {
     [router]
   );
 
+  const getCurrentBalance = () => {
+    // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
+    if (!data || !data.length || !settings.owner) {
+      console.log('Nessun dato o proprietario selezionato');
+      return { balance: 0, lastUpdate: new Date(), percentChange: 0, description: 'Nessun dato disponibile' };
+    }
+
+    const owner = settings.owner;
+    
+    // Controllo e conversione dei valori numerici
+    const initialBalance = owner.initialBalance ? parseFloat(owner.initialBalance) : 0;
+    const balanceDate = owner.balanceDate ? new Date(owner.balanceDate) : null;
+    
+    console.log('Dati saldo:', { initialBalance, balanceDate, owner });
+
+    // Poiché non abbiamo saldo iniziale nei dati, calcoliamo il saldo come entrate - uscite
+    // per tutti gli anni disponibili fino all'anno selezionato
+    const currentYear = parseInt(settings.year, 10);
+    
+    // Ottieni tutti gli anni disponibili e ordinali
+    const availableYears = Object.keys(owner.report.globalReport).map(y => parseInt(y, 10)).sort();
+    
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let lastTransaction = new Date();
+    let previousYearTotalIncome = 0;
+    let previousYearTotalExpense = 0;
+    
+    // Calcola il saldo per tutti gli anni fino all'anno corrente
+    availableYears.forEach(year => {
+      if (year <= currentYear) {
+        const yearReport = owner.report.globalReport[year.toString()];
+        
+        if (yearReport) {
+          const yearIncome = parseFloat(yearReport.income) || 0;
+          const yearExpense = parseFloat(yearReport.expense) || 0;
+          
+          totalIncome += yearIncome;
+          totalExpense += yearExpense;
+          
+          // Se è l'anno corrente, trova l'ultimo mese con transazioni
+          if (year === currentYear) {
+            const sortedMonths = Object.entries(yearReport.months)
+              .sort(([a], [b]) => parseInt(b, 10) - parseInt(a, 10));
+            
+            if (sortedMonths.length > 0) {
+              const lastMonth = parseInt(sortedMonths[0][0], 10);
+              lastTransaction = new Date(year, lastMonth - 1, 28); // Impostiamo al 28 del mese
+            }
+          }
+          
+          // Tieni traccia delle entrate e uscite fino all'anno precedente
+          if (year < currentYear) {
+            previousYearTotalIncome += yearIncome;
+            previousYearTotalExpense += yearExpense;
+          }
+        }
+      }
+    });
+    
+    // Calcola il saldo corrente e precedente
+    const currentBalance = initialBalance + totalIncome - totalExpense;
+    const previousYearBalance = initialBalance + previousYearTotalIncome - previousYearTotalExpense;
+    
+    console.log('Calcolo saldo finale:', { 
+      initialBalance, 
+      totalIncome, 
+      totalExpense, 
+      currentBalance,
+      previousYearBalance
+    });
+    
+    // Calcolo della variazione percentuale rispetto all'anno precedente
+    let percentChange = 0;
+    if (previousYearBalance !== 0) {
+      percentChange = ((currentBalance - previousYearBalance) / Math.abs(previousYearBalance)) * 100;
+    }
+
+    // Verifica se è disponibile l'anno corrente
+    const currentYearData = owner.report.globalReport[currentYear.toString()];
+    const description = currentYearData 
+      ? `Saldo aggiornato al ${lastTransaction.toLocaleDateString()}` 
+      : `Saldo calcolato in base alle transazioni fino al ${lastTransaction.getFullYear()}`;
+
+    return {
+      balance: currentBalance,
+      lastUpdate: lastTransaction,
+      percentChange,
+      description
+    };
+  };
+
   const getGlobalIncome = () => {
     const selectedReport = settings.owner?.report?.globalReport[settings.year];
 
@@ -265,9 +357,25 @@ export default function MasterAnalyticsView() {
           <Grid size={12}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
               <BankingWidgetSummary
+                title="Saldo corrente"
+                icon="solar:wallet-money-bold"
+                percent={getCurrentBalance().percentChange}
+                total={getCurrentBalance().balance}
+                description={getCurrentBalance().description}
+                color="info"
+                chart={{ series: [] }}  // Non mostriamo il grafico per il saldo
+                sx={{
+                  '&::before, &::after': {
+                    backgroundColor: (theme) => theme.palette.info.lighter,
+                  },
+                  boxShadow: (theme) => `0 4px 12px ${theme.palette.info.lighter}`,
+                }}
+              />
+            
+              <BankingWidgetSummary
                 title="Entrate"
                 icon="eva:diagonal-arrow-left-down-fill"
-                percent={getGlobalIncome().percentChange} // Qui puoi calcolare la variazione percentuale
+                percent={getGlobalIncome().percentChange}
                 total={getGlobalIncome().totalIncome}
                 chart={{ series: getGlobalIncome().incomeData }}
               />

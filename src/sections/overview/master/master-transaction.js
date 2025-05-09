@@ -64,17 +64,19 @@ function MasterTransactionRow({ row, onViewRow }) {
     <TableRow>
       <TableCell sx={{ display: 'none' }}>{row.id}</TableCell>
 
-      <Link
-        noWrap
-        color="inherit"
-        variant="subtitle2"
-        onClick={onViewRow}
-        sx={{ cursor: 'pointer' }}
-      >
-        <TableCell>{row.category}</TableCell>
-      </Link>
+      <TableCell>
+        <Link
+          noWrap
+          color="inherit"
+          variant="subtitle2"
+          onClick={onViewRow}
+          sx={{ cursor: 'pointer' }}
+        >
+          {row.category}
+        </Link>
+      </TableCell>
 
-     <TableCell align="right">{fCurrencyEur(row.income)}</TableCell>
+      <TableCell align="right">{fCurrencyEur(row.income)}</TableCell>
 
       <TableCell align="right">{fCurrencyEur(row.expense)}</TableCell>
 

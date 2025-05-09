@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 
 import Card from '@mui/material/Card';
+import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
@@ -8,12 +9,10 @@ import TableCell from '@mui/material/TableCell';
 import CardHeader from '@mui/material/CardHeader';
 import TableContainer from '@mui/material/TableContainer';
 
-import { fCurrencyEur } from 'src/utils/format-number';
-
-import Label from 'src/components/label';
-import Scrollbar from 'src/components/scrollbar';
-import { TableHeadCustom } from 'src/components/table';
-import Link from '@mui/material/Link';
+import Label from '../../../components/label';
+import Scrollbar from '../../../components/scrollbar';
+import { TableHeadCustom } from '../../../components/table';
+import { fCurrencyEur } from '../../../utils/format-number';
 
 // ----------------------------------------------------------------------
 
@@ -84,9 +83,9 @@ function MasterTransactionRow({ row, onViewRow }) {
       <TableCell align="right">
         <Label
           variant="soft"
-          color={parseFloat(row.difference.toFixed(2)) > 0 ? 'success' : 'error'}
+          color={parseFloat(row.difference) > 0 ? 'success' : 'error'}
         >
-          {fCurrencyEur(row.difference.toFixed(2))}
+          {fCurrencyEur(row.difference)}
         </Label>
       </TableCell>
     </TableRow>

@@ -10,14 +10,13 @@ import MenuItem from '@mui/material/MenuItem';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
-import { useSettingsContext } from 'src/components/settings';
-
-import MasterTransaction from '../master-transaction';
-import axios, { endpoints } from '../../../../utils/axios';
-import BankingWidgetSummary from '../../banking/banking-widget-summary';
-import AnalyticsCurrentVisits from '../../analytics/analytics-current-visits';
 import { paths } from '../../../../routes/paths';
 import { useRouter } from '../../../../routes/hooks';
+import MasterTransaction from '../master-transaction';
+import axios, { endpoints } from '../../../../utils/axios';
+import { useSettingsContext } from '../../../../components/settings';
+import BankingWidgetSummary from '../../banking/banking-widget-summary';
+import AnalyticsCurrentVisits from '../../analytics/analytics-current-visits';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 
 // ----------------------------------------------------------------------
@@ -25,27 +24,73 @@ import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-colum
 export default function MasterAnalyticsView() {
   const router = useRouter();
   const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const settings = useSettingsContext();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(endpoints.report.master, { params: { db: settings.db } });
-        setData(response.data.data);
-        if (!settings.owner) {
-          settings.onChangeOwner(response.data.data[0]);
+  // Funzione per caricare i dati dal server
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Fetching master data from API...');
+      // Aggiungiamo un timestamp come parametro per evitare la cache
+      const timestamp = new Date().getTime();
+      const response = await axios.get(endpoints.report.master, { 
+        params: { 
+          db: settings.db,
+          _t: timestamp 
         }
-        if (!settings.year) {
-          settings.onChangeYear(response.data.data[0].report.years[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching master data:', error);
+      });
+      console.log('Master data received:', response.data.data);
+      
+      // Controlla se il saldo iniziale è presente nei dati
+      if (response.data.data && response.data.data.length > 0) {
+        const firstOwner = response.data.data[0];
+        console.log('Primo owner:', firstOwner);
+        console.log('Saldo iniziale del primo owner:', {
+          initialBalance: firstOwner.initialBalance,
+          tipo: typeof firstOwner.initialBalance,
+          valoreConvertitoFloat: parseFloat(firstOwner.initialBalance || 0)
+        });
       }
-    };
+      
+      setData(response.data.data);
+      
+      // Aggiorna l'owner corrente se esiste, altrimenti imposta il primo della lista
+      if (settings.owner && response.data.data.length > 0) {
+        // Trova l'owner corrispondente nei nuovi dati
+        const currentOwner = response.data.data.find(owner => owner.id === settings.owner.id);
+        if (currentOwner) {
+          // Aggiorna l'owner con i dati freschi
+          console.log('Aggiornamento owner esistente:', currentOwner);
+          settings.onChangeOwner(currentOwner);
+        }
+      } else if (response.data.data.length > 0) {
+        // Se non c'è un owner selezionato, imposta il primo
+        settings.onChangeOwner(response.data.data[0]);
+      }
+      
+      // Solo se non c'è ancora un anno selezionato, impostiamo il primo anno disponibile
+      if (!settings.year && response.data.data.length > 0 && response.data.data[0].report?.years?.length) {
+        settings.onChangeYear(response.data.data[0].report.years[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching master data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    // Carica i dati all'avvio e quando cambia il database
     fetchData();
+    
+    // Aggiorniamo i dati ogni 30 secondi per mantenerli sincronizzati più frequentemente
+    const intervalId = setInterval(fetchData, 30000);
+    
+    // Puliamo l'intervallo quando il componente viene smontato
+    return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [settings.db]); // Riesegui quando cambia il database
 
   const handleYearChange = (event) => {
     settings.onChangeYear(event.target.value);
@@ -70,15 +115,20 @@ export default function MasterAnalyticsView() {
       return { balance: 0, lastUpdate: new Date(), percentChange: 0, description: 'Nessun dato disponibile' };
     }
 
-    const owner = settings.owner;
+    const { owner } = settings;
     
     // Controllo e conversione dei valori numerici
     const initialBalance = owner.initialBalance ? parseFloat(owner.initialBalance) : 0;
     const balanceDate = owner.balanceDate ? new Date(owner.balanceDate) : null;
     
-    console.log('Dati saldo:', { initialBalance, balanceDate, owner });
+    console.log('Dati saldo:', { 
+      initialBalance, 
+      balanceDate, 
+      ownerInitialBalance: owner.initialBalance,
+      tipoInitialBalance: typeof owner.initialBalance
+    });
 
-    // Poiché non abbiamo saldo iniziale nei dati, calcoliamo il saldo come entrate - uscite
+    // Calcoliamo il saldo come: saldo iniziale + entrate - uscite
     // per tutti gli anni disponibili fino all'anno selezionato
     const currentYear = parseInt(settings.year, 10);
     
@@ -87,7 +137,8 @@ export default function MasterAnalyticsView() {
     
     let totalIncome = 0;
     let totalExpense = 0;
-    let lastTransaction = new Date();
+    // Inizializziamo lastTransaction a una data molto vecchia per consentire l'aggiornamento
+    let lastTransaction = new Date(2000, 0, 1);
     let previousYearTotalIncome = 0;
     let previousYearTotalExpense = 0;
     
@@ -97,20 +148,37 @@ export default function MasterAnalyticsView() {
         const yearReport = owner.report.globalReport[year.toString()];
         
         if (yearReport) {
-          const yearIncome = parseFloat(yearReport.income) || 0;
-          const yearExpense = parseFloat(yearReport.expense) || 0;
+          // Arrotondiamo a due decimali per evitare problemi di precisione
+          const yearIncome = parseFloat(parseFloat(yearReport.income || 0).toFixed(2));
+          const yearExpense = parseFloat(parseFloat(yearReport.expense || 0).toFixed(2));
           
           totalIncome += yearIncome;
           totalExpense += yearExpense;
           
-          // Se è l'anno corrente, trova l'ultimo mese con transazioni
-          if (year === currentYear) {
-            const sortedMonths = Object.entries(yearReport.months)
-              .sort(([a], [b]) => parseInt(b, 10) - parseInt(a, 10));
+          // Controlliamo tutti gli anni disponibili per trovare l'ultima transazione
+          // Ordiniamo i mesi in ordine CRESCENTE per analizzare tutti i mesi
+          const sortedMonths = Object.entries(yearReport.months)
+            .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10));
+          
+          // Troviamo l'ultimo mese con importi di entrata o uscita
+          const lastMonth = sortedMonths.reduce((lastMonthValue, [month, monthData]) => {
+            const monthNum = parseInt(month, 10);
+            // Consideriamo un mese rilevante solo se ha entrate o uscite
+            return (monthData.income > 0 || monthData.expense > 0) 
+              ? Math.max(lastMonthValue, monthNum)
+              : lastMonthValue;
+          }, 0);
+          
+          // Se abbiamo trovato un mese valido, aggiorniamo lastTransaction solo se è più recente
+          if (lastMonth > 0) {
+            // Per ottenere l'ultimo giorno del mese, usiamo il giorno 0 del mese successivo
+            const lastDay = new Date(year, lastMonth, 0).getDate();
+            const newDate = new Date(year, lastMonth - 1, lastDay);
             
-            if (sortedMonths.length > 0) {
-              const lastMonth = parseInt(sortedMonths[0][0], 10);
-              lastTransaction = new Date(year, lastMonth - 1, 28); // Impostiamo al 28 del mese
+            // Aggiorniamo lastTransaction solo se questa data è più recente
+            if (newDate > lastTransaction) {
+              lastTransaction = newDate;
+              console.log(`Nuova data di aggiornamento saldo: ${lastMonth}/${year}, ultimo giorno: ${lastDay}, data: ${lastTransaction.toLocaleDateString()}`);
             }
           }
           
@@ -123,29 +191,45 @@ export default function MasterAnalyticsView() {
       }
     });
     
+    // Arrotonda i calcoli a 2 decimali per maggiore precisione
+    const roundedTotalIncome = parseFloat(totalIncome.toFixed(2));
+    const roundedTotalExpense = parseFloat(totalExpense.toFixed(2));
+    const roundedInitialBalance = parseFloat(initialBalance.toFixed(2));
+    
     // Calcola il saldo corrente e precedente
-    const currentBalance = initialBalance + totalIncome - totalExpense;
-    const previousYearBalance = initialBalance + previousYearTotalIncome - previousYearTotalExpense;
+    const currentBalance = parseFloat((roundedInitialBalance + roundedTotalIncome - roundedTotalExpense).toFixed(2));
+    
+    const roundedPreviousIncome = parseFloat(previousYearTotalIncome.toFixed(2));
+    const roundedPreviousExpense = parseFloat(previousYearTotalExpense.toFixed(2));
+    const previousYearBalance = parseFloat((roundedInitialBalance + roundedPreviousIncome - roundedPreviousExpense).toFixed(2));
     
     console.log('Calcolo saldo finale:', { 
-      initialBalance, 
-      totalIncome, 
-      totalExpense, 
+      initialBalance: roundedInitialBalance, 
+      totalIncome: roundedTotalIncome, 
+      totalExpense: roundedTotalExpense, 
       currentBalance,
-      previousYearBalance
+      previousYearBalance,
+      lastTransaction: lastTransaction.toLocaleDateString('it-IT')
     });
     
     // Calcolo della variazione percentuale rispetto all'anno precedente
     let percentChange = 0;
     if (previousYearBalance !== 0) {
-      percentChange = ((currentBalance - previousYearBalance) / Math.abs(previousYearBalance)) * 100;
+      percentChange = parseFloat(((currentBalance - previousYearBalance) / Math.abs(previousYearBalance) * 100).toFixed(2));
     }
 
     // Verifica se è disponibile l'anno corrente
     const currentYearData = owner.report.globalReport[currentYear.toString()];
+    
+    // Formatta la data in modo leggibile (es: 8 maggio 2025)
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    const formattedDate = lastTransaction.toLocaleDateString('it-IT', options);
+    
     const description = currentYearData 
-      ? `Saldo aggiornato al ${lastTransaction.toLocaleDateString()}` 
+      ? `Saldo aggiornato al ${formattedDate}` 
       : `Saldo calcolato in base alle transazioni fino al ${lastTransaction.getFullYear()}`;
+
+    console.log('Descrizione saldo:', description);
 
     return {
       balance: currentBalance,
@@ -167,19 +251,19 @@ export default function MasterAnalyticsView() {
 
     const incomeData = sortedMonths.map(([month, date]) => ({
       x: `${settings.year}-${month.padStart(2, '0')}`, // Formato YYYY-MM
-      y: date.income,
+      y: parseFloat(date.income.toFixed(2)),
     }));
 
-    const totalIncome = selectedReport?.income || 0;
+    const totalIncome = parseFloat(selectedReport?.income.toFixed(2)) || 0;
 
     // Calcolo variazione percentuale rispetto al mese precedente
     let percentChange = 0;
     if (sortedMonths.length > 1) {
-      const lastMonthIncome = sortedMonths[sortedMonths.length - 1][1].income; // Income dell'ultimo mese
-      const prevMonthIncome = sortedMonths[sortedMonths.length - 2][1].income; // Income del mese precedente
+      const lastMonthIncome = parseFloat(sortedMonths[sortedMonths.length - 1][1].income.toFixed(2)); // Income dell'ultimo mese
+      const prevMonthIncome = parseFloat(sortedMonths[sortedMonths.length - 2][1].income.toFixed(2)); // Income del mese precedente
 
       if (prevMonthIncome !== 0) {
-        percentChange = ((lastMonthIncome - prevMonthIncome) / prevMonthIncome) * 100;
+        percentChange = parseFloat(((lastMonthIncome - prevMonthIncome) / prevMonthIncome * 100).toFixed(2));
       }
     }
 
@@ -198,19 +282,19 @@ export default function MasterAnalyticsView() {
 
     const expenseData = sortedMonths.map(([month, date]) => ({
       x: `${settings.year}-${month.padStart(2, '0')}`, // Formato YYYY-MM
-      y: date.expense,
+      y: parseFloat(date.expense.toFixed(2)),
     }));
 
-    const totalExpense = selectedReport?.expense || 0;
+    const totalExpense = parseFloat(selectedReport?.expense.toFixed(2)) || 0;
 
     // Calcolo variazione percentuale rispetto al mese precedente
     let percentChange = 0;
     if (sortedMonths.length > 1) {
-      const lastMonthExpense = sortedMonths[sortedMonths.length - 1][1].expense; // Spesa dell'ultimo mese
-      const prevMonthExpense = sortedMonths[sortedMonths.length - 2][1].expense; // Spesa del mese precedente
+      const lastMonthExpense = parseFloat(sortedMonths[sortedMonths.length - 1][1].expense.toFixed(2)); // Spesa dell'ultimo mese
+      const prevMonthExpense = parseFloat(sortedMonths[sortedMonths.length - 2][1].expense.toFixed(2)); // Spesa del mese precedente
 
       if (prevMonthExpense !== 0) {
-        percentChange = ((lastMonthExpense - prevMonthExpense) / prevMonthExpense) * 100;
+        percentChange = parseFloat(((lastMonthExpense - prevMonthExpense) / prevMonthExpense * 100).toFixed(2));
       }
     }
 
@@ -229,19 +313,36 @@ export default function MasterAnalyticsView() {
     if (!selectedReport) return [];
 
     return Object.entries(selectedReport).map(([category, values]) => {
-      const totalExpense = values.totalExpense || 0;
-      const monthsWithExpense = Object.values(values.months).filter(
-        (month) => month.expense > 0
-      ).length;
-      const averageCost = monthsWithExpense > 0 ? totalExpense / monthsWithExpense : 0;
+      const totalExpense = parseFloat(values.totalExpense) || 0;
+      
+      // Trova l'ultimo mese dell'anno in cui c'è stata una spesa
+      const months = Object.entries(values.months).sort(
+        ([a], [b]) => parseInt(a, 10) - parseInt(b, 10)
+      );
+      
+      const lastMonthWithExpense = months.reduce((lastMonth, [month, monthData]) => {
+        if (monthData.expense > 0) {
+          return Math.max(lastMonth, parseInt(month, 10));
+        }
+        return lastMonth;
+      }, 0);
+      
+      // Calcola la media basata sui mesi da gennaio fino all'ultimo mese con spese
+      const averageCost = lastMonthWithExpense > 0 ? totalExpense / lastMonthWithExpense : 0;
+
+      // Arrotonda i valori a due decimali per maggiore precisione
+      const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
+      const roundedExpense = parseFloat(totalExpense.toFixed(2));
+      const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
+      const roundedAverageCost = parseFloat(averageCost.toFixed(2));
 
       return {
         id: category.toLowerCase().replace(/\s+/g, '-'),
         category: values.name,
-        income: values.totalIncome,
-        expense: values.totalExpense,
-        difference: values.totalIncome - values.totalExpense,
-        averageCost,
+        income: roundedIncome,
+        expense: roundedExpense,
+        difference: roundedDifference,
+        averageCost: roundedAverageCost,
       };
     });
   };
@@ -264,9 +365,10 @@ export default function MasterAnalyticsView() {
       const months = globalReport[year]?.months || {};
       return Array.from({ length: 12 }, (_, i) => {
         const monthKey = (i + 1).toString().padStart(2, '0'); // Formatta 01, 02, ..., 12
+        // Arrotondiamo a 2 decimali per maggiore precisione
         return {
-          income: months[monthKey]?.income || 0,
-          expense: months[monthKey]?.expense || 0,
+          income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
+          expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
         };
       });
     };
@@ -347,6 +449,30 @@ export default function MasterAnalyticsView() {
                     </MenuItem>
                   ))}
                 </Select>
+                
+                <Typography 
+                  variant="button" 
+                  component="button"
+                  onClick={fetchData}
+                  sx={{
+                    marginLeft: 2,
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    backgroundColor: isLoading ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    transition: 'background-color 0.3s',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.08)'
+                    }
+                  }}
+                >
+                  {isLoading ? 'Aggiornamento...' : 'Aggiorna dati'}
+                </Typography>
               </Stack>
             )}
           </Stack>
@@ -428,16 +554,15 @@ export default function MasterAnalyticsView() {
               series={getChartData()}
             />
           </Grid>
-          <Grid size={4}>
-            <AnalyticsCurrentVisits
-              title="Entrate/uscite"
-              chart={{
-                series: [
-                  { label: 'Entrate', value: getGlobalIncome().totalIncome },
-                  { label: 'Uscite', value: getGlobalExpense().totalExpense },
-                ],
-              }}
-            />
+          <Grid size={4}>              <AnalyticsCurrentVisits
+                title="Entrate/uscite"
+                chart={{
+                  series: [
+                    { label: 'Entrate', value: parseFloat(getGlobalIncome().totalIncome) },
+                    { label: 'Uscite', value: parseFloat(getGlobalExpense().totalExpense) },
+                  ],
+                }}
+              />
           </Grid>
         </Grid>
       ) : (

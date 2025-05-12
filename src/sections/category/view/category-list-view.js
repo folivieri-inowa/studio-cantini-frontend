@@ -84,22 +84,75 @@ export default function CategoryListView() {
   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
 
   const handleDeleteRow = useCallback(
-    async (id) => {
-      const response = await axios.post('/api/category/delete', { id });
+    async (category) => {
+      // Debug logging
+      console.log('Deleting category:', category);
+      
+      // Assicuriamoci che l'id sia nel formato corretto
+      const payload = {
+        id: category.id || category._id, // Usiamo id o _id a seconda di quale è disponibile
+        db: category.db || settings.db // Utilizziamo db dalla categoria se disponibile, altrimenti dalle impostazioni
+      };
+      
+      console.log('Delete payload:', payload);
+      
+      const response = await axios.post('/api/category/delete', payload);
       if (response.status === 200) {
         enqueueSnackbar('Record eliminato con successo', { variant: 'success' });
-        const deleteRow = tableData.filter((row) => row._id !== id);
-        setTableData(deleteRow);
+        refetchCategories();
 
         table.onUpdatePageDeleteRow(dataInPage.length);
-      }else{
+      } else {
         enqueueSnackbar('Errore durante l\'eliminazione del record', { variant: 'error' });
       }
     },
-    [dataInPage.length, enqueueSnackbar, table, tableData]
+    [dataInPage.length, enqueueSnackbar, refetchCategories, settings.db, table]
   );
 
-  const handleEditRow = () => refetchCategories()
+  const handleEditRow = useCallback(
+    async (updatedCategory) => {
+      try {
+        // Debug logging
+        console.log('Category object ricevuto per la modifica:', updatedCategory);
+        
+        // Otteniamo la categoria originale dai dati della tabella se necessario
+        // Questo è utile per recuperare campi che potrebbero non essere nel form
+        const originalCategory = dataFiltered.find(c => 
+          (c.id === updatedCategory.id || c._id === updatedCategory._id)
+        );
+        console.log('Categoria originale trovata:', originalCategory);
+        
+        // Utilizziamo in modo esplicito il nome dalla categoria aggiornata
+        // perché questo è il campo che vogliamo modificare
+        const payload = {
+          id: updatedCategory.id || updatedCategory._id,
+          name: updatedCategory.name, // Ci assicuriamo di usare il nome aggiornato dal form
+          db: updatedCategory.db || settings.db
+        };
+        
+        console.log('Payload finale da inviare al server:', payload);
+        
+        // Assicuriamoci che name contenga il valore aggiornato
+        if (!payload.name) {
+          console.error('Nome mancante nel payload!');
+          enqueueSnackbar('Errore: nome categoria mancante', { variant: 'error' });
+          return;
+        }
+        
+        const response = await axios.post('/api/category/edit', payload);
+        if (response.status === 200) {
+          enqueueSnackbar('Categoria aggiornata con successo', { variant: 'success' });
+          refetchCategories();
+        } else {
+          enqueueSnackbar('Errore durante l\'aggiornamento della categoria', { variant: 'error' });
+        }
+      } catch (error) {
+        console.error(error);
+        enqueueSnackbar('Errore durante l\'aggiornamento della categoria', { variant: 'error' });
+      }
+    },
+    [dataFiltered, enqueueSnackbar, refetchCategories, settings.db]
+  );
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>
@@ -146,12 +199,12 @@ export default function CategoryListView() {
                     )
                     .map((row) => (
                       <CategoryTableRow
-                        key={row._id}
+                        key={row.id || row._id}
                         row={row}
-                        selected={table.selected.includes(row._id)}
-                        onSelectRow={() => table.onSelectRow(row._id)}
-                        onDeleteRow={() => handleDeleteRow(row._id)}
-                        onEditRow={() => handleEditRow(row._id)}
+                        selected={table.selected.includes(row.id || row._id)}
+                        onSelectRow={() => table.onSelectRow(row.id || row._id)}
+                        onDeleteRow={() => handleDeleteRow(row)}
+                        onEditRow={() => handleEditRow(row)}
                         handleUpdate={refetchCategories}
                       />
                     ))}

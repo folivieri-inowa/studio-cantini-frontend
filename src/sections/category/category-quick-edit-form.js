@@ -21,8 +21,9 @@ export default function CategoryQuickEditForm({ currentCategory, open, onClose, 
 
   const defaultValues = useMemo(
     () => ({
-      id: currentCategory?.id || null,
-      name: currentCategory?.name || ''
+      id: currentCategory?.id || currentCategory?._id || null, // Utilizziamo entrambi i campi id
+      name: currentCategory?.name || '',
+      db: currentCategory?.db || 'db1' // Assicuriamoci di avere il campo db
     }),
     [currentCategory]
   );
@@ -34,6 +35,7 @@ export default function CategoryQuickEditForm({ currentCategory, open, onClose, 
 
   const {
     setValue,
+    getValues,
     handleSubmit,
     reset,
     formState: { isSubmitting },
@@ -41,9 +43,34 @@ export default function CategoryQuickEditForm({ currentCategory, open, onClose, 
 
   const onSubmit = handleSubmit(async (data) => {
     try {
+      // Otteniamo i valori aggiornati direttamente dal form
+      const currentFormValues = getValues();
+      console.log('Valori correnti del form:', currentFormValues);
+      
+      // Debug logging
+      console.log('Form data submitted RAW:', data);
+      console.log('Current category:', currentCategory);
+      
+      // Assicuriamoci di avere un ID valido nel formato corretto e di includere il campo db
+      const formattedData = {
+        ...data,
+        id: data.id || currentCategory?.id || currentCategory?._id, // Assicuriamoci di usare l'ID corretto
+        db: data.db || currentCategory?.db || 'db1', // Assicuriamoci di includere il campo db
+        name: currentFormValues.name || data.name, // Prendiamo il valore più aggiornato possibile
+      };
+      
+      console.log('Formatted data for update:', formattedData);
+      
+      // Eseguiamo la funzione di aggiornamento passata dal componente padre
+      // prima di chiudere il form, così possiamo essere sicuri che l'operazione
+      // sia completata e la UI venga aggiornata
+      if (onUpdate) {
+        await onUpdate(formattedData);
+      }
+      
+      // Chiudiamo il dialog e resettiamo il form
       onClose();
-      reset()
-      onUpdate(data)
+      reset();
     } catch (error) {
       console.error(error);
     }
@@ -72,10 +99,22 @@ export default function CategoryQuickEditForm({ currentCategory, open, onClose, 
               }}
             />
             <RHFTextField
+              name="db"
+              label="DB"
+              defaultValue={defaultValues.db}
+              InputProps={{ readOnly: true, style: { color: 'gray' } }}
+              sx={{
+                display: 'none',
+              }}
+            />
+            <RHFTextField
               name="name"
               label="Nome"
+              defaultValue={defaultValues.name}
               onChange={(e) => {
-                setValue("name", e.target.value);
+                const newValue = e.target.value;
+                setValue("name", newValue);
+                console.log('Nome campo aggiornato a:', newValue);
               }}
             />
           </Stack>

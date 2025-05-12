@@ -67,10 +67,15 @@ export default function SubjectNewEditForm({ rowId, open, onClose, onUpdate }) {
         setSubjects((prevSubjects) => [...prevSubjects, newSubject]);
 
         // setSubjects(response.data.data.subjects);
-        enqueueSnackbar('Categoria creata con successo', { variant: 'success' });
+        enqueueSnackbar('Soggetto creato con successo', { variant: 'success' });
+        
+        // Aggiorniamo anche il componente padre
+        if (onUpdate) {
+          onUpdate();
+        }
       }
     } catch (error) {
-      enqueueSnackbar('Errore durante la creazione della categoria', { variant: 'error' });
+      enqueueSnackbar('Errore durante la creazione del soggetto', { variant: 'error' });
       console.error(error);
     }
   };
@@ -85,10 +90,15 @@ export default function SubjectNewEditForm({ rowId, open, onClose, onUpdate }) {
           )
         );
 
-        enqueueSnackbar('Categoria aggiornata con successo', { variant: 'success' });
+        enqueueSnackbar('Soggetto aggiornato con successo', { variant: 'success' });
+        
+        // Aggiorniamo anche il componente padre
+        if (onUpdate) {
+          onUpdate();
+        }
       }
     } catch (error) {
-      enqueueSnackbar('Errore durante la modifica della categoria', { variant: 'error' });
+      enqueueSnackbar('Errore durante la modifica del soggetto', { variant: 'error' });
       console.error(error);
     }
   }
@@ -99,10 +109,15 @@ export default function SubjectNewEditForm({ rowId, open, onClose, onUpdate }) {
       if (response.status === 200) {
         const updatedSubjects = subjects.filter(val => val.id !== id);
         setSubjects(updatedSubjects);
-        enqueueSnackbar('Categoria eliminata con successo', { variant: 'success' });
+        enqueueSnackbar('Soggetto eliminato con successo', { variant: 'success' });
+        
+        // Aggiorniamo anche il componente padre
+        if (onUpdate) {
+          onUpdate();
+        }
       }
     } catch (error) {
-      enqueueSnackbar('Errore durante l\'eliminazione della categoria', { variant: 'error' });
+      enqueueSnackbar('Errore durante l\'eliminazione del soggetto', { variant: 'error' });
       console.log(error);
     }
   };

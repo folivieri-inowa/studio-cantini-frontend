@@ -82,11 +82,17 @@ export default function DetailNewEditForm({ rowId, open, onClose, onUpdate }) {
             subject.id === data.id ? { ...subject, name: data.name } : subject
           )
         );
-
-        enqueueSnackbar('Categoria aggiornata con successo', { variant: 'success' });
+        
+        // Notifica del successo con il messaggio corretto
+        enqueueSnackbar('Dettaglio aggiornato con successo', { variant: 'success' });
+        
+        // Aggiorniamo anche il componente padre
+        if (onUpdate) {
+          onUpdate();
+        }
       }
     } catch (error) {
-      enqueueSnackbar('Errore durante la modifica della categoria', { variant: 'error' });
+      enqueueSnackbar('Errore durante la modifica del dettaglio', { variant: 'error' });
       console.error(error);
     }
   }
@@ -98,6 +104,11 @@ export default function DetailNewEditForm({ rowId, open, onClose, onUpdate }) {
         const updatedSubjects = details.filter(val => val.id !== id);
         setDetails(updatedSubjects);
         enqueueSnackbar('Dettaglio eliminato con successo', { variant: 'success' });
+        
+        // Aggiorniamo anche il componente padre
+        if (onUpdate) {
+          onUpdate();
+        }
       }
     } catch (error) {
       enqueueSnackbar('Errore durante l\'eliminazione del dettaglio', { variant: 'error' });

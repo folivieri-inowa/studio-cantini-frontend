@@ -41,9 +41,16 @@ export default function SubjectQuickEditForm({ currentSubject, open, onClose, on
 
   const onSubmit = handleSubmit(async (data) => {
     try {
+      // Eseguiamo la funzione di aggiornamento passata dal componente padre
+      // prima di chiudere il form, così possiamo essere sicuri che l'operazione
+      // sia completata e la UI venga aggiornata
+      if (onUpdate) {
+        await onUpdate(data);
+      }
+      
+      // Chiudiamo il dialog e resettiamo il form
       onClose();
-      reset()
-      onUpdate(data)
+      reset();
     } catch (error) {
       console.error(error);
     }

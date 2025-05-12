@@ -18,6 +18,7 @@ import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import AnalyticsCurrentVisits from '../../analytics/analytics-current-visits';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
+import { useAuthContext } from '../../../../auth/hooks';
 
 // ----------------------------------------------------------------------
 
@@ -26,6 +27,7 @@ export default function MasterAnalyticsView() {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const settings = useSettingsContext();
+  const { user } = useAuthContext();
 
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
@@ -34,14 +36,14 @@ export default function MasterAnalyticsView() {
       console.log('Fetching master data from API...');
       // Aggiungiamo un timestamp come parametro per evitare la cache
       const timestamp = new Date().getTime();
-      const response = await axios.get(endpoints.report.master, { 
-        params: { 
+      const response = await axios.get(endpoints.report.master, {
+        params: {
           db: settings.db,
-          _t: timestamp 
+          _t: timestamp
         }
       });
       console.log('Master data received:', response.data.data);
-      
+
       // Controlla se il saldo iniziale è presente nei dati
       if (response.data.data && response.data.data.length > 0) {
         const firstOwner = response.data.data[0];
@@ -52,9 +54,9 @@ export default function MasterAnalyticsView() {
           valoreConvertitoFloat: parseFloat(firstOwner.initialBalance || 0)
         });
       }
-      
+
       setData(response.data.data);
-      
+
       // Aggiorna l'owner corrente se esiste, altrimenti imposta il primo della lista
       if (settings.owner && response.data.data.length > 0) {
         // Trova l'owner corrispondente nei nuovi dati
@@ -68,7 +70,7 @@ export default function MasterAnalyticsView() {
         // Se non c'è un owner selezionato, imposta il primo
         settings.onChangeOwner(response.data.data[0]);
       }
-      
+
       // Solo se non c'è ancora un anno selezionato, impostiamo il primo anno disponibile
       if (!settings.year && response.data.data.length > 0 && response.data.data[0].report?.years?.length) {
         settings.onChangeYear(response.data.data[0].report.years[0]);
@@ -83,10 +85,10 @@ export default function MasterAnalyticsView() {
   useEffect(() => {
     // Carica i dati all'avvio e quando cambia il database
     fetchData();
-    
+
     // Aggiorniamo i dati ogni 30 secondi per mantenerli sincronizzati più frequentemente
     const intervalId = setInterval(fetchData, 30000);
-    
+
     // Puliamo l'intervallo quando il componente viene smontato
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,14 +118,14 @@ export default function MasterAnalyticsView() {
     }
 
     const { owner } = settings;
-    
+
     // Controllo e conversione dei valori numerici
     const initialBalance = owner.initialBalance ? parseFloat(owner.initialBalance) : 0;
     const balanceDate = owner.balanceDate ? new Date(owner.balanceDate) : null;
-    
-    console.log('Dati saldo:', { 
-      initialBalance, 
-      balanceDate, 
+
+    console.log('Dati saldo:', {
+      initialBalance,
+      balanceDate,
       ownerInitialBalance: owner.initialBalance,
       tipoInitialBalance: typeof owner.initialBalance
     });
@@ -131,57 +133,57 @@ export default function MasterAnalyticsView() {
     // Calcoliamo il saldo come: saldo iniziale + entrate - uscite
     // per tutti gli anni disponibili fino all'anno selezionato
     const currentYear = parseInt(settings.year, 10);
-    
+
     // Ottieni tutti gli anni disponibili e ordinali
     const availableYears = Object.keys(owner.report.globalReport).map(y => parseInt(y, 10)).sort();
-    
+
     let totalIncome = 0;
     let totalExpense = 0;
     // Inizializziamo lastTransaction a una data molto vecchia per consentire l'aggiornamento
     let lastTransaction = new Date(2000, 0, 1);
     let previousYearTotalIncome = 0;
     let previousYearTotalExpense = 0;
-    
+
     // Calcola il saldo per tutti gli anni fino all'anno corrente
     availableYears.forEach(year => {
       if (year <= currentYear) {
         const yearReport = owner.report.globalReport[year.toString()];
-        
+
         if (yearReport) {
           // Arrotondiamo a due decimali per evitare problemi di precisione
           const yearIncome = parseFloat(parseFloat(yearReport.income || 0).toFixed(2));
           const yearExpense = parseFloat(parseFloat(yearReport.expense || 0).toFixed(2));
-          
+
           totalIncome += yearIncome;
           totalExpense += yearExpense;
-          
+
           // Controlliamo tutti gli anni disponibili per trovare l'ultima transazione
           // Ordiniamo i mesi in ordine CRESCENTE per analizzare tutti i mesi
           const sortedMonths = Object.entries(yearReport.months)
             .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10));
-          
+
           // Troviamo l'ultimo mese con importi di entrata o uscita
           const lastMonth = sortedMonths.reduce((lastMonthValue, [month, monthData]) => {
             const monthNum = parseInt(month, 10);
             // Consideriamo un mese rilevante solo se ha entrate o uscite
-            return (monthData.income > 0 || monthData.expense > 0) 
+            return (monthData.income > 0 || monthData.expense > 0)
               ? Math.max(lastMonthValue, monthNum)
               : lastMonthValue;
           }, 0);
-          
+
           // Se abbiamo trovato un mese valido, aggiorniamo lastTransaction solo se è più recente
           if (lastMonth > 0) {
             // Per ottenere l'ultimo giorno del mese, usiamo il giorno 0 del mese successivo
             const lastDay = new Date(year, lastMonth, 0).getDate();
             const newDate = new Date(year, lastMonth - 1, lastDay);
-            
+
             // Aggiorniamo lastTransaction solo se questa data è più recente
             if (newDate > lastTransaction) {
               lastTransaction = newDate;
               console.log(`Nuova data di aggiornamento saldo: ${lastMonth}/${year}, ultimo giorno: ${lastDay}, data: ${lastTransaction.toLocaleDateString()}`);
             }
           }
-          
+
           // Tieni traccia delle entrate e uscite fino all'anno precedente
           if (year < currentYear) {
             previousYearTotalIncome += yearIncome;
@@ -190,28 +192,28 @@ export default function MasterAnalyticsView() {
         }
       }
     });
-    
+
     // Arrotonda i calcoli a 2 decimali per maggiore precisione
     const roundedTotalIncome = parseFloat(totalIncome.toFixed(2));
     const roundedTotalExpense = parseFloat(totalExpense.toFixed(2));
     const roundedInitialBalance = parseFloat(initialBalance.toFixed(2));
-    
+
     // Calcola il saldo corrente e precedente
     const currentBalance = parseFloat((roundedInitialBalance + roundedTotalIncome - roundedTotalExpense).toFixed(2));
-    
+
     const roundedPreviousIncome = parseFloat(previousYearTotalIncome.toFixed(2));
     const roundedPreviousExpense = parseFloat(previousYearTotalExpense.toFixed(2));
     const previousYearBalance = parseFloat((roundedInitialBalance + roundedPreviousIncome - roundedPreviousExpense).toFixed(2));
-    
-    console.log('Calcolo saldo finale:', { 
-      initialBalance: roundedInitialBalance, 
-      totalIncome: roundedTotalIncome, 
-      totalExpense: roundedTotalExpense, 
+
+    console.log('Calcolo saldo finale:', {
+      initialBalance: roundedInitialBalance,
+      totalIncome: roundedTotalIncome,
+      totalExpense: roundedTotalExpense,
       currentBalance,
       previousYearBalance,
       lastTransaction: lastTransaction.toLocaleDateString('it-IT')
     });
-    
+
     // Calcolo della variazione percentuale rispetto all'anno precedente
     let percentChange = 0;
     if (previousYearBalance !== 0) {
@@ -220,13 +222,13 @@ export default function MasterAnalyticsView() {
 
     // Verifica se è disponibile l'anno corrente
     const currentYearData = owner.report.globalReport[currentYear.toString()];
-    
+
     // Formatta la data in modo leggibile (es: 8 maggio 2025)
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     const formattedDate = lastTransaction.toLocaleDateString('it-IT', options);
-    
-    const description = currentYearData 
-      ? `Saldo aggiornato al ${formattedDate}` 
+
+    const description = currentYearData
+      ? `Saldo aggiornato al ${formattedDate}`
       : `Saldo calcolato in base alle transazioni fino al ${lastTransaction.getFullYear()}`;
 
     console.log('Descrizione saldo:', description);
@@ -314,19 +316,19 @@ export default function MasterAnalyticsView() {
 
     return Object.entries(selectedReport).map(([category, values]) => {
       const totalExpense = parseFloat(values.totalExpense) || 0;
-      
+
       // Trova l'ultimo mese dell'anno in cui c'è stata una spesa
       const months = Object.entries(values.months).sort(
         ([a], [b]) => parseInt(a, 10) - parseInt(b, 10)
       );
-      
+
       const lastMonthWithExpense = months.reduce((lastMonth, [month, monthData]) => {
         if (monthData.expense > 0) {
           return Math.max(lastMonth, parseInt(month, 10));
         }
         return lastMonth;
       }, 0);
-      
+
       // Calcola la media basata sui mesi da gennaio fino all'ultimo mese con spese
       const averageCost = lastMonthWithExpense > 0 ? totalExpense / lastMonthWithExpense : 0;
 
@@ -406,7 +408,7 @@ export default function MasterAnalyticsView() {
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
           <Stack direction="column" spacing={3}>
             <Typography variant="h4" component="div">
-              Francesco
+              {user?.firstname} {user?.lastname}
             </Typography>
 
             {data && settings.owner && (
@@ -449,9 +451,9 @@ export default function MasterAnalyticsView() {
                     </MenuItem>
                   ))}
                 </Select>
-                
-                <Typography 
-                  variant="button" 
+
+                <Typography
+                  variant="button"
                   component="button"
                   onClick={fetchData}
                   sx={{
@@ -497,7 +499,7 @@ export default function MasterAnalyticsView() {
                   boxShadow: (theme) => `0 4px 12px ${theme.palette.info.lighter}`,
                 }}
               />
-            
+
               <BankingWidgetSummary
                 title="Entrate"
                 icon="eva:diagonal-arrow-left-down-fill"

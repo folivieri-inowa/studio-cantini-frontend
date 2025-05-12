@@ -40,7 +40,7 @@ export default function CategoryAverageExpenseSubject({ title, subheader, tableD
               {tableData.averageMonthlyCosts.map((row) => (
                 <CategoryAverageExpenseSubjectRow
                   categoryId={tableData.categoryId}
-                  key={row.category}
+                  key={`${row.id || row.category}`}
                   row={row}
                   onViewRow={onViewRow}
                 />
@@ -72,7 +72,7 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
   const handleOpenQuickView = (props) => {
     const dataToSend = {
       db: settings.db,
-      owner: settings.owner.id,
+      owner: settings.owner ? settings.owner.id : 'all-accounts',
       year: settings.year,
       ...props
     }
@@ -81,7 +81,7 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
   }
 
   const handleOpenDetails = (prop) => {
-    setChartData({category: categoryId, subject: row.id, db: settings.db, owner: settings.owner.id, year: settings.year,})
+    setChartData({category: categoryId, subject: row.id, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year,})
     qucikViewDetails.onTrue()
   }
 
@@ -138,14 +138,14 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                   </TableHead>
                   <TableBody>
                     {row.values.map((value) => (
-                      <TableRow key={value.id}>
+                      <TableRow key={`${value.id}-${row.id}`}>
                         <TableCell sx={{ width: '5%' }}/>
                         {value.detailsId ? (
                           <Link
                             noWrap
                             color="inherit"
                             variant="subtitle2"
-                            onClick={() => onViewRow({ details: value.id, subject: row.id, category: categoryId, db: settings.db, owner: settings.owner.id, year: settings.year})}
+                            onClick={() => onViewRow({ details: value.id, subject: row.id, category: categoryId, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year})}
                             sx={{ cursor: 'pointer' }}
                           >
                             <TableCell sx={{ color: 'blue' }}>{value.title}</TableCell>
@@ -188,7 +188,7 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
 }
 
 CategoryAverageExpenseSubjectRow.propTypes = {
-  categoryId: PropTypes.object,
+  categoryId: PropTypes.string,
   row: PropTypes.object,
   onViewRow: PropTypes.func,
 };

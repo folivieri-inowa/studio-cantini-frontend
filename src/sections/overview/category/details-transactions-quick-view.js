@@ -13,7 +13,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import TableContainer from '@mui/material/TableContainer';
 
-import { _mock as subject, PRODUCT_STOCK_OPTIONS } from '../../../_mock';
 import axios, { endpoints } from '../../../utils/axios';
 import Scrollbar from '../../../components/scrollbar/scrollbar';
 import PrimaNotaTableRow from '../../prima-nota/prima-nota-table-row';
@@ -26,7 +25,6 @@ import {
   TableHeadCustom,
   TableSelectedAction, TablePaginationCustom,
 } from '../../../components/table';
-import { useSettingsContext } from '../../../components/settings';
 
 // ----------------------------------------------------------------------
 
@@ -62,17 +60,53 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
       setTransactionsLoading(true)
 
       try {
+        // Verifica che data esista prima di fare la richiesta
+        if (!data) {
+          console.warn("Nessun dato da inviare per la richiesta");
+          setTableData([]);
+          setTransactionsLoading(false);
+          return;
+        }
+
         const response = await axios.post(endpoints.prima_nota.filtered_list, data);
         if (response.status === 200) {
-          setTableData(response.data.data);
+          // La struttura della risposta è response.data.data.data
+          if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
+            console.log("Dati ricevuti:", response.data.data.data);
+
+            // Mappiamo i dati nel formato che il componente PrimaNotaTableRow si aspetta
+            const formattedData = response.data.data.data.map((item, index) => ({
+              _id: `transaction-${index}`, // Creiamo un ID unico
+              date: item.date,
+              description: item.description,
+              ownername: item.ownername || "Non specificato",
+              ownerid: item.ownerid || null,
+              amount: item.amount,
+              status: 'completed' // Default status
+            }));
+
+            setTableData(formattedData);
+          } else {
+            console.warn("Risposta API non nel formato atteso:", response.data);
+            setTableData([]);
+          }
+        } else {
+          console.warn("Risposta API non valida:", response.data);
+          setTableData([]);
         }
       } catch (error) {
         console.error("Error fetching master data:", error);
+        setTableData([]);
       }
       setTransactionsLoading(false);
     };
 
-    if (open && data) {
+    // Reset dei dati quando il componente viene chiuso
+    if (!open) {
+      setTableData([]);
+    }
+    // Recupera i dati solo quando il modal è aperto e abbiamo dei dati
+    else if (open && data) {
       fetchData();
       table.setRowsPerPage(rowsPerPage);
     }
@@ -157,8 +191,8 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
 
                 <TableBody>
                   {transactionsLoading ? (
-                    [...Array(table.rowsPerPage)].map((i, index) => (
-                      <TableSkeleton key={index} sx={{ height: denseHeight }} />
+                    [...Array(table.rowsPerPage)].map((_, index) => (
+                      <TableSkeleton key={`skeleton-${index}`} sx={{ height: denseHeight }} />
                     ))
                   ) : (
                     <>
@@ -169,7 +203,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
                         )
                         .map((row) => (
                           <PrimaNotaTableRow
-                            key={row._id}
+                            key={row._id || `row-${Math.random()}`}
                             row={row}
                             selectColumns={false}
                             editable={false}
@@ -224,6 +258,12 @@ DetailsTransactionsQuickView.propTypes = {
 function applyFilter({ inputData, comparator, filters }) {
   const { name, description, status } = filters;
 
+  // Verifica che inputData sia un array
+  if (!Array.isArray(inputData)) {
+    console.warn('applyFilter: inputData non è un array', inputData);
+    return [];
+  }
+
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
   stabilizedThis.sort((a, b) => {
@@ -234,20 +274,27 @@ function applyFilter({ inputData, comparator, filters }) {
 
   inputData = stabilizedThis.map((el) => el[0]);
 
+  // Filtro per owner name
   if (name) {
     inputData = inputData.filter(
-      (transaction) => transaction.owner.name.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (transaction) => transaction.ownername &&
+        transaction.ownername.toLowerCase().indexOf(name.toLowerCase()) !== -1
     );
   }
 
+  // Filtro per descrizione
   if (description) {
     inputData = inputData.filter(
-      (transaction) => transaction.description.toLowerCase().indexOf(description.toLowerCase()) !== -1
+      (transaction) => transaction.description &&
+        transaction.description.toLowerCase().indexOf(description.toLowerCase()) !== -1
     );
   }
 
-  if (status.length) {
-    inputData = inputData.filter((transaction) => status.includes(transaction.status));
+  // Filtro per stato
+  if (status && status.length) {
+    inputData = inputData.filter((transaction) =>
+      transaction.status && status.includes(transaction.status)
+    );
   }
 
   return inputData;

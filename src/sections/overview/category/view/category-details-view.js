@@ -27,7 +27,7 @@ export default function CategoryDetailsView({ categoryId }) {
   const quickView = useBoolean();
   const settings = useSettingsContext();
 
-  const ownerId = settings.owner.id;
+  const ownerId = settings.owner ? settings.owner.id : null;
   const { year } = settings;
 
   const { reportCategory, reportCategoryLoading } = useGetReportCategory(categoryId, ownerId, year, settings.db);
@@ -117,7 +117,7 @@ export default function CategoryDetailsView({ categoryId }) {
                 Dati relativi all&#39;anno {year},
               </Typography>
               <Typography variant="body1" component="div">
-                conto di riferimento {reportCategory.owner.name} | {reportCategory.owner.cc}
+                conto di riferimento {reportCategory.owner.id === 'all-accounts' ? 'Tutti i conti' : `${reportCategory.owner.name} | ${reportCategory.owner.cc}`}
               </Typography>
             </Stack>
           </Stack>

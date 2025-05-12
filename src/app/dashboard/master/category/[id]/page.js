@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function CategoryDetailPage({ params }) {
-  const { id } = await params
+  const { id } = params;
 
   return <CategoryDetailsView categoryId={id} />;
 }

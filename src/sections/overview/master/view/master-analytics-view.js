@@ -13,12 +13,12 @@ import Typography from '@mui/material/Typography';
 import { paths } from '../../../../routes/paths';
 import { useRouter } from '../../../../routes/hooks';
 import MasterTransaction from '../master-transaction';
+import { useAuthContext } from '../../../../auth/hooks';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import AnalyticsCurrentVisits from '../../analytics/analytics-current-visits';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
-import { useAuthContext } from '../../../../auth/hooks';
 
 // ----------------------------------------------------------------------
 
@@ -99,8 +99,135 @@ export default function MasterAnalyticsView() {
   };
 
   const handleOwnerChange = (event) => {
-    const selectedOwner = data.find((owner) => owner.id === event.target.value);
-    settings.onChangeOwner(selectedOwner);
+    const selectedValue = event.target.value;
+
+    if (selectedValue === 'all-accounts') {
+      // Create a special owner object that represents all accounts combined
+      const allAccountsOwner = {
+        id: 'all-accounts',
+        name: 'Tutti i conti',
+        cc: '',
+        iban: '',
+        initialBalance: 0,
+        balanceDate: null,
+        report: {
+          years: [], // Will be populated below
+          globalReport: {},
+          categoryReport: {},
+        },
+      };
+
+      // Combine data from all owners
+      if (data && data.length > 0) {
+        // Collect all available years from all owners
+        const allYears = new Set();
+        data.forEach(owner => {
+          owner.report.years.forEach(year => allYears.add(year));
+        });
+        allAccountsOwner.report.years = Array.from(allYears).sort((a, b) => b - a);
+
+        // For each year, combine the global reports from all owners
+        allAccountsOwner.report.years.forEach(year => {
+          allAccountsOwner.report.globalReport[year] = { income: 0, expense: 0, months: {} };
+
+          // Initialize months
+          for (let month = 1; month <= 12; month++) {
+            const monthKey = month.toString().padStart(2, '0');
+            allAccountsOwner.report.globalReport[year].months[monthKey] = { income: 0, expense: 0 };
+          }
+
+          // Combine data from all owners for this year
+          data.forEach(owner => {
+            const ownerReport = owner.report.globalReport[year];
+            if (ownerReport) {
+              // Add to yearly totals
+              allAccountsOwner.report.globalReport[year].income += parseFloat(ownerReport.income || 0);
+              allAccountsOwner.report.globalReport[year].expense += parseFloat(ownerReport.expense || 0);
+
+              // Add to monthly totals
+              Object.entries(ownerReport.months).forEach(([month, monthData]) => {
+                allAccountsOwner.report.globalReport[year].months[month].income += parseFloat(monthData.income || 0);
+                allAccountsOwner.report.globalReport[year].months[month].expense += parseFloat(monthData.expense || 0);
+              });
+            }
+          });
+
+          // Round values for precision
+          allAccountsOwner.report.globalReport[year].income = parseFloat(allAccountsOwner.report.globalReport[year].income.toFixed(2));
+          allAccountsOwner.report.globalReport[year].expense = parseFloat(allAccountsOwner.report.globalReport[year].expense.toFixed(2));
+
+          Object.keys(allAccountsOwner.report.globalReport[year].months).forEach(month => {
+            allAccountsOwner.report.globalReport[year].months[month].income = parseFloat(allAccountsOwner.report.globalReport[year].months[month].income.toFixed(2));
+            allAccountsOwner.report.globalReport[year].months[month].expense = parseFloat(allAccountsOwner.report.globalReport[year].months[month].expense.toFixed(2));
+          });
+
+          // Combine category reports
+          allAccountsOwner.report.categoryReport[year] = {};
+
+          // Get all unique categories from all owners
+          const allCategories = new Set();
+          data.forEach(owner => {
+            const categoryReport = owner.report.categoryReport[year];
+            if (categoryReport) {
+              Object.keys(categoryReport).forEach(categoryId => allCategories.add(categoryId));
+            }
+          });
+
+          // Combine category data
+          allCategories.forEach(categoryId => {
+            allAccountsOwner.report.categoryReport[year][categoryId] = {
+              id: categoryId,
+              name: '', // Will be set from the first owner that has this category
+              totalIncome: 0,
+              totalExpense: 0,
+              months: {},
+            };
+
+            // Initialize months
+            for (let month = 1; month <= 12; month++) {
+              const monthKey = month.toString().padStart(2, '0');
+              allAccountsOwner.report.categoryReport[year][categoryId].months[monthKey] = { income: 0, expense: 0 };
+            }
+
+            // Combine data from all owners for this category
+            data.forEach(owner => {
+              const categoryReport = owner.report.categoryReport[year];
+              if (categoryReport && categoryReport[categoryId]) {
+                // Set category name if not already set
+                if (!allAccountsOwner.report.categoryReport[year][categoryId].name) {
+                  allAccountsOwner.report.categoryReport[year][categoryId].name = categoryReport[categoryId].name;
+                }
+
+                // Add to yearly totals
+                allAccountsOwner.report.categoryReport[year][categoryId].totalIncome += parseFloat(categoryReport[categoryId].totalIncome || 0);
+                allAccountsOwner.report.categoryReport[year][categoryId].totalExpense += parseFloat(categoryReport[categoryId].totalExpense || 0);
+
+                // Add to monthly totals
+                Object.entries(categoryReport[categoryId].months).forEach(([month, monthData]) => {
+                  allAccountsOwner.report.categoryReport[year][categoryId].months[month].income += parseFloat(monthData.income || 0);
+                  allAccountsOwner.report.categoryReport[year][categoryId].months[month].expense += parseFloat(monthData.expense || 0);
+                });
+              }
+            });
+
+            // Round values for precision
+            allAccountsOwner.report.categoryReport[year][categoryId].totalIncome = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].totalIncome.toFixed(2));
+            allAccountsOwner.report.categoryReport[year][categoryId].totalExpense = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].totalExpense.toFixed(2));
+
+            Object.keys(allAccountsOwner.report.categoryReport[year][categoryId].months).forEach(month => {
+              allAccountsOwner.report.categoryReport[year][categoryId].months[month].income = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].months[month].income.toFixed(2));
+              allAccountsOwner.report.categoryReport[year][categoryId].months[month].expense = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].months[month].expense.toFixed(2));
+            });
+          });
+        });
+      }
+
+      settings.onChangeOwner(allAccountsOwner);
+    } else {
+      // Handle normal owner selection
+      const selectedOwner = data.find((owner) => owner.id === selectedValue);
+      settings.onChangeOwner(selectedOwner);
+    }
   };
 
   const handleViewRow = useCallback(
@@ -135,6 +262,10 @@ export default function MasterAnalyticsView() {
     const currentYear = parseInt(settings.year, 10);
 
     // Ottieni tutti gli anni disponibili e ordinali
+    if (!owner.report?.globalReport) {
+      console.log('Nessun report globale disponibile');
+      return { balance: 0, lastUpdate: new Date(), percentChange: 0, description: 'Nessun dato disponibile' };
+    }
     const availableYears = Object.keys(owner.report.globalReport).map(y => parseInt(y, 10)).sort();
 
     let totalIncome = 0;
@@ -306,7 +437,48 @@ export default function MasterAnalyticsView() {
   const getCategorySummary = () => {
     if (!data || !settings.owner || !settings.year) return [];
 
-    // Trova i dati corrispondenti all'owner selezionato
+    // Special handling for 'all-accounts' case
+    if (settings.owner.id === 'all-accounts') {
+      // Use the categoryReport directly from settings.owner
+      const selectedReport = settings.owner.report?.categoryReport[settings.year];
+      if (!selectedReport) return [];
+
+      return Object.entries(selectedReport).map(([category, values]) => {
+        const totalExpense = parseFloat(values.totalExpense) || 0;
+
+        // Find the last month of the year with an expense
+        const months = Object.entries(values.months).sort(
+          ([a], [b]) => parseInt(a, 10) - parseInt(b, 10)
+        );
+
+        const lastMonthWithExpense = months.reduce((lastMonth, [month, monthData]) => {
+          if (monthData.expense > 0) {
+            return Math.max(lastMonth, parseInt(month, 10));
+          }
+          return lastMonth;
+        }, 0);
+
+        // Calculate the average based on months from January to the last month with expenses
+        const averageCost = lastMonthWithExpense > 0 ? totalExpense / lastMonthWithExpense : 0;
+
+        // Round values to two decimal places for greater precision
+        const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
+        const roundedExpense = parseFloat(totalExpense.toFixed(2));
+        const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
+        const roundedAverageCost = parseFloat(averageCost.toFixed(2));
+
+        return {
+          id: category.toLowerCase().replace(/\s+/g, '-'),
+          category: values.name,
+          income: roundedIncome,
+          expense: roundedExpense,
+          difference: roundedDifference,
+          averageCost: roundedAverageCost,
+        };
+      });
+    }
+
+    // Regular case: find the owner in the data array
     const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
     if (!selectedOwner) return [];
 
@@ -350,13 +522,21 @@ export default function MasterAnalyticsView() {
   };
 
   const getChartData = () => {
-    if (!data || !settings.year) return [];
+    if (!data || !settings.year || !settings.owner) return [];
 
-    // Trova l'owner selezionato
-    const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
-    if (!selectedOwner) return [];
+    let globalReport;
 
-    const globalReport = selectedOwner.report?.globalReport;
+    // Special handling for 'all-accounts' case
+    if (settings.owner.id === 'all-accounts') {
+      globalReport = settings.owner.report?.globalReport;
+    } else {
+      // Regular case: find the owner in the data array
+      const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
+      if (!selectedOwner) return [];
+
+      globalReport = selectedOwner.report?.globalReport;
+    }
+
     if (!globalReport) return [];
 
     const currentYear = settings.year; // Anno selezionato
@@ -445,6 +625,9 @@ export default function MasterAnalyticsView() {
                     width: '700',
                   }}
                 >
+                  <MenuItem key="all-accounts" value="all-accounts">
+                    Tutti i conti
+                  </MenuItem>
                   {data.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
                       {option.name} | {option.cc}{' '}
@@ -484,21 +667,23 @@ export default function MasterAnalyticsView() {
         <Grid container spacing={3}>
           <Grid size={12}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-              <BankingWidgetSummary
-                title="Saldo corrente"
-                icon="solar:wallet-money-bold"
-                percent={getCurrentBalance().percentChange}
-                total={getCurrentBalance().balance}
-                description={getCurrentBalance().description}
-                color="info"
-                chart={{ series: [] }}  // Non mostriamo il grafico per il saldo
-                sx={{
-                  '&::before, &::after': {
-                    backgroundColor: (theme) => theme.palette.info.lighter,
-                  },
-                  boxShadow: (theme) => `0 4px 12px ${theme.palette.info.lighter}`,
-                }}
-              />
+              {settings.owner.id !== 'all-accounts' && (
+                <BankingWidgetSummary
+                  title="Saldo corrente"
+                  icon="solar:wallet-money-bold"
+                  percent={getCurrentBalance().percentChange}
+                  total={getCurrentBalance().balance}
+                  description={getCurrentBalance().description}
+                  color="info"
+                  chart={{ series: [] }}  // Non mostriamo il grafico per il saldo
+                  sx={{
+                    '&::before, &::after': {
+                      backgroundColor: (theme) => theme.palette.info.lighter,
+                    },
+                    boxShadow: (theme) => `0 4px 12px ${theme.palette.info.lighter}`,
+                  }}
+                />
+              )}
 
               <BankingWidgetSummary
                 title="Entrate"

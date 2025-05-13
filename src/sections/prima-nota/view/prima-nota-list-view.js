@@ -715,8 +715,12 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
 
     inputData = inputData.filter(transaction => {
       const txDescription = transaction.description.toLowerCase();
-      // Check if all search terms are included in the description
-      return searchTerms.every(term => txDescription.includes(term));
+      const txAmount = transaction.amount ? transaction.amount.toString() : '';
+      
+      // Check if all search terms are included in the description or amount
+      return searchTerms.every(term => 
+        txDescription.includes(term) || txAmount.includes(term)
+      );
     });
   }
 

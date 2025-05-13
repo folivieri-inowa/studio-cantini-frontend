@@ -222,7 +222,7 @@ export default function PrimaNotaTableToolbar({
           fullWidth
           value={filters.description}
           onChange={handleFilterDescription}
-          placeholder="Ricerca in descrizione"
+          placeholder="Ricerca in descrizione o importo"
           slotProps={{
             input: {
               startAdornment: (

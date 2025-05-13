@@ -34,7 +34,10 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
 
-  const [status, setStatus] = useState('completed');
+  // Verifichiamo se tutte le transazioni selezionate sono in stato 'pending'
+  // Se tutte sono in 'pending', manteniamo lo stato, altrimenti usiamo 'completed' di default
+  const allPending = transactions?.every(transaction => transaction.status === 'pending');
+  const [status, setStatus] = useState(allPending ? 'pending' : 'completed');
   const [paymentType, setPaymentType] = useState(null);
 
   const { db } = useSettingsContext();

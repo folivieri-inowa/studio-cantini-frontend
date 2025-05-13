@@ -47,7 +47,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
       subject: transaction?.subjectid || '',
       details: transaction?.detailid || '',
       documents: transaction?.documents || [],
-      status: 'completed',
+      status: transaction?.status || 'completed',
     },
   });
 
@@ -78,7 +78,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
         subject: transaction?.subjectid || '',
         details: transaction?.detailid || '',
         documents: transaction?.documents || [],
-        status: 'completed',
+        status: transaction?.status || 'completed',
       });
     }
   }, [open, reset, transaction]);

@@ -12,6 +12,7 @@ import FormControl from '@mui/material/FormControl';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import InputAdornment from '@mui/material/InputAdornment';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import Button from '@mui/material/Button';
 
 import Iconify from 'src/components/iconify';
 import CustomPopover, { usePopover } from 'src/components/custom-popover';
@@ -25,6 +26,8 @@ export default function PrimaNotaTableToolbar({
   ownersOptions,
   categoriesOptions,
   stateFilter = true,
+  onImportOpen,
+  onHistoryOpen,
 }) {
   const popover = usePopover();
 
@@ -276,4 +279,6 @@ PrimaNotaTableToolbar.propTypes = {
   stateFilter: PropTypes.bool,
   ownersOptions: PropTypes.array,
   categoriesOptions: PropTypes.array,
+  onImportOpen: PropTypes.func,
+  onHistoryOpen: PropTypes.func,
 };

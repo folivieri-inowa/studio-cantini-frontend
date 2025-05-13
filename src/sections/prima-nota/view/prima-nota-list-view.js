@@ -59,6 +59,7 @@ import FormProvider, { RHFUpload, RHFTextField } from '../../../components/hook-
 import { useGetOwners } from '../../../api/owner';
 import { fTimestamp } from '../../../utils/format-time';
 import { useGetCategories } from '../../../api/category';
+import ImportHistoryDialog from '../import-history-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -108,7 +109,8 @@ export default function PrimaNotaListView() {
 
   const quickEdit = useBoolean();
   const importData = useBoolean();
-  const confirm = useBoolean()
+  const confirm = useBoolean();
+  const importHistory = useBoolean();
 
   // table.order = 'desc';
   // table.orderBy = 'date';
@@ -236,14 +238,23 @@ export default function PrimaNotaListView() {
             { name: 'Elenco' },
           ]}
           action={
-            <Button
-              component={RouterLink}
-              href={paths.dashboard.prima_nota.new}
-              variant="contained"
-              startIcon={<Iconify icon="mingcute:add-line" />}
-            >
-              Nuova voce
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                onClick={importHistory.onTrue}
+                variant="outlined"
+                startIcon={<Iconify icon="solar:clock-circle-bold" />}
+              >
+                Storico Importazioni
+              </Button>
+              <Button
+                component={RouterLink}
+                href={paths.dashboard.prima_nota.new}
+                variant="contained"
+                startIcon={<Iconify icon="mingcute:add-line" />}
+              >
+                Nuova voce
+              </Button>
+            </Stack>
           }
           sx={{ mb: { xs: 3, md: 5 } }}
         />
@@ -255,6 +266,8 @@ export default function PrimaNotaListView() {
             publishOptions={PUBLISH_OPTIONS}
             ownersOptions={owners}
             categoriesOptions={categories}
+            onImportOpen={importData.onTrue}
+            onHistoryOpen={importHistory.onTrue}
           />
 
           {canReset && (
@@ -293,6 +306,14 @@ export default function PrimaNotaListView() {
                   <Tooltip title="Elimina">
                     <IconButton color="primary" onClick={confirm.onTrue}>
                       <Iconify icon="solar:trash-bin-minimalistic-bold" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Storico importazioni">
+                    <IconButton
+                      color="primary"
+                      onClick={importHistory.onTrue}
+                    >
+                      <Iconify icon="solar:clock-history" />
                     </IconButton>
                   </Tooltip>
                 </>
@@ -399,6 +420,12 @@ export default function PrimaNotaListView() {
         onUpdate={() => {
           refetch();
         }}
+      />
+
+      <ImportHistoryDialog
+        open={importHistory}
+        onClose={importHistory.onFalse}
+        onUpdate={refetch}
       />
     </>
   );

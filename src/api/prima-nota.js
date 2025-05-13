@@ -43,3 +43,58 @@ export function useGetPrimaNotaDetail(id) {
 }
 
 // ----------------------------------------------------------------------
+// Funzioni per la gestione della cronologia delle importazioni
+
+/**
+ * Ottiene la cronologia delle importazioni
+ * @param {Object} params - Parametri di ricerca
+ * @returns {Promise<Object>} Risposta con la cronologia delle importazioni
+ */
+export async function getImportHistory(params) {
+  try {
+    const response = await fetcher(endpoints.prima_nota.import_history, {
+      method: 'post',
+      data: params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching import history:', error);
+    throw error;
+  }
+}
+
+/**
+ * Ottiene i dettagli di un'importazione specifica
+ * @param {Object} params - Parametri di ricerca
+ * @returns {Promise<Object>} Risposta con i dettagli dell'importazione
+ */
+export async function getImportDetails(params) {
+  try {
+    const response = await fetcher(endpoints.prima_nota.import_details, {
+      method: 'post',
+      data: params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching import details:', error);
+    throw error;
+  }
+}
+
+/**
+ * Annulla un'importazione
+ * @param {Object} params - Parametri per identificare l'importazione da annullare
+ * @returns {Promise<Object>} Risposta con il risultato dell'operazione
+ */
+export async function undoImport(params) {
+  try {
+    const response = await fetcher(endpoints.prima_nota.undo_import, {
+      method: 'post',
+      data: params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error undoing import:', error);
+    throw error;
+  }
+}

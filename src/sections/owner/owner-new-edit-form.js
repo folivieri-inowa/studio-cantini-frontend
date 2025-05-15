@@ -8,13 +8,14 @@ import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
+import Box from '@mui/material/Box';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { useRouter } from 'src/routes/hooks';
 
 import { useSnackbar } from 'src/components/snackbar';
-import FormProvider, { RHFTextField } from 'src/components/hook-form';
+import FormProvider, { RHFTextField, RHFSwitch } from 'src/components/hook-form';
 import axios from '../../utils/axios';
 import { paths as endpoint } from '../../routes/paths';
 import { useSettingsContext } from '../../components/settings';
@@ -29,6 +30,7 @@ export default function OwnerNewEditForm({ ownerData }) {
   const NewUserSchema = Yup.object().shape({
     name: Yup.string().required('Nome Titolare conto è un campo obbligatorio'),
     balanceDate: Yup.date().nullable(),
+    isCreditCard: Yup.boolean().nullable(),
   });
 
   const defaultValues = useMemo(
@@ -39,6 +41,7 @@ export default function OwnerNewEditForm({ ownerData }) {
       iban: ownerData?.iban || '',
       initialBalance: ownerData?.initialBalance || '',
       balanceDate: ownerData?.balanceDate || null,
+      isCreditCard: ownerData?.isCreditCard || false,
     }),
     [ownerData]
   );
@@ -97,30 +100,48 @@ export default function OwnerNewEditForm({ ownerData }) {
                 <RHFTextField name="iban" label="IBAN" />
               </Stack>
               
-              <Stack direction="row" spacing={2}>
-                <RHFTextField name="initialBalance" label="Saldo Iniziale" type="number" />
+              <Grid container spacing={2} alignItems="center">
+                <Grid xs={4}>
+                  <RHFTextField 
+                    name="initialBalance" 
+                    label="Saldo Iniziale" 
+                    type="number"
+                    fullWidth
+                  />
+                </Grid>
                 
-                <Controller
-                  name="balanceDate"
-                  control={methods.control}
-                  render={({ field, fieldState: { error } }) => (
-                    <DatePicker
-                      label="Data Saldo"
-                      value={field.value ? new Date(field.value) : null}
-                      onChange={(newValue) => {
-                        field.onChange(newValue);
-                      }}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          error: !!error,
-                          helperText: error?.message,
-                        },
-                      }}
-                    />
-                  )}
-                />
-              </Stack>
+                <Grid xs={4}>
+                  <Controller
+                    name="balanceDate"
+                    control={methods.control}
+                    render={({ field, fieldState: { error } }) => (
+                      <DatePicker
+                        label="Data Saldo"
+                        value={field.value ? new Date(field.value) : null}
+                        onChange={(newValue) => {
+                          field.onChange(newValue);
+                        }}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            error: !!error,
+                            helperText: error?.message,
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                </Grid>
+                
+                <Grid xs={4}>
+                  <RHFSwitch
+                    name="isCreditCard"
+                    label="Carta di Credito"
+                    labelPlacement="start"
+                    sx={{ mx: 0, width: '100%', justifyContent: 'space-between' }}
+                  />
+                </Grid>
+              </Grid>
             </Stack>
 
             <Stack alignItems="flex-end" sx={{ mt: 3 }}>

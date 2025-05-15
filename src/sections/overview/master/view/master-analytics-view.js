@@ -110,6 +110,7 @@ export default function MasterAnalyticsView() {
         iban: '',
         initialBalance: 0,
         balanceDate: null,
+        // Per "Tutti i conti", filtriamo escludendo le carte di credito
         report: {
           years: [], // Will be populated below
           globalReport: {},
@@ -117,16 +118,19 @@ export default function MasterAnalyticsView() {
         },
       };
 
-      // Combine data from all owners
+      // Combine data from all owners, escludendo quelli con isCreditCard=true
       if (data && data.length > 0) {
-        // Collect all available years from all owners
+        // Filtriamo gli owner escludendo le carte di credito
+        const nonCreditCardOwners = data.filter(owner => !owner.isCreditCard);
+
+        // Collect all available years from filtered owners
         const allYears = new Set();
-        data.forEach(owner => {
+        nonCreditCardOwners.forEach(owner => {
           owner.report.years.forEach(year => allYears.add(year));
         });
         allAccountsOwner.report.years = Array.from(allYears).sort((a, b) => b - a);
 
-        // For each year, combine the global reports from all owners
+        // For each year, combine the global reports from filtered owners
         allAccountsOwner.report.years.forEach(year => {
           allAccountsOwner.report.globalReport[year] = { income: 0, expense: 0, months: {} };
 
@@ -136,8 +140,8 @@ export default function MasterAnalyticsView() {
             allAccountsOwner.report.globalReport[year].months[monthKey] = { income: 0, expense: 0 };
           }
 
-          // Combine data from all owners for this year
-          data.forEach(owner => {
+          // Combine data from filtered owners for this year
+          nonCreditCardOwners.forEach(owner => {
             const ownerReport = owner.report.globalReport[year];
             if (ownerReport) {
               // Add to yearly totals
@@ -164,9 +168,9 @@ export default function MasterAnalyticsView() {
           // Combine category reports
           allAccountsOwner.report.categoryReport[year] = {};
 
-          // Get all unique categories from all owners
+          // Get all unique categories from filtered owners
           const allCategories = new Set();
-          data.forEach(owner => {
+          nonCreditCardOwners.forEach(owner => {
             const categoryReport = owner.report.categoryReport[year];
             if (categoryReport) {
               Object.keys(categoryReport).forEach(categoryId => allCategories.add(categoryId));
@@ -189,8 +193,8 @@ export default function MasterAnalyticsView() {
               allAccountsOwner.report.categoryReport[year][categoryId].months[monthKey] = { income: 0, expense: 0 };
             }
 
-            // Combine data from all owners for this category
-            data.forEach(owner => {
+            // Combine data from filtered owners for this category
+            nonCreditCardOwners.forEach(owner => {
               const categoryReport = owner.report.categoryReport[year];
               if (categoryReport && categoryReport[categoryId]) {
                 // Set category name if not already set
@@ -224,7 +228,7 @@ export default function MasterAnalyticsView() {
 
       settings.onChangeOwner(allAccountsOwner);
     } else {
-      // Handle normal owner selection
+      // Handle normal owner selection - qui NON filtriamo in base a isCreditCard
       const selectedOwner = data.find((owner) => owner.id === selectedValue);
       settings.onChangeOwner(selectedOwner);
     }
@@ -631,6 +635,7 @@ export default function MasterAnalyticsView() {
                   {data.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
                       {option.name} | {option.cc}{' '}
+                      {option.isCreditCard && '(Carta di Credito)'}
                     </MenuItem>
                   ))}
                 </Select>

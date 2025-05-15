@@ -48,6 +48,7 @@ const TABLE_HEAD = [
   { id: 'iban', label: 'IBAN' },
   { id: 'initialBalance', label: 'Saldo Iniziale' },
   { id: 'balanceDate', label: 'Data Saldo' },
+  { id: 'isCreditCard', label: 'Carta di Credito' },
   { id: '', width: 88 },
 ];
 
@@ -90,12 +91,17 @@ export default function OwnerListView() {
     );
   }, []);
 
+  // Tutti i dati filtrati, incluse le carte di credito
   const dataFiltered = applyFilter({
     inputData: tableData,
     comparator: getComparator(table.order, table.orderBy),
     filters,
   });
 
+  // Calcoliamo il conteggio escludendo le carte di credito
+  const countExcludingCreditCards = dataFiltered.filter(owner => !owner.isCreditCard).length;
+
+  // Dati da visualizzare nella pagina corrente (incluse le carte di credito)
   const dataInPage = dataFiltered.slice(
     table.page * table.rowsPerPage,
     table.page * table.rowsPerPage + table.rowsPerPage
@@ -210,7 +216,7 @@ export default function OwnerListView() {
 
                 <TableEmptyRows
                   height={denseHeight}
-                  emptyRows={emptyRows(table.page, table.rowsPerPage, tableData.length)}
+                  emptyRows={emptyRows(table.page, table.rowsPerPage, countExcludingCreditCards)}
                 />
 
                 <TableNoData notFound={notFound} />
@@ -220,7 +226,7 @@ export default function OwnerListView() {
         </TableContainer>
 
         <TablePaginationCustom
-          count={dataFiltered.length}
+          count={countExcludingCreditCards} // Utilizziamo il conteggio che esclude le carte di credito
           page={table.page}
           rowsPerPage={table.rowsPerPage}
           onPageChange={table.onChangePage}

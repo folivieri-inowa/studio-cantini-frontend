@@ -17,7 +17,7 @@ import OwnerQuickEditForm from './owner-quick-edit-form';
 // ----------------------------------------------------------------------
 
 export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate }) {
-  const { name, cc, iban, initialBalance, balanceDate } = row;
+  const { name, cc, iban, initialBalance, balanceDate, isCreditCard } = row;
 
   const confirm = useBoolean();
   const quickEdit = useBoolean();
@@ -38,6 +38,8 @@ export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate
         <TableCell>{initialBalance ? `€ ${initialBalance.toLocaleString()}` : '-'}</TableCell>
         
         <TableCell>{balanceDate ? new Date(balanceDate).toLocaleDateString() : '-'}</TableCell>
+        
+        <TableCell>{isCreditCard ? 'Si' : 'No'}</TableCell>
 
         <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Tooltip title="Modifica rapida" placement="top" arrow>

@@ -15,7 +15,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { useSnackbar } from 'src/components/snackbar';
 import { useBoolean } from 'src/hooks/use-boolean';
-import FormProvider, { RHFTextField } from 'src/components/hook-form';
+import FormProvider, { RHFTextField, RHFSwitch } from 'src/components/hook-form';
 
 import axios from '../../utils/axios';
 
@@ -32,6 +32,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
     iban: Yup.string(),
     initialBalance: Yup.number().required('Il saldo iniziale è richiesto'),
     balanceDate: Yup.date().nullable(),
+    isCreditCard: Yup.boolean().nullable(),
   });
 
   const defaultValues = useMemo(
@@ -49,6 +50,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
             return date;
           })()
         : null,
+      isCreditCard: currentOwner?.isCreditCard || false,
     }),
     [currentOwner]
   );
@@ -89,6 +91,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
         iban: data.iban,
         initialBalance: data.initialBalance,
         balanceDate: balanceDate,
+        isCreditCard: data.isCreditCard,
       });
 
       onUpdate({
@@ -98,6 +101,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
         iban: data.iban,
         initialBalance: data.initialBalance,
         balanceDate: balanceDate,
+        isCreditCard: data.isCreditCard,
       });
 
       enqueueSnackbar('Aggiornamento avvenuto con successo!');
@@ -152,6 +156,13 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
                 )}
               />
             </Stack>
+            
+            <RHFSwitch
+              name="isCreditCard"
+              label="Carta di Credito"
+              labelPlacement="start"
+              sx={{ mx: 0, width: 1, justifyContent: 'space-between' }}
+            />
           </Stack>
         </DialogContent>
 

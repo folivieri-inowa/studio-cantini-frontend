@@ -9,6 +9,8 @@ import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 import { paths } from '../../../../routes/paths';
 import { useRouter } from '../../../../routes/hooks';
@@ -28,6 +30,13 @@ export default function MasterAnalyticsView() {
   const [isLoading, setIsLoading] = useState(false);
   const settings = useSettingsContext();
   const { user } = useAuthContext();
+  
+  // Stato per lo Snackbar
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
@@ -95,7 +104,32 @@ export default function MasterAnalyticsView() {
   }, [settings.db]); // Riesegui quando cambia il database
 
   const handleYearChange = (event) => {
-    settings.onChangeYear(event.target.value);
+    const newYear = event.target.value;
+    const currentOwnerId = settings.owner?.id;
+    
+    // Se siamo nel caso "Tutti i conti", non abbiamo bisogno di verificare l'anno
+    if (currentOwnerId === 'all-accounts') {
+      settings.onChangeYear(newYear);
+      return;
+    }
+
+    // Controlla se il conto corrente ha dati per l'anno selezionato
+    const currentOwner = data.find(owner => owner.id === currentOwnerId);
+    
+    if (currentOwner && currentOwner.report) {
+      const hasDataForYear = currentOwner.report.globalReport && currentOwner.report.globalReport[newYear];
+      
+      if (!hasDataForYear) {
+        // Mostra un avviso all'utente che il conto non ha dati per quell'anno
+        setSnackbar({
+          open: true,
+          message: `Il conto corrente selezionato non ha dati per l'anno ${newYear}.`,
+          severity: 'warning'
+        });
+      }
+    }
+    
+    settings.onChangeYear(newYear);
   };
 
   const handleOwnerChange = (event) => {
@@ -230,7 +264,32 @@ export default function MasterAnalyticsView() {
     } else {
       // Handle normal owner selection - qui NON filtriamo in base a isCreditCard
       const selectedOwner = data.find((owner) => owner.id === selectedValue);
-      settings.onChangeOwner(selectedOwner);
+      
+      // Verifica se l'anno attualmente selezionato è disponibile per questo conto
+      const currentYear = settings.year;
+      const availableYears = selectedOwner.report?.years || [];
+      
+      // Se l'anno corrente non è disponibile e ci sono anni disponibili, seleziona il primo disponibile
+      if (availableYears.length > 0 && !availableYears.includes(currentYear)) {
+        // Seleziona il primo anno disponibile (solitamente il più recente)
+        const firstAvailableYear = availableYears[0];
+        
+        // Mostra il messaggio all'utente
+        setSnackbar({
+          open: true,
+          message: `L'anno ${currentYear} non ha dati per il conto selezionato. È stato selezionato automaticamente l'anno ${firstAvailableYear}.`,
+          severity: 'info'
+        });
+        
+        console.log(`L'anno ${currentYear} non è disponibile per il conto selezionato. Seleziono automaticamente l'anno ${firstAvailableYear}`);
+        
+        // Aggiorna prima l'owner e poi l'anno per evitare problemi di rendering
+        settings.onChangeOwner(selectedOwner);
+        settings.onChangeYear(firstAvailableYear);
+      } else {
+        // L'anno corrente è disponibile, aggiorna solo l'owner
+        settings.onChangeOwner(selectedOwner);
+      }
     }
   };
 
@@ -240,6 +299,11 @@ export default function MasterAnalyticsView() {
     },
     [router]
   );
+
+  // Funzione per chiudere lo Snackbar
+  const handleCloseSnackbar = useCallback(() => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  }, []);
 
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
@@ -445,7 +509,10 @@ export default function MasterAnalyticsView() {
     if (settings.owner.id === 'all-accounts') {
       // Use the categoryReport directly from settings.owner
       const selectedReport = settings.owner.report?.categoryReport[settings.year];
-      if (!selectedReport) return [];
+      if (!selectedReport) {
+        console.log(`Nessun dato disponibile per l'anno ${settings.year} per tutti i conti`);
+        return [];
+      }
 
       return Object.entries(selectedReport).map(([category, values]) => {
         const totalExpense = parseFloat(values.totalExpense) || 0;
@@ -484,11 +551,17 @@ export default function MasterAnalyticsView() {
 
     // Regular case: find the owner in the data array
     const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
-    if (!selectedOwner) return [];
+    if (!selectedOwner) {
+      console.log('Conto corrente selezionato non trovato nei dati');
+      return [];
+    }
 
     // Prende il report dal dataset caricato
     const selectedReport = selectedOwner.report?.categoryReport[settings.year];
-    if (!selectedReport) return [];
+    if (!selectedReport) {
+      console.log(`Nessun dato disponibile per l'anno ${settings.year} per il conto corrente ${selectedOwner.name}`);
+      return [];
+    }
 
     return Object.entries(selectedReport).map(([category, values]) => {
       const totalExpense = parseFloat(values.totalExpense) || 0;
@@ -526,7 +599,10 @@ export default function MasterAnalyticsView() {
   };
 
   const getChartData = () => {
-    if (!data || !settings.year || !settings.owner) return [];
+    if (!data || !settings.year || !settings.owner) {
+      console.log('Dati mancanti per il grafico: nessun dato, anno o owner');
+      return [];
+    }
 
     let globalReport;
 
@@ -536,15 +612,36 @@ export default function MasterAnalyticsView() {
     } else {
       // Regular case: find the owner in the data array
       const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
-      if (!selectedOwner) return [];
+      if (!selectedOwner) {
+        console.log('Owner selezionato non trovato nei dati');
+        return [];
+      }
 
       globalReport = selectedOwner.report?.globalReport;
     }
 
-    if (!globalReport) return [];
+    if (!globalReport) {
+      console.log('Nessun report globale disponibile');
+      return [];
+    }
 
     const currentYear = settings.year; // Anno selezionato
     const previousYear = (parseInt(settings.year, 10) - 1).toString(); // Anno precedente
+
+    // Verifica se ci sono dati per l'anno corrente
+    if (!globalReport[currentYear]) {
+      console.log(`Nessun dato disponibile per l'anno ${currentYear}`);
+      // Se non ci sono dati per l'anno corrente, mostriamo un messaggio all'utente
+      // se lo Snackbar non è già aperto
+      if (!snackbar.open) {
+        setSnackbar({
+          open: true,
+          message: `Non ci sono dati disponibili per l'anno ${currentYear}.`,
+          severity: 'info'
+        });
+      }
+      return [];
+    }
 
     // Funzione per estrarre i dati mensili per un determinato anno
     const extractMonthlyData = (year) => {
@@ -604,7 +701,7 @@ export default function MasterAnalyticsView() {
                   id="current-year"
                   label="Anno"
                   onChange={handleYearChange}
-                  defaultValue={settings.year}
+                  value={settings.year}
                   variant="standard"
                   sx={{
                     width: 65,
@@ -762,6 +859,22 @@ export default function MasterAnalyticsView() {
           Non sono ancora disponibili dati sufficienti per generare il report
         </Typography>
       )}
+
+      {/* Snackbar per notifiche */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

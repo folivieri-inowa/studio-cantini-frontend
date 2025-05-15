@@ -7,6 +7,10 @@ import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import CardHeader from '@mui/material/CardHeader';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import TableContainer from '@mui/material/TableContainer';
 
 import Label from '../../../components/label';
@@ -24,27 +28,39 @@ export default function MasterTransaction({
   handleViewRow,
   ...other
 }) {
+  // Verifica se ci sono dati da visualizzare
+  const hasData = tableData && tableData.length > 0;
+
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} sx={{ mb: 3 }} />
 
-      <TableContainer sx={{ overflow: 'unset' }}>
-        <Scrollbar>
-          <Table sx={{ minWidth: 680 }}>
-            <TableHeadCustom headLabel={tableLabels} />
+      {!hasData ? (
+        <Box sx={{ p: 3 }}>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <AlertTitle>Nessun dato disponibile</AlertTitle>
+            Non ci sono dati disponibili per il conto e l'anno selezionati. Prova a selezionare un altro anno o un altro conto.
+          </Alert>
+        </Box>
+      ) : (
+        <TableContainer sx={{ overflow: 'unset' }}>
+          <Scrollbar>
+            <Table sx={{ minWidth: 680 }}>
+              <TableHeadCustom headLabel={tableLabels} />
 
-            <TableBody>
-              {tableData.map((row) => (
-                <MasterTransactionRow
-                  key={row.id}
-                  row={row}
-                  onViewRow={() => handleViewRow(row.id)}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </Scrollbar>
-      </TableContainer>
+              <TableBody>
+                {tableData.map((row) => (
+                  <MasterTransactionRow
+                    key={row.id}
+                    row={row}
+                    onViewRow={() => handleViewRow(row.id)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </Scrollbar>
+        </TableContainer>
+      )}
     </Card>
   );
 }

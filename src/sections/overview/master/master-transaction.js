@@ -98,6 +98,8 @@ function MasterTransactionRow({ row, onViewRow }) {
 
       <TableCell align="right">{fCurrencyEur(row.averageCost)}</TableCell>
 
+      <TableCell align="right">{fCurrencyEur(row.totalExpense)}</TableCell>
+
       <TableCell align="right">
         <Label
           variant="soft"

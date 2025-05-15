@@ -29,7 +29,22 @@ import DetailsChartQuickView from './details-chart-quick-view';
 export default function CategoryAverageExpenseSubject({ title, subheader, tableData, tableLabels, onViewRow, ...other }) {
   return (
     <Card {...other}>
-      <CardHeader title={title} subheader={subheader} sx={{ mb: 3 }} />
+      <CardHeader 
+        title={title} 
+        subheader={
+          <>
+            {subheader}
+            {tableData.averageMonthlyCosts.some(row => 
+                row.values && row.values.some(value => parseFloat(value.totalExpense) === 0)
+              ) && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                * I valori a €0,00 con asterisco indicano voci senza transazioni nell&apos;anno selezionato
+              </Typography>
+            )}
+          </>
+        } 
+        sx={{ mb: 3 }} 
+      />
 
       <TableContainer sx={{ overflow: 'unset' }}>
         <Scrollbar>
@@ -37,7 +52,7 @@ export default function CategoryAverageExpenseSubject({ title, subheader, tableD
             <TableHeadCustom headLabel={tableLabels} />
 
             <TableBody>
-              {tableData.averageMonthlyCosts.map((row) => (
+              {tableData && tableData.averageMonthlyCosts && tableData.averageMonthlyCosts.map((row) => (
                 <CategoryAverageExpenseSubjectRow
                   categoryId={tableData.categoryId}
                   key={`${row.id || row.category}`}
@@ -153,8 +168,26 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                         ) : (
                           <TableCell sx={{ width: '50%' }}>{value.title}</TableCell>
                         )}
-                        <TableCell align="right">{fCurrencyEur(value.averageCost)}</TableCell>
-                        <TableCell align="right">{fCurrencyEur(value.totalExpense)}</TableCell>
+                        <TableCell align="right">
+                          {parseFloat(value.averageCost) > 0 
+                            ? fCurrencyEur(value.averageCost) 
+                            : (
+                              <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
+                                <span style={{ color: '#999' }}>€0,00*</span>
+                              </Tooltip>
+                            )
+                          }
+                        </TableCell>
+                        <TableCell align="right">
+                          {parseFloat(value.totalExpense) > 0 
+                            ? fCurrencyEur(value.totalExpense) 
+                            : (
+                              <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
+                                <span style={{ color: '#999' }}>€0,00*</span>
+                              </Tooltip>
+                            )
+                          }
+                        </TableCell>
                         <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
                           <Tooltip title="Vedi dettaglio spese" placement="top" arrow>
                             <IconButton color={quickView.value ? 'inherit' : 'default'} onClick={()=>handleOpenQuickView({ details: value.id, subject: row.id, category: categoryId })}>

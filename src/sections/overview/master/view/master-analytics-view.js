@@ -545,6 +545,7 @@ export default function MasterAnalyticsView() {
           expense: roundedExpense,
           difference: roundedDifference,
           averageCost: roundedAverageCost,
+          totalExpense: roundedExpense,
         };
       });
     }
@@ -585,16 +586,15 @@ export default function MasterAnalyticsView() {
       const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
       const roundedExpense = parseFloat(totalExpense.toFixed(2));
       const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-      const roundedAverageCost = parseFloat(averageCost.toFixed(2));
-
-      return {
-        id: category.toLowerCase().replace(/\s+/g, '-'),
-        category: values.name,
-        income: roundedIncome,
-        expense: roundedExpense,
-        difference: roundedDifference,
-        averageCost: roundedAverageCost,
-      };
+      const roundedAverageCost = parseFloat(averageCost.toFixed(2));        return {
+          id: category.toLowerCase().replace(/\s+/g, '-'),
+          category: values.name,
+          income: roundedIncome,
+          expense: roundedExpense,
+          difference: roundedDifference,
+          averageCost: roundedAverageCost,
+          totalExpense: roundedExpense,
+        };
     });
   };
 
@@ -817,6 +817,7 @@ export default function MasterAnalyticsView() {
                     { id: 'income', label: 'Entrate (€)', align: 'right' },
                     { id: 'expense', label: 'Uscite (€)', align: 'right' },
                     { id: 'averageCost', label: 'Media spese mensile (€)', align: 'right' },
+                    { id: 'totalExpense', label: 'Totale spese annuale (€)', align: 'right' },
                     { id: 'difference', label: 'Delta annuale (€)', align: 'right' },
                   ]}
                 />
@@ -843,7 +844,8 @@ export default function MasterAnalyticsView() {
               series={getChartData()}
             />
           </Grid>
-          <Grid size={4}>              <AnalyticsCurrentVisits
+          <Grid size={4}>              
+            <AnalyticsCurrentVisits
                 title="Entrate/uscite"
                 chart={{
                   series: [

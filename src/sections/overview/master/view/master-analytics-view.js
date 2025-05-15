@@ -19,7 +19,6 @@ import { useAuthContext } from '../../../../auth/hooks';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
-import AnalyticsCurrentVisits from '../../analytics/analytics-current-visits';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 
 // ----------------------------------------------------------------------
@@ -94,12 +93,7 @@ export default function MasterAnalyticsView() {
   useEffect(() => {
     // Carica i dati all'avvio e quando cambia il database
     fetchData();
-
-    // Aggiorniamo i dati ogni 30 secondi per mantenerli sincronizzati più frequentemente
-    const intervalId = setInterval(fetchData, 30000);
-
-    // Puliamo l'intervallo quando il componente viene smontato
-    return () => clearInterval(intervalId);
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.db]); // Riesegui quando cambia il database
 
@@ -843,17 +837,6 @@ export default function MasterAnalyticsView() {
               ]}
               series={getChartData()}
             />
-          </Grid>
-          <Grid size={4}>              
-            <AnalyticsCurrentVisits
-                title="Entrate/uscite"
-                chart={{
-                  series: [
-                    { label: 'Entrate', value: parseFloat(getGlobalIncome().totalIncome) },
-                    { label: 'Uscite', value: parseFloat(getGlobalExpense().totalExpense) },
-                  ],
-                }}
-              />
           </Grid>
         </Grid>
       ) : (

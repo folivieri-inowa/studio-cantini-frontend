@@ -9,6 +9,7 @@ import CardHeader from '@mui/material/CardHeader';
 import TableContainer from '@mui/material/TableContainer';
 
 import { fCurrencyEur } from 'src/utils/format-number';
+import { capitalizeCase } from 'src/utils/change-case';
 
 import Label from 'src/components/label';
 import Scrollbar from 'src/components/scrollbar';
@@ -50,7 +51,7 @@ function CategorySummaryRow({ row }) {
 
   return (
     <TableRow>
-        <TableCell>{row.subcategory}</TableCell>
+        <TableCell>{capitalizeCase(row.subcategory)}</TableCell>
 
         <TableCell>{fCurrencyEur(row.income)}</TableCell>
 

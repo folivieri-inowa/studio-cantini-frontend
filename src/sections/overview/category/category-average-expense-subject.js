@@ -14,6 +14,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { TableHeadCustom } from 'src/components/table';
 import { fCurrencyEur } from 'src/utils/format-number';
+import { capitalizeCase } from 'src/utils/change-case';
 import Scrollbar from 'src/components/scrollbar';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -117,8 +118,9 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
             </IconButton>
           ) : null}
         </TableCell>
-        <TableCell sx={{ width: '50%' }}>{row.category}</TableCell>
+        <TableCell sx={{ width: '40%' }}>{capitalizeCase(row.category)}</TableCell>
         <TableCell align="right">{fCurrencyEur(row.averageCost)}</TableCell>
+        <TableCell align="right">{fCurrencyEur(row.totalIncome)}</TableCell>
         <TableCell align="right">{fCurrencyEur(row.totalExpense)}</TableCell>
         {hasValues ? (
           <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
@@ -147,6 +149,7 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                       <TableCell sx={{ width: '5%' }}/>
                       <TableCell>Nome</TableCell>
                       <TableCell align="right">Media spesa mensile</TableCell>
+                      <TableCell align="right">Totale entrate annuale</TableCell>
                       <TableCell align="right">Totale spesa annuale</TableCell>
                       <TableCell>{' '}</TableCell>
                     </TableRow>
@@ -163,14 +166,24 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                             onClick={() => onViewRow({ details: value.id, subject: row.id, category: categoryId, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year})}
                             sx={{ cursor: 'pointer' }}
                           >
-                            <TableCell sx={{ color: 'blue' }}>{value.title}</TableCell>
+                            <TableCell sx={{ color: 'blue' }}>{capitalizeCase(value.title)}</TableCell>
                           </Link>
                         ) : (
-                          <TableCell sx={{ width: '50%' }}>{value.title}</TableCell>
+                          <TableCell sx={{ width: '50%' }}>{capitalizeCase(value.title)}</TableCell>
                         )}
                         <TableCell align="right">
                           {parseFloat(value.averageCost) > 0 
                             ? fCurrencyEur(value.averageCost) 
+                            : (
+                              <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
+                                <span style={{ color: '#999' }}>€0,00*</span>
+                              </Tooltip>
+                            )
+                          }
+                        </TableCell>
+                        <TableCell align="right">
+                          {parseFloat(value.totalIncome) > 0 
+                            ? fCurrencyEur(value.totalIncome) 
                             : (
                               <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
                                 <span style={{ color: '#999' }}>€0,00*</span>

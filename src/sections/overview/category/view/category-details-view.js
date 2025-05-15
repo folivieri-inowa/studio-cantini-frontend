@@ -10,6 +10,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import { useSettingsContext } from 'src/components/settings';
+import { capitalizeCase } from 'src/utils/change-case';
 
 import DetailsQuickView from '../details-quick-view';
 import GlobalWidgetSummary from '../global-widget-summary';
@@ -110,14 +111,14 @@ export default function CategoryDetailsView({ categoryId }) {
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
           <Stack direction="column" spacing={3}>
             <Typography variant="h4" component="div">
-              Report relativo alla categoria: &#34;{reportCategory.categoryName}&#34;
+              Report relativo alla categoria: &#34;{capitalizeCase(reportCategory.categoryName)}&#34;
             </Typography>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body1" component="div">
                 Dati relativi all&#39;anno {year},
               </Typography>
               <Typography variant="body1" component="div">
-                conto di riferimento {reportCategory.owner.id === 'all-accounts' ? 'Tutti i conti' : `${reportCategory.owner.name} | ${reportCategory.owner.cc}`}
+                conto di riferimento {reportCategory.owner.id === 'all-accounts' ? 'Tutti i conti' : `${capitalizeCase(reportCategory.owner.name)} | ${reportCategory.owner.cc}`}
               </Typography>
             </Stack>
           </Stack>
@@ -176,6 +177,7 @@ export default function CategoryDetailsView({ categoryId }) {
                   { id: "", label: "" },
                   { id: "subject", label: "Soggetto" },
                   { id: "averageExpense", label: "Media spese mensile (€)", align: 'right' },
+                  { id: "totalIncome", label: "Totale entrate annuale (€)", align: 'right'},
                   { id: "totalExpense", label: "Totale spesa annuale (€)", align: 'right'},
                   { id: "", label: ""}
                 ]}

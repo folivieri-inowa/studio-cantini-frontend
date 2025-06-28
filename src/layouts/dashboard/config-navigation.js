@@ -67,6 +67,11 @@ export function useNavData() {
             path: paths.dashboard.fileManager,
             icon: ICONS.folder,
           },
+          {
+            title: t('Scadenziario'),
+            path: paths.dashboard.scadenziario.root,
+            icon: ICONS.calendar,
+          },
           /* {
             title: t('ecommerce'),
             path: paths.dashboard.general.ecommerce,

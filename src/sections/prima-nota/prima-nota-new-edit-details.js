@@ -6,13 +6,19 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
 import TextField from '@mui/material/TextField';
 import Accordion from '@mui/material/Accordion';
 import Typography from '@mui/material/Typography';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 import { RHFSelect, RHFUpload, RHFTextField, RHFAutocomplete } from 'src/components/hook-form';
 
@@ -20,21 +26,35 @@ import { useGetOwners } from '../../api/owner';
 import Iconify from '../../components/iconify';
 import { useGetCategories } from '../../api/category';
 import { useSettingsContext } from '../../components/settings';
+import { useSnackbar } from '../../components/snackbar';
 import axios, { endpoints } from '../../utils/axios';
 import { PostDetailsSkeleton } from '../blog/post-skeleton';
 
 // ----------------------------------------------------------------------
 
-export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit=false}) {
+export default function PrimaNotaNewEditDetails({ control, setValue, watch, errors, edit=false}) {
   const [ownersList, setOwnersList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [subjectList, setSubjectList] = useState([]);
   const [detailsList, setDetailsList] = useState([])
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState(false);
+  const [expandedDocs, setExpandedDocs] = useState(false);
+  
+  // Stati per i dialog di creazione
+  const [openNewCategoryDialog, setOpenNewCategoryDialog] = useState(false);
+  const [openNewSubjectDialog, setOpenNewSubjectDialog] = useState(false);
+  const [openNewDetailDialog, setOpenNewDetailDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [newDetailName, setNewDetailName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [creatingSubject, setCreatingSubject] = useState(false);
+  const [creatingDetail, setCreatingDetail] = useState(false);
 
   const { db } = useSettingsContext()
   const {owners, ownersEmpty} = useGetOwners(db)
+  const { enqueueSnackbar } = useSnackbar();
   const values = watch();
 
   useEffect(() => {
@@ -69,15 +89,18 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
         // Execute all requests in parallel
         const responses = await Promise.all(requests);
 
-        // Handle responses
-        setCategoriesList(responses[0].data.data);
+        // Handle responses and sort alphabetically by name
+        const categories = responses[0].data.data;
+        setCategoriesList(categories.sort((a, b) => a.name.localeCompare(b.name)));
 
         if (responses[1]) {
-          setSubjectList(responses[1].data.data);
+          const subjects = responses[1].data.data;
+          setSubjectList(subjects.sort((a, b) => a.name.localeCompare(b.name)));
         }
 
         if (responses[2]) {
-          setDetailsList(responses[2].data.data);
+          const details = responses[2].data.data;
+          setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
         }
 
         setLoading(false);
@@ -92,13 +115,14 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
 
   const STATUS = [{name:'In Revisione', value:'pending'}, {name:'Completata', value:'completed'}, {name:'Da Controllare', value:'toCheck'}]
 
-  const PAYMENT_METHODS = ['Bonifico', 'Carte di Credito', 'Cbill', 'F24', 'PayPal', 'Addebito Diretto SEPA', 'POS', 'Altro'];
+  const PAYMENT_METHODS = ['Bonifico', 'Carte di Credito', 'CBill', 'F24', 'PayPal', 'Addebito Diretto SEPA', 'POS', 'Altro'];
 
   const handleCategoryChange = async (newValue) => {
     setValue('category', newValue.id);
     const response = await axios.post(endpoints.subject.list, { db, categoryId: newValue.id });
     if (response.status === 200) {
-      setSubjectList(response.data.data)
+      const subjects = response.data.data;
+      setSubjectList(subjects.sort((a, b) => a.name.localeCompare(b.name)));
     }
   };
 
@@ -106,7 +130,8 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
     setValue('subject', newValue.id);
     const response = await axios.post(endpoints.detail.list, { db, subjectId: newValue.id });
     if (response.status === 200) {
-      setDetailsList(response.data.data)
+      const details = response.data.data;
+      setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
     }
   }
 
@@ -156,6 +181,191 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
     setValue('documents', []);
   }, [setValue]);
 
+  // Funzioni per aprire i dialog
+  const handleOpenNewCategoryDialog = () => {
+    setNewCategoryName('');
+    setOpenNewCategoryDialog(true);
+  };
+
+  const handleOpenNewSubjectDialog = () => {
+    if (!watch('category')) {
+      enqueueSnackbar('Seleziona prima una categoria', { variant: 'warning' });
+      return;
+    }
+    setNewSubjectName('');
+    setOpenNewSubjectDialog(true);
+  };
+
+  const handleOpenNewDetailDialog = () => {
+    if (!watch('subject')) {
+      enqueueSnackbar('Seleziona prima un soggetto', { variant: 'warning' });
+      return;
+    }
+    setNewDetailName('');
+    setOpenNewDetailDialog(true);
+  };
+  
+  // Funzioni per chiudere i dialog
+  const handleCloseNewCategoryDialog = () => {
+    setOpenNewCategoryDialog(false);
+  };
+  
+  const handleCloseNewSubjectDialog = () => {
+    setOpenNewSubjectDialog(false);
+  };
+  
+  const handleCloseNewDetailDialog = () => {
+    setOpenNewDetailDialog(false);
+  };
+
+  // Funzioni per creare nuovi elementi
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      enqueueSnackbar('Inserisci un nome per la categoria', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setCreatingCategory(true);
+      const response = await axios.post('/api/category/create', { db, name: newCategoryName.trim() });        if (response.status === 200) {
+          // Aggiorniamo la lista delle categorie
+          const categoryResponse = await axios.get(endpoints.category.list, { params: { db } });
+          if (categoryResponse.status === 200) {
+            const categories = categoryResponse.data.data;
+            setCategoriesList(categories.sort((a, b) => a.name.localeCompare(b.name)));
+            
+            // Troviamo la categoria appena creata
+            const newCategory = categories.find(cat => cat.name === newCategoryName.trim());
+            if (newCategory) {
+              setValue('category', newCategory.id);
+              setValue('subject', null);
+              setValue('details', null);
+              setSubjectList([]);
+              setDetailsList([]);
+              enqueueSnackbar(`Categoria "${newCategoryName}" creata con successo`, { 
+                variant: 'success',
+                autoHideDuration: 2000
+              });
+            } else {
+              enqueueSnackbar('Categoria creata con successo', { variant: 'success' });
+            }
+          }
+          
+          setOpenNewCategoryDialog(false);
+        }
+    } catch (error) {
+      console.error('Errore durante la creazione della categoria:', error);
+      enqueueSnackbar('Errore durante la creazione della categoria', { variant: 'error' });
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const handleCreateSubject = async () => {
+    if (!newSubjectName.trim()) {
+      enqueueSnackbar('Inserisci un nome per il soggetto', { variant: 'error' });
+      return;
+    }
+
+    const categoryId = watch('category');
+    if (!categoryId) {
+      enqueueSnackbar('Seleziona prima una categoria', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setCreatingSubject(true);
+      const response = await axios.post('/api/subject/create', {
+        db,
+        name: newSubjectName.trim(),
+        categoryId
+      });        if (response.status === 200) {
+          // Aggiorniamo la lista dei soggetti
+          const subjectResponse = await axios.post(endpoints.subject.list, { db, categoryId });
+          if (subjectResponse.status === 200) {
+            const subjects = subjectResponse.data.data;
+            setSubjectList(subjects.sort((a, b) => a.name.localeCompare(b.name)));
+            
+            // Troviamo il soggetto appena creato
+            const newSubject = subjects.find(subj => subj.name === newSubjectName.trim());
+            if (newSubject) {
+              setValue('subject', newSubject.id);
+              setValue('details', null);
+              setDetailsList([]);
+              
+              // Carica i dettagli (saranno vuoti per un nuovo soggetto)
+              const detailResponse = await axios.post(endpoints.detail.list, { db, subjectId: newSubject.id });
+              if (detailResponse.status === 200) {
+                const details = detailResponse.data.data;
+                setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
+              }
+              
+              enqueueSnackbar(`Soggetto "${newSubjectName}" creato con successo`, { 
+                variant: 'success',
+                autoHideDuration: 2000
+              });
+            } else {
+              enqueueSnackbar('Soggetto creato con successo', { variant: 'success' });
+            }
+          }
+          
+          setOpenNewSubjectDialog(false);
+        }
+    } catch (error) {
+      console.error('Errore durante la creazione del soggetto:', error);
+      enqueueSnackbar('Errore durante la creazione del soggetto', { variant: 'error' });
+    } finally {
+      setCreatingSubject(false);
+    }
+  };
+
+  const handleCreateDetail = async () => {
+    if (!newDetailName.trim()) {
+      enqueueSnackbar('Inserisci un nome per il dettaglio', { variant: 'error' });
+      return;
+    }
+
+    const subjectId = watch('subject');
+    if (!subjectId) {
+      enqueueSnackbar('Seleziona prima un soggetto', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setCreatingDetail(true);
+      const response = await axios.post('/api/detail/create', {
+        db,
+        name: newDetailName.trim(),
+        subjectId
+      });        if (response.status === 200) {
+          // Aggiorniamo la lista dei dettagli
+          const detailResponse = await axios.post(endpoints.detail.list, { db, subjectId });
+          if (detailResponse.status === 200) {
+            const details = detailResponse.data.data;
+            setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
+            
+            // Troviamo il dettaglio appena creato
+            const newDetail = details.find(detail => detail.name === newDetailName.trim());
+            if (newDetail) {
+              setValue('details', newDetail.id);
+              enqueueSnackbar(`Dettaglio "${newDetailName}" creato con successo`, { 
+                variant: 'success',
+                autoHideDuration: 2000
+              });
+            } else {
+              enqueueSnackbar('Dettaglio creato con successo', { variant: 'success' });
+            }
+          }
+          
+          setOpenNewDetailDialog(false);
+        }
+    } catch (error) {
+      console.error('Errore durante la creazione del dettaglio:', error);
+      enqueueSnackbar('Errore durante la creazione del dettaglio', { variant: 'error' });
+    } finally {
+      setCreatingDetail(false);
+    }
+  };
 
   if (loading) {
     return <PostDetailsSkeleton/>
@@ -225,6 +435,11 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
             name="negativeAmount"
             label="Dare"
             placeholder="0.00"
+            inputProps={{ 
+              step: "0.01",
+              min: "-999999999.99", 
+              max: "0" 
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -233,8 +448,13 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
               ),
             }}
             onChange={(e) => {
-              const newValue = e.target.value < 0 ? e.target.value : e.target.value * -1;
-              setValue('negativeAmount', newValue);
+              // Limitiamo a 2 cifre decimali
+              let value = parseFloat(e.target.value);
+              if (!Number.isNaN(value)) {
+                value = Math.round(value * 100) / 100;
+                const newValue = value < 0 ? value : value * -1;
+                setValue('negativeAmount', newValue);
+              }
             }}
             disabled={watch('amount') > 0}
           />
@@ -243,12 +463,25 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
             name="positiveAmount"
             label="Avere"
             placeholder="0.00"
+            inputProps={{ 
+              step: "0.01",
+              min: "0", 
+              max: "999999999.99" 
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
                   <Box sx={{ typography: 'subtitle2', color: 'text.disabled' }}>€</Box>
                 </InputAdornment>
               ),
+            }}
+            onChange={(e) => {
+              // Limitiamo a 2 cifre decimali
+              let value = parseFloat(e.target.value);
+              if (!Number.isNaN(value)) {
+                value = Math.round(value * 100) / 100;
+                setValue('positiveAmount', value);
+              }
             }}
             disabled={watch('amount') < 0}
           />
@@ -303,7 +536,40 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
               )}
               sx={{ minWidth: '33%' }}
               renderInput={(params) => (
-                <TextField {...params} label="Categoria" placeholder="Seleziona una categoria" />
+                <TextField 
+                  {...params} 
+                  label="Categoria *" 
+                  placeholder="Seleziona una categoria"
+                  error={!!errors?.category}
+                  helperText={errors?.category?.message}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {params.InputProps.endAdornment}
+                        <Button 
+                          color="primary"
+                          variant="outlined"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleOpenNewCategoryDialog();
+                          }}
+                          size="small"
+                          title="Crea nuova categoria"
+                          sx={{ 
+                            minWidth: 'unset', 
+                            ml: 1, 
+                            px: 0.5,
+                            py: 0.5,
+                            borderRadius: '50%'
+                          }}
+                        >
+                          <Iconify icon="eva:plus-fill" width={20} height={20} />
+                        </Button>
+                      </>
+                    ),
+                  }}
+                />
               )}
             />
 
@@ -332,8 +598,40 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Soggetto"
+                  label="Soggetto *"
                   placeholder="Seleziona un soggetto"
+                  error={!!errors?.subject}
+                  helperText={errors?.subject?.message}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {params.InputProps.endAdornment}
+                        {watch('category') && (
+                          <Button 
+                            color="primary"
+                            variant="outlined"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleOpenNewSubjectDialog();
+                            }}
+                            disabled={!watch('category')}
+                            size="small"
+                            title="Crea nuovo soggetto"
+                            sx={{ 
+                              minWidth: 'unset', 
+                              ml: 1, 
+                              px: 0.5,
+                              py: 0.5,
+                              borderRadius: '50%'
+                            }}
+                          >
+                            <Iconify icon="eva:plus-fill" width={20} height={20} />
+                          </Button>
+                        )}
+                      </>
+                    ),
+                  }}
                 />
               )}
             />
@@ -360,15 +658,68 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
               )}
               sx={{ minWidth: '33%' }}
               renderInput={(params) => (
-                <TextField {...params} label="Dettagli" placeholder="Seleziona un dettaglio" />
+                <TextField 
+                  {...params} 
+                  label="Dettagli" 
+                  placeholder="Seleziona un dettaglio" 
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {params.InputProps.endAdornment}
+                        {watch('subject') && (
+                          <Button 
+                            color="primary"
+                            variant="outlined"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleOpenNewDetailDialog();
+                            }}
+                            disabled={!watch('subject')}
+                            size="small"
+                            title="Crea nuovo dettaglio"
+                            sx={{ 
+                              minWidth: 'unset', 
+                              ml: 1, 
+                              px: 0.5,
+                              py: 0.5,
+                              borderRadius: '50%'
+                            }}
+                          >
+                            <Iconify icon="eva:plus-fill" width={20} height={20} />
+                          </Button>
+                        )}
+                      </>
+                    ),
+                  }}
+                />
               )}
             />
           </Stack>
         </Stack>
 
-        <Accordion expanded={expanded} onChange={() => setExpanded(!expanded)}>
+        <Accordion expanded={expandedNotes} onChange={() => setExpandedNotes(!expandedNotes)}>
           <AccordionSummary expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}>
-            <Typography variant="subtitle1">Note</Typography>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="subtitle1">Note</Typography>
+              {watch('note') && !expandedNotes && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    display: 'inline-block',
+                  }}
+                />
+              )}
+              {watch('note') && !expandedNotes && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                  (presente)
+                </Typography>
+              )}
+            </Stack>
           </AccordionSummary>
           <AccordionDetails>
             <Stack spacing={1.5}>
@@ -383,9 +734,28 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
           </AccordionDetails>
         </Accordion>
 
-        <Accordion expanded={expanded} onChange={() => setExpanded(!expanded)}>
+        <Accordion expanded={expandedDocs} onChange={() => setExpandedDocs(!expandedDocs)}>
           <AccordionSummary expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}>
-            <Typography variant="subtitle1">Documenti</Typography>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="subtitle1">Documenti</Typography>
+              {watch('documents') && watch('documents').length > 0 && !expandedDocs && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    display: 'inline-block',
+                  }}
+                />
+              )}
+              {watch('documents') && watch('documents').length > 0 && !expandedDocs && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                  ({watch('documents').length} {watch('documents').length === 1 ? 'documento' : 'documenti'})
+                </Typography>
+              )}
+            </Stack>
           </AccordionSummary>
           <AccordionDetails>
             <Stack spacing={1.5} mt={2}>
@@ -405,6 +775,132 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, edit
         </Accordion>
       </Stack>
       <Divider sx={{ my: 3, borderStyle: 'dashed' }} />
+
+      {/* Dialog per creazione nuova categoria */}
+      <Dialog 
+        open={openNewCategoryDialog} 
+        onClose={handleCloseNewCategoryDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nuova Categoria</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Categoria"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !creatingCategory) {
+                e.preventDefault();
+                handleCreateCategory();
+              }
+            }}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewCategoryDialog} color="inherit">
+            Annulla
+          </Button>
+          <LoadingButton
+            onClick={handleCreateCategory}
+            loading={creatingCategory}
+            variant="contained"
+            color="primary"
+          >
+            Crea Categoria
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog per creazione nuovo soggetto */}
+      <Dialog 
+        open={openNewSubjectDialog} 
+        onClose={handleCloseNewSubjectDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nuovo Soggetto</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Soggetto"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newSubjectName}
+            onChange={(e) => setNewSubjectName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !creatingSubject) {
+                e.preventDefault();
+                handleCreateSubject();
+              }
+            }}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewSubjectDialog} color="inherit">
+            Annulla
+          </Button>
+          <LoadingButton
+            onClick={handleCreateSubject}
+            loading={creatingSubject}
+            variant="contained"
+            color="primary"
+          >
+            Crea Soggetto
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog per creazione nuovo dettaglio */}
+      <Dialog 
+        open={openNewDetailDialog} 
+        onClose={handleCloseNewDetailDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nuovo Dettaglio</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Dettaglio"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newDetailName}
+            onChange={(e) => setNewDetailName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !creatingDetail) {
+                e.preventDefault();
+                handleCreateDetail();
+              }
+            }}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewDetailDialog} color="inherit">
+            Annulla
+          </Button>
+          <LoadingButton
+            onClick={handleCreateDetail}
+            loading={creatingDetail}
+            variant="contained"
+            color="primary"
+          >
+            Crea Dettaglio
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -414,5 +910,6 @@ PrimaNotaNewEditDetails.propTypes = {
   setValue: PropTypes.func,
   watch: PropTypes.func,
   trigger: PropTypes.func,
+  errors: PropTypes.object,
   edit: PropTypes.bool,
 };

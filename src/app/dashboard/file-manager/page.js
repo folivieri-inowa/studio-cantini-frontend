@@ -3,7 +3,7 @@ import { FileManagerView } from 'src/sections/file-manager/view';
 // ----------------------------------------------------------------------
 
 export const metadata = {
-  title: 'Dashboard: File Manager',
+  title: 'Dashboard: Archivio File',
 };
 
 export default function FileManagerPage() {

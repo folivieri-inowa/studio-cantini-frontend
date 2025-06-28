@@ -29,6 +29,8 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
     // amount: Yup.number().required('Importo è un campo obbligatorio'),
     description: Yup.string().required('Descrizione è un campo obbligatorio'),
     paymentType: Yup.string().required('Metodo di pagamento è un campo obbligatorio'),
+    category: Yup.string().required('Categoria è un campo obbligatorio'),
+    subject: Yup.string().required('Soggetto è un campo obbligatorio'),
   });
 
   const methods = useForm({
@@ -58,7 +60,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
     setValue,
     watch,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = methods;
 
 
@@ -101,19 +103,37 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
     return imageUrls;
   };
 
-  const onSubmit = handleSubmit(async (data) => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      // const documentsUrl = await handleUploadFiles(data.documents);
-
-      const documentsUrl = await handleUploadFiles(data.documents);
-
-      const dataToSend = {
-        ...data,
-        db,
-        amount: parseFloat(data.positiveAmount || data.negativeAmount),
-        documents: documentsUrl || data.documents || [],
+  // Funzione per gestire il salvataggio con o senza stato completato
+  const handleSaveWithStatus = (setCompleted) => {
+    return handleSubmit(async (data) => {
+      // Attiva la validazione dei campi
+      await trigger('category');
+      await trigger('subject');
+      
+      // Verifica che sia specificata almeno categoria e soggetto
+      if (!data.category) {
+        enqueueSnackbar('È necessario specificare una categoria', { variant: 'error' });
+        return;
       }
+
+      if (!data.subject) {
+        enqueueSnackbar('È necessario specificare un soggetto', { variant: 'error' });
+        return;
+      }
+      
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // const documentsUrl = await handleUploadFiles(data.documents);
+
+        const documentsUrl = await handleUploadFiles(data.documents);
+
+        const dataToSend = {
+          ...data,
+          db,
+          amount: parseFloat(data.positiveAmount || data.negativeAmount),
+          documents: documentsUrl || data.documents || [],
+          status: setCompleted ? 'completed' : data.status, // Imposta lo stato a 'completed' solo se richiesto
+        }
 
       const response = await axios.post('/api/prima-nota/edit', dataToSend);
 
@@ -121,7 +141,10 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
         onClose();
         reset();
         onUpdate();
-        enqueueSnackbar('Aggiornamento completato!');
+        const message = setCompleted ? 
+          "Prima nota aggiornata e completata con successo" : 
+          "Aggiornamento completato!";
+        enqueueSnackbar(message, { variant: 'success' });
       } else {
         enqueueSnackbar('Si è verificato un errore');
       }
@@ -129,6 +152,10 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
       console.error(error);
     }
   });
+};
+
+  // Manteniamo onSubmit per retrocompatibilità
+  const onSubmit = handleSaveWithStatus(false);
 
   const handleClose = () => {
     onClose();
@@ -150,6 +177,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
             setValue={setValue}
             watch={watch}
             trigger={trigger}
+            errors={errors}
           />
         </DialogContent>
 
@@ -161,8 +189,14 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
             Annulla
           </Button>
 
-          <LoadingButton type="submit" variant="contained" loading={isSubmitting}>
-            Aggiorna
+          <LoadingButton 
+            type="button"
+            variant="contained" 
+            color="success"
+            onClick={handleSaveWithStatus(true)}
+            loading={isSubmitting}
+          >
+            Aggiorna e completa
           </LoadingButton>
         </DialogActions>
       </FormProvider>

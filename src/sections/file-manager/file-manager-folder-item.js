@@ -4,44 +4,56 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import ListItemText from '@mui/material/ListItemText';
-import { useBoolean } from 'src/hooks/use-boolean';
-import { useCopyToClipboard } from 'src/hooks/use-copy-to-clipboard';
 
-import { fData } from 'src/utils/format-number';
-import { useSnackbar } from 'src/components/snackbar';
-import FileManagerFileDetails from './file-manager-file-details';
-import FileManagerSubfolderItem from './file-manager-subfolder-item';
+// Utility functions for formatting
+const fData = (size) => {
+  if (!size) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(size) / Math.log(1024));
+  return `${(size / (1024 ** i)).toFixed(2)} ${units[i]}`;
+};
 
 // ----------------------------------------------------------------------
 
 export default function FileManagerFolderItem({
   folder,
   sx,
+  onOpen,
   ...other
 }) {
+  // Conteggio file e sottocartelle
+  const fileCount = folder.files?.length || folder.fileCount || 0;
+  const subfolderCount = folder.subfolder?.length || folder.subfolderCount || 0;
 
-  const details = useBoolean();
+  // Logging per debug
+  console.log(`Rendering folder: ${folder.name}, files:`, fileCount, ', subfolders:', subfolderCount);
 
-  const renderIcon = <Box onClick={details.onTrue} component="img" src="/assets/icons/files/ic_folder.svg" sx={{ width: 36, height: 36 }} />
+  const renderIcon = <Box onClick={onOpen} component="img" src="/assets/icons/files/ic_folder.svg" sx={{ width: 36, height: 36 }} />
 
   const renderText = (
     <ListItemText
-      onClick={details.onTrue}
+      onClick={onOpen}
       primary={folder.name}
       secondary={
         <>
-          {fData(folder.size)}
-          <Box
-            component="span"
-            sx={{
-              mx: 0.75,
-              width: 2,
-              height: 2,
-              borderRadius: '50%',
-              bgcolor: 'currentColor',
-            }}
-          />
-          {folder.subfolderCount} cartelle
+          {fileCount > 0 && `${fileCount} file${fileCount > 1 ? 's' : ''}`}
+          
+          {fileCount > 0 && subfolderCount > 0 && (
+            <Box
+              component="span"
+              sx={{
+                mx: 0.75,
+                width: 2,
+                height: 2,
+                borderRadius: '50%',
+                bgcolor: 'currentColor',
+              }}
+            />
+          )}
+          
+          {subfolderCount > 0 && `${subfolderCount} cartell${subfolderCount > 1 ? 'e' : 'a'}`}
+          
+          {fileCount === 0 && subfolderCount === 0 && 'Vuoto'}
         </>
       }
       slotProps={{
@@ -55,53 +67,42 @@ export default function FileManagerFolderItem({
           alignItems: 'center',
           typography: 'caption',
           color: 'text.disabled',
+          flexDirection: 'row',
           display: 'inline-flex',
-        }
+        },
       }}
     />
   );
 
   return (
-    <>
-      <Stack
-        component={Paper}
-        variant="outlined"
-        spacing={1}
-        alignItems="flex-start"
-        sx={{
-          p: 2.5,
-          maxWidth: 222,
-          borderRadius: 2,
-          bgcolor: 'unset',
-          cursor: 'pointer',
-          position: 'relative',
-          ...sx,
-        }}
-        {...other}
-      >
-        <Box>
-          {renderIcon}
-        </Box>
+    <Stack
+      component={Paper}
+      variant="outlined"
+      spacing={1}
+      alignItems="flex-start"
+      sx={{
+        p: 2.5,
+        maxWidth: 222,
+        borderRadius: 2,
+        bgcolor: 'unset',
+        cursor: 'pointer',
+        position: 'relative',
+        ...sx,
+      }}
+      onClick={onOpen}
+      {...other}
+    >
+      <Box>
+        {renderIcon}
+      </Box>
 
-        {renderText}
-      </Stack>
-
-      <FileManagerSubfolderItem
-        folder={folder}
-        open={details.value}
-        onClose={details.onFalse}
-      />
-
-      {/* <FileManagerFileDetails
-        item={folder}
-        open={details.value}
-        onClose={details.onFalse}
-      /> */}
-    </>
+      {renderText}
+    </Stack>
   );
 }
 
 FileManagerFolderItem.propTypes = {
   folder: PropTypes.object,
+  onOpen: PropTypes.func,
   sx: PropTypes.object,
 };

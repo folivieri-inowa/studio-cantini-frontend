@@ -1,8 +1,10 @@
 'use client';
 
+import * as Yup from 'yup';
 import PropTypes from 'prop-types';
 import isEqual from 'lodash/isEqual';
 import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
@@ -55,7 +57,7 @@ import PrimaNotaTableToolbar from '../prima-nota-table-toolbar';
 import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
-import FormProvider, { RHFUpload, RHFTextField } from '../../../components/hook-form';
+import FormProvider, { RHFUpload, RHFTextField, RHFSelect } from '../../../components/hook-form';
 import { useGetOwners } from '../../../api/owner';
 import { fTimestamp } from '../../../utils/format-time';
 import { useGetCategories } from '../../../api/category';
@@ -441,9 +443,15 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
-  const {owners} = useGetOwners(db)
+  const {owners} = useGetOwners(db);
+  const {categories} = useGetCategories(db);
   const loadingSend = useBoolean();
   const { enqueueSnackbar } = useSnackbar();
+
+  const ImportSchema = Yup.object().shape({
+    category: Yup.string().required('Categoria è un campo obbligatorio'),
+    subject: Yup.string().required('Soggetto è un campo obbligatorio'),
+  });
 
   const defaultValues = useMemo(
     () => ({
@@ -454,12 +462,15 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
       amount: '',
       paymentType: '',
       description: '',
-      commissions: 0 // nuovo campo commissioni
+      commissions: 0, // nuovo campo commissioni
+      category: '', // campo per la categoria
+      subject: ''  // campo per il soggetto
     }),
     []
   );
 
   const methods = useForm({
+    resolver: yupResolver(ImportSchema),
     defaultValues,
   });
 
@@ -468,7 +479,9 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
     setValue,
     watch,
     reset,
+    trigger,
     handleSubmit,
+    formState: { errors },
   } = methods;
 
   useEffect(() => {
@@ -480,7 +493,9 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
         amount: selectedRow.amount,
         paymentType: selectedRow.paymenttype,
         description: selectedRow.description,
-        commissions: selectedRow.commissions || '' // valorizza se presente
+        commissions: selectedRow.commissions || '', // valorizza se presente
+        category: selectedRow.categoryid || '',
+        subject: ''
       })
     }
   }, [owners, reset, selectedRow]);
@@ -515,6 +530,21 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
   }, [setValue]);
 
   const handleCreateAndSend = handleSubmit(async (data) => {
+    // Attiva la validazione dei campi
+    await trigger('category');
+    await trigger('subject');
+    
+    // Verifica che sia specificata almeno categoria e soggetto
+    if (!data.category) {
+      enqueueSnackbar('È necessario specificare una categoria', { variant: 'error' });
+      return;
+    }
+
+    if (!data.subject) {
+      enqueueSnackbar('È necessario specificare un soggetto', { variant: 'error' });
+      return;
+    }
+
     loadingSend.onTrue();
 
     try {
@@ -526,8 +556,14 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
         formData.append('file', data.file[0]); // Il file viene inviato normalmente
       }
 
-      // aggiungi commissioni nei metadata
-      formData.append('metadata', JSON.stringify({ db, id: selectedRow.id, commissions: data.commissions }));
+      // aggiungi commissioni, categoria e soggetto nei metadata
+      formData.append('metadata', JSON.stringify({ 
+        db, 
+        id: selectedRow.id, 
+        commissions: data.commissions,
+        categoryId: data.category,
+        subject: data.subject
+      }));
 
       const response = await axios.post('/api/prima-nota/import/associated', formData);
       if (response.status === 200) {
@@ -654,6 +690,31 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
                   const newValue = e.target.value < 0 ? e.target.value : e.target.value * -1;
                   setValue('commissions', newValue);
                 }}
+              />
+            </Stack>
+            
+            <Stack direction={{ sm: 'column', md: 'row' }} spacing={2}>
+              <RHFSelect
+                name="category"
+                label="Categoria *"
+                InputLabelProps={{ shrink: true }}
+                error={!!errors.category}
+                helperText={errors?.category?.message}
+              >
+                <option value=""></option>
+                {categories?.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </RHFSelect>
+              
+              <RHFTextField
+                name="subject"
+                label="Soggetto *"
+                InputLabelProps={{ shrink: true }}
+                error={!!errors.subject}
+                helperText={errors?.subject?.message}
               />
             </Stack>
 

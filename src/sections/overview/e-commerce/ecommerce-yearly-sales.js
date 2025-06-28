@@ -13,12 +13,15 @@ import CustomPopover, { usePopover } from 'src/components/custom-popover';
 
 // ----------------------------------------------------------------------
 
-export default function EcommerceYearlySales({ title, subheader, chart, ...other }) {
+export default function EcommerceYearlySales({ title, subheader, chart, defaultYear, ...other }) {
   const { colors, categories, series, options } = chart;
 
   const popover = usePopover();
 
-  const [seriesData, setSeriesData] = useState('2019');
+  // Usa defaultYear se fornito, oppure prendi il primo anno dalla serie,
+  // altrimenti usa '2019' come fallback
+  const initialYear = defaultYear || (series[0]?.year) || '2019';
+  const [seriesData, setSeriesData] = useState(initialYear);
 
   const chartOptions = useChart({
     colors,
@@ -102,6 +105,7 @@ export default function EcommerceYearlySales({ title, subheader, chart, ...other
 
 EcommerceYearlySales.propTypes = {
   chart: PropTypes.object,
+  defaultYear: PropTypes.string,
   subheader: PropTypes.string,
   title: PropTypes.string,
 };

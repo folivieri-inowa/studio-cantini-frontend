@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-import Grid from '@mui/material/Grid2';
-import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
-import Divider from '@mui/material/Divider';
-import MenuItem from '@mui/material/MenuItem';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid2';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
 import { paths } from '../../../../routes/paths';
 import { useRouter } from '../../../../routes/hooks';
@@ -20,6 +20,7 @@ import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
+import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
 
 // ----------------------------------------------------------------------
 
@@ -592,6 +593,84 @@ export default function MasterAnalyticsView() {
     });
   };
 
+  // Prepare data for EcommerceYearlySales component
+  const getYearlySalesData = () => {
+    // Check if we have data and settings
+    const globalReport = settings.owner?.report?.globalReport;
+    if (!globalReport) return { categories: [], series: [] };
+
+    // Get current year and previous year
+    const currentYear = settings.year;
+    const previousYear = (parseInt(settings.year, 10) - 1).toString();
+    
+    // Verify if we have data for both years
+    if (!globalReport[currentYear]) {
+      console.log(`Nessun dato disponibile per l'anno ${currentYear}`);
+      return { categories: [], series: [] };
+    }
+    
+    // Create categories array (months)
+    const categories = [
+      'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
+      'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
+    ];
+    
+    // Funzione per estrarre i dati mensili di un determinato anno
+    const extractMonthlyData = (year) => {
+      const months = globalReport[year]?.months || {};
+      return Array.from({ length: 12 }, (_, i) => {
+        const monthKey = (i + 1).toString().padStart(2, '0');
+        return {
+          income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
+          expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
+        };
+      });
+    };
+    
+    // Estrai dati per l'anno corrente
+    const monthlyDataCurrentYear = extractMonthlyData(currentYear);
+    
+    // Estrai dati per l'anno precedente se disponibili
+    const monthlyDataPreviousYear = extractMonthlyData(previousYear);
+    
+    // Crea le serie per il grafico
+    const series = [];
+    
+    // Anno corrente
+    series.push({
+      year: currentYear,
+      data: [
+        {
+          name: `Entrate ${currentYear}`,
+          data: monthlyDataCurrentYear.map(m => m.income),
+        },
+        {
+          name: `Uscite ${currentYear}`,
+          data: monthlyDataCurrentYear.map(m => m.expense),
+        },
+      ],
+    });
+    
+    // Anno precedente (se disponibile)
+    if (globalReport[previousYear]) {
+      series.push({
+        year: previousYear,
+        data: [
+          {
+            name: `Entrate ${previousYear}`,
+            data: monthlyDataPreviousYear.map(m => m.income),
+          },
+          {
+            name: `Uscite ${previousYear}`,
+            data: monthlyDataPreviousYear.map(m => m.expense),
+          },
+        ],
+      });
+    }
+    
+    return { categories, series };
+  };
+
   const getChartData = () => {
     if (!data || !settings.year || !settings.owner) {
       console.log('Dati mancanti per il grafico: nessun dato, anno o owner');
@@ -836,6 +915,18 @@ export default function MasterAnalyticsView() {
                 'Dic',
               ]}
               series={getChartData()}
+            />
+          </Grid>
+          
+          <Grid size={12} sx={{ mt: 3 }}>
+            <EcommerceMultiYearSales
+              title="Andamento annuale entrate/uscite"
+              subheader="Confronto dettagliato entrate e uscite per anno"
+              chart={{
+                colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
+                categories: getYearlySalesData().categories,
+                series: getYearlySalesData().series,
+              }}
             />
           </Grid>
         </Grid>

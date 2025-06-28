@@ -180,7 +180,8 @@ const UploadDialog = ({ dialog, owners, db, categories }) => {
     setValue('details', null);
     const response = await axios.post(endpoints.subject.list, { db, categoryId: newValue.id });
     if (response.status === 200) {
-      setSubjectList(response.data.data)
+      const subjects = response.data.data;
+      setSubjectList(subjects.sort((a, b) => a.name.localeCompare(b.name)));
     }
   };
 
@@ -189,7 +190,8 @@ const UploadDialog = ({ dialog, owners, db, categories }) => {
     setValue('details', null);
     const response = await axios.post(endpoints.detail.list, { db, subjectId: newValue.id });
     if (response.status === 200) {
-      setDetailsList(response.data.data)
+      const details = response.data.data;
+      setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
     }
   }
 

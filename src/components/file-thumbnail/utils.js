@@ -19,43 +19,32 @@ const iconUrl = (icon) => `/assets/icons/files/${icon}.svg`;
 
 export function fileFormat(fileUrl) {
   let format;
+  const fileType = fileTypeByUrl(fileUrl);
 
-  switch (fileUrl?.includes(fileTypeByUrl(fileUrl))) {
-    case FORMAT_TEXT.includes(fileTypeByUrl(fileUrl)):
-      format = 'txt';
-      break;
-    case FORMAT_ZIP.includes(fileTypeByUrl(fileUrl)):
-      format = 'zip';
-      break;
-    case FORMAT_AUDIO.includes(fileTypeByUrl(fileUrl)):
-      format = 'audio';
-      break;
-    case FORMAT_IMG.includes(fileTypeByUrl(fileUrl)):
-      format = 'image';
-      break;
-    case FORMAT_VIDEO.includes(fileTypeByUrl(fileUrl)):
-      format = 'video';
-      break;
-    case FORMAT_WORD.includes(fileTypeByUrl(fileUrl)):
-      format = 'word';
-      break;
-    case FORMAT_EXCEL.includes(fileTypeByUrl(fileUrl)):
-      format = 'excel';
-      break;
-    case FORMAT_POWERPOINT.includes(fileTypeByUrl(fileUrl)):
-      format = 'powerpoint';
-      break;
-    case FORMAT_PDF.includes(fileTypeByUrl(fileUrl)):
-      format = 'pdf';
-      break;
-    case FORMAT_PHOTOSHOP.includes(fileTypeByUrl(fileUrl)):
-      format = 'photoshop';
-      break;
-    case FORMAT_ILLUSTRATOR.includes(fileTypeByUrl(fileUrl)):
-      format = 'illustrator';
-      break;
-    default:
-      format = fileTypeByUrl(fileUrl);
+  if (FORMAT_TEXT.includes(fileType)) {
+    format = 'txt';
+  } else if (FORMAT_ZIP.includes(fileType)) {
+    format = 'zip';
+  } else if (FORMAT_AUDIO.includes(fileType)) {
+    format = 'audio';
+  } else if (FORMAT_IMG.includes(fileType)) {
+    format = 'image';
+  } else if (FORMAT_VIDEO.includes(fileType)) {
+    format = 'video';
+  } else if (FORMAT_WORD.includes(fileType)) {
+    format = 'word';
+  } else if (FORMAT_EXCEL.includes(fileType)) {
+    format = 'excel';
+  } else if (FORMAT_POWERPOINT.includes(fileType)) {
+    format = 'powerpoint';
+  } else if (FORMAT_PDF.includes(fileType)) {
+    format = 'pdf';
+  } else if (FORMAT_PHOTOSHOP.includes(fileType)) {
+    format = 'photoshop';
+  } else if (FORMAT_ILLUSTRATOR.includes(fileType)) {
+    format = 'illustrator';
+  } else {
+    format = fileType;
   }
 
   return format;

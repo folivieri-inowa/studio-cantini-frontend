@@ -11,14 +11,21 @@ export function useGetSubjects(db) {
   const { data, isLoading, error, isValidating } = useSWR(URL, fetcher);
 
   return useMemo(
-    () => ({
-      subjects: data?.data || [],
-      subjectsLoading: isLoading,
-      subjectsError: error,
-      subjectsValidating: isValidating,
-      subjectsEmpty: !isLoading && !data?.data.length,
-      refetchSubjects: () => mutate(URL)
-    }),
+    () => {
+      // Ordiniamo alfabeticamente i soggetti
+      const sortedSubjects = data?.data 
+        ? [...data.data].sort((a, b) => a.name.localeCompare(b.name))
+        : [];
+
+      return {
+        subjects: sortedSubjects,
+        subjectsLoading: isLoading,
+        subjectsError: error,
+        subjectsValidating: isValidating,
+        subjectsEmpty: !isLoading && !data?.data.length,
+        refetchSubjects: () => mutate(URL)
+      };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data?.data, error, isLoading, isValidating]
   );

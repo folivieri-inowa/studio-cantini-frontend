@@ -49,7 +49,8 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
         // Create an array to store all requests
         const response = await axios.get(endpoints.category.list, { params: { db } });
         if (response.status === 200) {
-          setCategoryList(response.data.data);
+          const categories = response.data.data;
+          setCategoryList(categories.sort((a, b) => a.name.localeCompare(b.name)));
         }
 
         setIsLoading(false);
@@ -64,13 +65,20 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
 
   const { enqueueSnackbar } = useSnackbar();
 
-  const onSubmit = async () => {
+  const onSubmit = async (forceCompleted = false) => {
     try {
       setIsLoading(true);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
+      // Verifica che categoria e soggetto siano entrambi specificati
+      if (selectedCategory === null) {
+        enqueueSnackbar('È necessario specificare una categoria', { variant: 'warning' });
+        setIsLoading(false);
+        return; // Interrompo l'esecuzione della funzione
+      }
+
       if (selectedCategory !== null && selectedSubject === null) {
-        enqueueSnackbar('E\' necessario specificare anche un soggetto', { variant: 'warning' });
+        enqueueSnackbar('È necessario specificare anche un soggetto', { variant: 'warning' });
         setIsLoading(false);
         return; // Interrompo l'esecuzione della funzione
       }
@@ -81,14 +89,17 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
         category: selectedCategory,
         subject: selectedSubject,
         details: selectedDetail,
-        status,
+        status: forceCompleted ? 'completed' : status,
         paymentType
       };
 
       const response = await axios.post('/api/prima-nota/edit-multi', data);
 
       if (response.data.data.status === 200) {
-        enqueueSnackbar('Transazioni aggiornate con successo', { variant: 'success' });
+        const message = forceCompleted ? 
+          'Transazioni aggiornate e completate con successo' : 
+          'Transazioni aggiornate con successo';
+        enqueueSnackbar(message, { variant: 'success' });
         onUpdate();
         onClose();
         setSelectedCategory(null);
@@ -110,7 +121,8 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
     setSelectedCategory(newValue.id);
     const response = await axios.post(endpoints.subject.list, { db, categoryId: newValue.id });
     if (response.status === 200) {
-      setSubjectList(response.data.data);
+      const subjects = response.data.data;
+      setSubjectList(subjects.sort((a, b) => a.name.localeCompare(b.name)));
     }
   };
 
@@ -118,7 +130,8 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
     setSelectedSubject(newValue.id);
     const response = await axios.post(endpoints.detail.list, { db, subjectId: newValue.id });
     if (response.status === 200) {
-      setDetailsList(response.data.data);
+      const details = response.data.data;
+      setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
     }
   };
 
@@ -276,7 +289,12 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
           Annulla
         </Button>
 
-        <LoadingButton type="button" variant="contained" loading={isLoading} onClick={onSubmit}>
+        <LoadingButton 
+          type="button" 
+          variant="contained" 
+          loading={isLoading} 
+          onClick={() => onSubmit(false)}
+        >
           Aggiorna
         </LoadingButton>
       </DialogActions>

@@ -3,23 +3,24 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 
+import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
-import { useSettingsContext } from 'src/components/settings';
-import { capitalizeCase } from 'src/utils/change-case';
+import { useGetReportCategory } from '../../../../api/report';
+import { useSettingsContext } from '../../../../components/settings';
+import { useBoolean } from '../../../../hooks/use-boolean';
+import { capitalizeCase } from '../../../../utils/change-case';
+import axios, { endpoints } from '../../../../utils/axios';
 
 import DetailsQuickView from '../details-quick-view';
-import GlobalWidgetSummary from '../global-widget-summary';
-import { useBoolean } from '../../../../hooks/use-boolean';
-import axios, { endpoints } from '../../../../utils/axios';
 import CategorySummaryTable from '../category-summary-table';
-import { useGetReportCategory } from '../../../../api/report';
 import CategoryAverageExpenseSubject from '../category-average-expense-subject';
+import GlobalWidgetSummary from '../global-widget-summary';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
+import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
 
 // ----------------------------------------------------------------------
 
@@ -101,6 +102,50 @@ export default function CategoryDetailsView({ categoryId }) {
     ];
   };
 
+  // La funzione getYearlySalesData è stata rimossa perché ora utilizziamo getChartData
+  // per uniformare la rappresentazione dei dati in tutti i grafici
+  
+  // Funzione per adattare i dati di getChartData al formato richiesto da EcommerceMultiYearSales
+  const adaptChartDataForMultiYear = (chartData, currentYear, previousYear) => {
+    if (!chartData || chartData.length === 0) return { categories: [], series: [] };
+    
+    // Separare i dati per anno
+    const currentYearData = chartData.filter(item => 
+      item.name.includes(`${currentYear}`)
+    );
+    
+    const previousYearData = chartData.filter(item => 
+      item.name.includes(`${previousYear}`)
+    );
+    
+    // Create categories array (months)
+    const categories = [
+      'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
+      'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
+    ];
+    
+    // Costruire le serie nel formato richiesto da EcommerceMultiYearSales
+    const series = [];
+    
+    // Anno corrente
+    if (currentYearData.length > 0) {
+      series.push({
+        year: currentYear.toString(),
+        data: currentYearData
+      });
+    }
+    
+    // Anno precedente
+    if (previousYearData.length > 0) {
+      series.push({
+        year: previousYear.toString(),
+        data: previousYearData
+      });
+    }
+    
+    return { categories, series };
+  };
+
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
       <Stack
@@ -158,19 +203,35 @@ export default function CategoryDetailsView({ categoryId }) {
                   { id: "expense", label: "Uscite (€)" },
                   { id: "difference", label: "Delta (€)" }
                 ]}
-              />
-            </Grid>
+                />
+              </Grid>
 
-            <Grid size={12}>
-              <ChartColumnMultiple
+              <Grid size={12}>
+                <ChartColumnMultiple
                 title="Entrate/Uscite per anno confrontate con l'anno precedente"
                 categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
                 series={getChartData(reportCategory.monthlyTotals, year, year - 1)}
-              />
-            </Grid>
+                colors={['#00C853', '#FF3D00', '#2196F3', '#FFEB3B']}
+                />
+              </Grid>
 
-            <Grid size={12}>
-              <CategoryAverageExpenseSubject
+              <Grid size={12} sx={{ mt: 3 }}>
+                <EcommerceMultiYearSales
+                title="Andamento annuale entrate/uscite"
+                subheader="Confronto dettagliato entrate e uscite per anno"
+                chart={{
+                  colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
+                  ...adaptChartDataForMultiYear(
+                    getChartData(reportCategory.monthlyTotals, year, year - 1),
+                    year,
+                    year - 1
+                  ),
+                }}
+                />
+              </Grid>
+
+              <Grid size={12}>
+                <CategoryAverageExpenseSubject
                 title="Media spese mensile e totale annuale per soggetto"
                 tableData={reportCategory} // Popoliamo la tabella con i dati API
                 tableLabels={[

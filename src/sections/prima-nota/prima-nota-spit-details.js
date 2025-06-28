@@ -49,7 +49,8 @@ export default function PrimaNotaSpitDetails({ maxAmount, control, setValue, wat
       try {
         const response = await axios.get(endpoints.category.list, { params: { db } });
         if (response.status === 200) {
-          setCategoriesList(response.data.data);
+          const categories = response.data.data;
+          setCategoriesList(categories.sort((a, b) => a.name.localeCompare(b.name)));
         }
         setLoading(false);
       } catch (error) {
@@ -69,7 +70,8 @@ export default function PrimaNotaSpitDetails({ maxAmount, control, setValue, wat
     setValue('category', newValue.id);
     const response = await axios.post(endpoints.subject.list, { db, categoryId: newValue.id });
     if (response.status === 200) {
-      setSubjectList(response.data.data)
+      const subjects = response.data.data;
+      setSubjectList(subjects.sort((a, b) => a.name.localeCompare(b.name)));
     }
   };
 
@@ -77,7 +79,8 @@ export default function PrimaNotaSpitDetails({ maxAmount, control, setValue, wat
     setValue('subject', newValue.id);
     const response = await axios.post(endpoints.detail.list, { db, subjectId: newValue.id });
     if (response.status === 200) {
-      setDetailsList(response.data.data)
+      const details = response.data.data;
+      setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
     }
   }
 
@@ -222,7 +225,8 @@ export default function PrimaNotaSpitDetails({ maxAmount, control, setValue, wat
             }}
             disabled={maxAmount < 0}
             onChange={(e) => {
-              const newValue = e.target.value > 0 ? e.target.value : e.target.value * -1;
+              // Assicura che il valore sia sempre positivo
+              const newValue = Math.abs(parseFloat(e.target.value));
               if (maxAmount < newValue) {
                 setValue('positiveAmount', maxAmount);
               }else {

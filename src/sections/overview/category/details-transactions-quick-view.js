@@ -48,7 +48,10 @@ const TABLE_HEAD = [
 ];
 
 export default function DetailsTransactionsQuickView({ data, open, onClose }) {
-  const table = useTable();
+  const table = useTable({
+    defaultOrderBy: 'date',
+    defaultOrder: 'asc',
+  });
 
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [tableData, setTableData] = useState([]);

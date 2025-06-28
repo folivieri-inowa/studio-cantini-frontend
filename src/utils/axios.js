@@ -48,6 +48,9 @@ export const endpoints = {
   },
   file_manager: {
     list: '/api/file-manager/list',
+    fileInfo: '/api/file-manager/file-info',
+    upload: '/api/file-manager/upload',
+    delete: '/api/file-manager/delete',
   },
 
   // ----------------------------------------------------------------------

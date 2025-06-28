@@ -21,6 +21,17 @@ RUN \
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+
+# Declare build arguments
+ARG NEXT_PUBLIC_HOST_API
+ARG NEXT_PUBLIC_HOST_BACKEND
+ARG NEXT_PUBLIC_DEBUG_MODE
+
+# Set environment variables from build arguments
+ENV NEXT_PUBLIC_HOST_API=$NEXT_PUBLIC_HOST_API
+ENV NEXT_PUBLIC_HOST_BACKEND=$NEXT_PUBLIC_HOST_BACKEND
+ENV NEXT_PUBLIC_DEBUG_MODE=$NEXT_PUBLIC_DEBUG_MODE
+
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.

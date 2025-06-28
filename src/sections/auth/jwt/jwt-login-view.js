@@ -1,7 +1,7 @@
 'use client';
 
 import * as Yup from 'yup';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -31,12 +31,10 @@ import { useSettingsContext } from '../../../components/settings';
 
 export default function JwtLoginView() {
   const { login } = useAuthContext();
-  const settings = useSettingsContext()
+  const settings = useSettingsContext();
 
-  const DB = [
-    { value: 'db1', label: 'Guido' },
-    { value: 'db2', label: 'Marta' },
-  ]
+  const [databases, setDatabases] = useState([]);
+  const [loadingDatabases, setLoadingDatabases] = useState(true);
 
   const router = useRouter();
 
@@ -47,6 +45,40 @@ export default function JwtLoginView() {
   const returnTo = searchParams.get('returnTo');
 
   const password = useBoolean();
+
+  // Carica dinamicamente i database disponibili
+  useEffect(() => {
+    const fetchDatabases = async () => {
+      try {
+        setLoadingDatabases(true);
+        const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+        const response = await fetch(`${backendUrl}/v1/databases/list`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setDatabases(data.databases);
+        } else {
+          console.error('Errore nel caricamento dei database:', data.message);
+          // Fallback ai database hardcoded in caso di errore
+          setDatabases([
+            { value: 'db1', label: 'Guido' },
+            { value: 'db2', label: 'Marta' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Errore nella chiamata API per i database:', error);
+        // Fallback ai database hardcoded in caso di errore
+        setDatabases([
+          { value: 'db1', label: 'Guido' },
+          { value: 'db2', label: 'Marta' },
+        ]);
+      } finally {
+        setLoadingDatabases(false);
+      }
+    };
+
+    fetchDatabases();
+  }, []);
 
   const LoginSchema = Yup.object().shape({
     db: Yup.string().required('Database è un campo obbligatorio'),
@@ -96,13 +128,14 @@ export default function JwtLoginView() {
       <RHFSelect
         name="db"
         label="Database"
-        options={DB}
+        disabled={loadingDatabases}
+        options={databases}
         onChange={(event)=>{
           settings.onChangeDb(event.target.value)
           setValue('db', event.target.value)
         }}
       >
-        {DB.map((value, index)=>(
+        {databases.map((value, index)=>(
           <MenuItem key={index} value={value.value}>
             {value.label}
           </MenuItem>

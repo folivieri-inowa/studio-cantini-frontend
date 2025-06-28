@@ -183,15 +183,28 @@ export default function PrimaNotaNewEditForm({ currentTransaction }) {
         )}
         
         {isEdit && (
-          <LoadingButton
-            size="large"
-            variant="contained"
-            color="success"
-            loading={loadingSend.value && isSubmitting}
-            onClick={handleSaveWithStatus(true)}
-          >
-            Aggiorna e completa
-          </LoadingButton>
+          <>
+            <LoadingButton
+              size="large"
+              variant="contained"
+              color="primary"
+              loading={loadingSend.value && isSubmitting}
+              onClick={handleSaveWithStatus(false)}
+              sx={{ mr: 1 }}
+            >
+              Aggiorna
+            </LoadingButton>
+            
+            <LoadingButton
+              size="large"
+              variant="contained"
+              color="success"
+              loading={loadingSend.value && isSubmitting}
+              onClick={handleSaveWithStatus(true)}
+            >
+              Aggiorna e completa
+            </LoadingButton>
+          </>
         )}
       </Stack>
     </FormProvider>

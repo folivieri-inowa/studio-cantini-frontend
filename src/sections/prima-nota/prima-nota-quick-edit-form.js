@@ -1,5 +1,5 @@
 import * as Yup from 'yup';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -22,7 +22,11 @@ import PrimaNotaNewEditDetails from './prima-nota-new-edit-details';
 
 export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onUpdate }) {
   const { enqueueSnackbar } = useSnackbar();
-  const { db } = useSettingsContext()
+  const { db } = useSettingsContext();
+
+  // Stati separati per i loading dei bottoni
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isCompletingUpdate, setIsCompletingUpdate] = useState(false);
 
   const NewTransactionSchema = Yup.object().shape({
     date: Yup.mixed().nullable().required('Data è un campo obbligatorio'),
@@ -60,7 +64,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
     setValue,
     watch,
     handleSubmit,
-    formState: { isSubmitting, errors },
+    formState: { errors },
   } = methods;
 
 
@@ -104,24 +108,31 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
   };
 
   // Funzione per gestire il salvataggio con o senza stato completato
-  const handleSaveWithStatus = (setCompleted) => {
-    return handleSubmit(async (data) => {
-      // Attiva la validazione dei campi
-      await trigger('category');
-      await trigger('subject');
-      
-      // Verifica che sia specificata almeno categoria e soggetto
-      if (!data.category) {
-        enqueueSnackbar('È necessario specificare una categoria', { variant: 'error' });
-        return;
+  const handleSaveWithStatus = (setCompleted) => 
+    handleSubmit(async (data) => {
+      // Imposta il loading appropriato
+      if (setCompleted) {
+        setIsCompletingUpdate(true);
+      } else {
+        setIsUpdating(true);
       }
 
-      if (!data.subject) {
-        enqueueSnackbar('È necessario specificare un soggetto', { variant: 'error' });
-        return;
-      }
-      
       try {
+        // Attiva la validazione dei campi
+        await trigger('category');
+        await trigger('subject');
+        
+        // Verifica che sia specificata almeno categoria e soggetto
+        if (!data.category) {
+          enqueueSnackbar('È necessario specificare una categoria', { variant: 'error' });
+          return;
+        }
+
+        if (!data.subject) {
+          enqueueSnackbar('È necessario specificare un soggetto', { variant: 'error' });
+          return;
+        }
+        
         await new Promise((resolve) => setTimeout(resolve, 500));
         // const documentsUrl = await handleUploadFiles(data.documents);
 
@@ -135,24 +146,28 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
           status: setCompleted ? 'completed' : data.status, // Imposta lo stato a 'completed' solo se richiesto
         }
 
-      const response = await axios.post('/api/prima-nota/edit', dataToSend);
+        const response = await axios.post('/api/prima-nota/edit', dataToSend);
 
-      if (response.status === 200) {
-        onClose();
-        reset();
-        onUpdate();
-        const message = setCompleted ? 
-          "Prima nota aggiornata e completata con successo" : 
-          "Aggiornamento completato!";
-        enqueueSnackbar(message, { variant: 'success' });
-      } else {
-        enqueueSnackbar('Si è verificato un errore');
+        if (response.status === 200) {
+          onClose();
+          reset();
+          onUpdate();
+          const message = setCompleted ? 
+            "Prima nota aggiornata e completata con successo" : 
+            "Aggiornamento completato!";
+          enqueueSnackbar(message, { variant: 'success' });
+        } else {
+          enqueueSnackbar('Si è verificato un errore');
+        }
+      } catch (error) {
+        console.error(error);
+        enqueueSnackbar('Si è verificato un errore durante il salvataggio', { variant: 'error' });
+      } finally {
+        // Reset dei loading stati
+        setIsUpdating(false);
+        setIsCompletingUpdate(false);
       }
-    } catch (error) {
-      console.error(error);
-    }
-  });
-};
+    });
 
   // Manteniamo onSubmit per retrocompatibilità
   const onSubmit = handleSaveWithStatus(false);
@@ -185,6 +200,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
           <Button
             variant="outlined"
             onClick={handleClose}
+            disabled={isUpdating || isCompletingUpdate}
           >
             Annulla
           </Button>
@@ -192,9 +208,20 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
           <LoadingButton 
             type="button"
             variant="contained" 
+            color="info"
+            onClick={handleSaveWithStatus(false)}
+            loading={isUpdating}
+            sx={{ mr: 1 }}
+          >
+            Aggiorna
+          </LoadingButton>
+
+          <LoadingButton 
+            type="button"
+            variant="contained" 
             color="success"
             onClick={handleSaveWithStatus(true)}
-            loading={isSubmitting}
+            loading={isCompletingUpdate}
           >
             Aggiorna e completa
           </LoadingButton>

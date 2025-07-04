@@ -16,11 +16,9 @@ import { capitalizeCase } from '../../../../utils/change-case';
 import axios, { endpoints } from '../../../../utils/axios';
 
 import DetailsQuickView from '../details-quick-view';
-import CategorySummaryTable from '../category-summary-table';
 import CategoryAverageExpenseSubject from '../category-average-expense-subject';
-import GlobalWidgetSummary from '../global-widget-summary';
-import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
+import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 
 // ----------------------------------------------------------------------
 
@@ -35,26 +33,6 @@ export default function CategoryDetailsView({ categoryId }) {
   const { reportCategory, reportCategoryLoading } = useGetReportCategory(categoryId, ownerId, year, settings.db);
 
   if (reportCategoryLoading) {return null}
-
-  const calculatePercentageChange = (monthlyTotals) => {
-    const currentMonth = new Date().getMonth() + 1; // Mese corrente (1-based)
-    const currentIncome = monthlyTotals[currentMonth]?.income || 0;
-    const prevIncome = monthlyTotals[currentMonth]?.prevIncome || 0;
-
-    if (prevIncome === 0) return 0; // Evita divisioni per zero
-
-    return ((currentIncome - prevIncome) / prevIncome) * 100;
-  };
-
-  const getGlobalIncome = (monthlyTotals) => Object.keys(monthlyTotals).map((month) => ({
-      x: `Mese ${month}`,
-      y: monthlyTotals[month].income,
-    }));
-
-  const getGlobalExpense = (monthlyTotals) => Object.keys(monthlyTotals).map((month) => ({
-      x: `Mese ${month}`,
-      y: monthlyTotals[month].expense,
-    }));
 
   const getSubjectDetails = async (props) => {
     const response = await axios.post(endpoints.report.category.subject.details, props);
@@ -172,51 +150,43 @@ export default function CategoryDetailsView({ categoryId }) {
 
       <Grid container spacing={3}>
         <Grid size={12}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-            <GlobalWidgetSummary
-              title="Entrate"
-              icon="eva:diagonal-arrow-left-down-fill"
-              percent={calculatePercentageChange(reportCategory.monthlyTotals)}
-              total={reportCategory.totalIncome}
-              chart={{ series: getGlobalIncome(reportCategory.monthlyTotals) }}
-            />
+          <CategoryAverageExpenseSubject
+            title="Riepilogo spese per soggetto"
+            tableData={reportCategory} // Popoliamo la tabella con i dati API
+            tableLabels={[
+              { id: "", label: "" },
+              { id: "subject", label: "Soggetto" },
+              { id: "averageExpense", label: "Media spese mensile (€)", align: 'right' },
+              { id: "totalExpense", label: "Uscite (€)", align: 'right'},
+              { id: "totalIncome", label: "Entrate (€)", align: 'right'},
+              { id: "difference", label: "Delta (€)", align: 'right'},
+              { id: "", label: ""}
+            ]}
+            onViewRow={async (prop) => {
+              await getSubjectDetails(prop)
+            }}
+          />
 
-            <GlobalWidgetSummary
-              title="Uscite"
-              color="warning"
-              icon="eva:diagonal-arrow-right-up-fill"
-              percent={calculatePercentageChange(reportCategory.monthlyTotals)}
-              total={reportCategory.totalExpense}
-              chart={{ series: getGlobalExpense(reportCategory.monthlyTotals) }}
-            />
-          </Stack>
+          <DetailsQuickView
+            data={detailsData}
+            open={quickView.value}
+            onClose={quickView.onFalse}
+          />
         </Grid>
+        
         <Grid size={12}>
           <Stack direction='column' spacing={3}>
             <Grid size={12}>
-              <CategorySummaryTable
-                title="Riepilogo dati per soggetto"
-                tableData={reportCategory.summaryTable} // Popoliamo la tabella con i dati API
-                tableLabels={[
-                  { id: "subject", label: "Soggetto" },
-                  { id: "income", label: "Entrate (€)" },
-                  { id: "expense", label: "Uscite (€)" },
-                  { id: "difference", label: "Delta (€)" }
-                ]}
-                />
-              </Grid>
-
-              <Grid size={12}>
-                <ChartColumnMultiple
+              <ChartColumnMultiple
                 title="Entrate/Uscite per anno confrontate con l'anno precedente"
                 categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
                 series={getChartData(reportCategory.monthlyTotals, year, year - 1)}
                 colors={['#00C853', '#FF3D00', '#2196F3', '#FFEB3B']}
-                />
-              </Grid>
+              />
+            </Grid>
 
-              <Grid size={12} sx={{ mt: 3 }}>
-                <EcommerceMultiYearSales
+            <Grid size={12} sx={{ mt: 3 }}>
+              <EcommerceMultiYearSales
                 title="Andamento annuale entrate/uscite"
                 subheader="Confronto dettagliato entrate e uscite per anno"
                 chart={{
@@ -227,30 +197,6 @@ export default function CategoryDetailsView({ categoryId }) {
                     year - 1
                   ),
                 }}
-                />
-              </Grid>
-
-              <Grid size={12}>
-                <CategoryAverageExpenseSubject
-                title="Media spese mensile e totale annuale per soggetto"
-                tableData={reportCategory} // Popoliamo la tabella con i dati API
-                tableLabels={[
-                  { id: "", label: "" },
-                  { id: "subject", label: "Soggetto" },
-                  { id: "averageExpense", label: "Media spese mensile (€)", align: 'right' },
-                  { id: "totalIncome", label: "Totale entrate annuale (€)", align: 'right'},
-                  { id: "totalExpense", label: "Totale spesa annuale (€)", align: 'right'},
-                  { id: "", label: ""}
-                ]}
-                onViewRow={async (prop) => {
-                  await getSubjectDetails(prop)
-                }}
-              />
-
-              <DetailsQuickView
-                data={detailsData}
-                open={quickView.value}
-                onClose={quickView.onFalse}
               />
             </Grid>
           </Stack>

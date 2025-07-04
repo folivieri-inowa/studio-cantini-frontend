@@ -120,8 +120,11 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
         </TableCell>
         <TableCell sx={{ width: '40%' }}>{capitalizeCase(row.category)}</TableCell>
         <TableCell align="right">{fCurrencyEur(row.averageCost)}</TableCell>
-        <TableCell align="right">{fCurrencyEur(row.totalIncome)}</TableCell>
         <TableCell align="right">{fCurrencyEur(row.totalExpense)}</TableCell>
+        <TableCell align="right">{fCurrencyEur(row.totalIncome)}</TableCell>
+        <TableCell align="right">
+          {fCurrencyEur(parseFloat(row.totalIncome || 0) - parseFloat(row.totalExpense || 0))}
+        </TableCell>
         {hasValues ? (
           <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
             <Tooltip title="Vedi dettaglio spese" placement="top" arrow>
@@ -137,7 +140,7 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
 
       {hasValues && (
         <TableRow>
-          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box sx={{ margin: 1 }}>
                 <Typography variant="subtitle1" gutterBottom component="div">
@@ -149,8 +152,9 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                       <TableCell sx={{ width: '5%' }}/>
                       <TableCell>Nome</TableCell>
                       <TableCell align="right">Media spesa mensile</TableCell>
-                      <TableCell align="right">Totale entrate annuale</TableCell>
-                      <TableCell align="right">Totale spesa annuale</TableCell>
+                      <TableCell align="right">Uscite</TableCell>
+                      <TableCell align="right">Entrate</TableCell>
+                      <TableCell align="right">Delta</TableCell>
                       <TableCell>{' '}</TableCell>
                     </TableRow>
                   </TableHead>
@@ -182,6 +186,16 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                           }
                         </TableCell>
                         <TableCell align="right">
+                          {parseFloat(value.totalExpense) > 0 
+                            ? fCurrencyEur(value.totalExpense) 
+                            : (
+                              <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
+                                <span style={{ color: '#999' }}>€0,00*</span>
+                              </Tooltip>
+                            )
+                          }
+                        </TableCell>
+                        <TableCell align="right">
                           {parseFloat(value.totalIncome) > 0 
                             ? fCurrencyEur(value.totalIncome) 
                             : (
@@ -192,14 +206,7 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                           }
                         </TableCell>
                         <TableCell align="right">
-                          {parseFloat(value.totalExpense) > 0 
-                            ? fCurrencyEur(value.totalExpense) 
-                            : (
-                              <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
-                                <span style={{ color: '#999' }}>€0,00*</span>
-                              </Tooltip>
-                            )
-                          }
+                          {fCurrencyEur(parseFloat(value.totalIncome || 0) - parseFloat(value.totalExpense || 0))}
                         </TableCell>
                         <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
                           <Tooltip title="Vedi dettaglio spese" placement="top" arrow>

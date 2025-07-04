@@ -18,7 +18,10 @@ export function useGetFileManager(db) {
       fileManagerError: error,
       fileManagerValidating: isValidating,
       fileManagerEmpty: !isLoading && !data?.data.length,
-      refetch: () => mutate(URL)
+      refetch: () => {
+        // Forza una rivalidazione completa
+        mutate(URL, undefined, { revalidate: true });
+      }
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data?.data, error, isLoading, isValidating]
@@ -52,27 +55,48 @@ export function useGetFileInfo(db, fileUrl) {
 // Funzione per caricare un file
 export async function uploadFile(db, file, categoryId, subjectId = null, detailId = null) {
   try {
+    console.log('=== FRONTEND: Iniziando upload ===');
+    console.log('Parametri ricevuti nella funzione uploadFile:');
+    console.log('  - db:', db);
+    console.log('  - file:', file?.name, 'size:', file?.size);
+    console.log('  - categoryId:', categoryId);
+    console.log('  - subjectId:', subjectId);
+    console.log('  - detailId:', detailId);
+    
     const formData = new FormData();
     formData.append('file', file);
 
+    // Chiama direttamente il backend usando l'endpoint corretto
+    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:3031';
+    const url = `${backendUrl}/v1/file-manager/upload/${db}`;
+
+    const queryParams = {
+      categoryId,
+      subjectId,
+      detailId,
+    };
+    
+    console.log('📡 Inviando richiesta a URL:', url);
+    console.log('📡 Query params inviati:', queryParams);
+
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/file-manager/upload/${db}`,
+      url,
       formData,
       {
-        params: {
-          categoryId,
-          subjectId,
-          detailId,
-        },
+        params: queryParams,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       }
     );
 
+    console.log('✅ Risposta ricevuta dal backend:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Errore durante il caricamento del file:', error);
+    console.error('❌ Errore durante il caricamento del file:', error);
+    if (error.response) {
+      console.error('❌ Dettagli errore response:', error.response.data);
+    }
     throw error;
   }
 }

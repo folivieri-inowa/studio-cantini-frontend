@@ -26,7 +26,7 @@ export default function FileManagerFolderItem({
   const subfolderCount = folder.subfolder?.length || folder.subfolderCount || 0;
 
   // Logging per debug
-  console.log(`Rendering folder: ${folder.name}, files:`, fileCount, ', subfolders:', subfolderCount);
+  // console.log(`Rendering folder: ${folder.name}, files:`, fileCount, ', subfolders:', subfolderCount);
 
   const renderIcon = <Box onClick={onOpen} component="img" src="/assets/icons/files/ic_folder.svg" sx={{ width: 36, height: 36 }} />
 

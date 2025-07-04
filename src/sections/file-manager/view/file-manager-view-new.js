@@ -1,35 +1,27 @@
-// file-manager-view-new.js
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { useBoolean } from 'src/hooks/use-boolean';
-import { useSnackbar } from 'src/components/snackbar';
 import { useSettingsContext } from 'src/components/settings';
-import { useTable, getComparator } from 'src/components/table';
+import { useTable } from 'src/components/table';
 
-import Iconify from 'src/components/iconify';
 import EmptyContent from 'src/components/empty-content';
 import { useGetFileManager } from 'src/api/file-manager';
 import FileManagerGridView from '../file-manager-grid-view-new';
-import FileManagerUploadDialog from '../file-manager-upload-dialog';
 
 // ----------------------------------------------------------------------
 
 export default function FileManagerView() {
-  const { enqueueSnackbar } = useSnackbar();
   const table = useTable({ defaultRowsPerPage: 10 });
   const { db } = useSettingsContext();
   const settings = useSettingsContext();
 
   const { fileManager, fileManagerLoading, refetch } = useGetFileManager(db);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   // Preparazione della struttura per categorie/soggetti/dettagli
   const [categories, setCategories] = useState([]);
@@ -92,7 +84,7 @@ export default function FileManagerView() {
       // Inizializzazione e controllo dei file a livello di categoria
       if (!updatedCategory.files) {
         updatedCategory.files = [];
-        console.log(`Inizializzata la proprietà files per la categoria ${updatedCategory.name}`);
+        // console.log(`Inizializzata la proprietà files per la categoria ${updatedCategory.name}`);
       } else if (updatedCategory.files.length > 0) {
         console.log(`La categoria ${updatedCategory.name} ha ${updatedCategory.files.length} file:`, updatedCategory.files);
         totalFiles += updatedCategory.files.length;
@@ -107,7 +99,7 @@ export default function FileManagerView() {
           // Inizializzazione e controllo dei file a livello di soggetto
           if (!updatedSubject.files) {
             updatedSubject.files = [];
-            console.log(`Inizializzata la proprietà files per il soggetto ${updatedSubject.name}`);
+            // console.log(`Inizializzata la proprietà files per il soggetto ${updatedSubject.name}`);
           } else if (updatedSubject.files.length > 0) {
             console.log(`Il soggetto ${updatedSubject.name} ha ${updatedSubject.files.length} file:`, updatedSubject.files);
             totalFiles += updatedSubject.files.length;
@@ -122,7 +114,7 @@ export default function FileManagerView() {
               // Inizializzazione e controllo dei file a livello di dettaglio
               if (!updatedDetail.files) {
                 updatedDetail.files = [];
-                console.log(`Inizializzata la proprietà files per il dettaglio ${updatedDetail.name}`);
+                // console.log(`Inizializzata la proprietà files per il dettaglio ${updatedDetail.name}`);
               } else if (updatedDetail.files.length > 0) {
                 console.log(`Il dettaglio ${updatedDetail.name} ha ${updatedDetail.files.length} file:`, updatedDetail.files);
                 totalFiles += updatedDetail.files.length;
@@ -147,27 +139,24 @@ export default function FileManagerView() {
     return processedData;
   };
 
+  // Stato per mantenere la posizione di navigazione dopo il refresh
+  const [navigationState, setNavigationState] = useState({
+    viewMode: 'categories',
+    currentFolder: null,
+    navigationHistory: []
+  });
+
   const handleRefresh = () => {
     refetch();
   };
 
-  const handleOpenUploadDialog = useCallback(() => {
-    setUploadDialogOpen(true);
-  }, []);
-
-  const handleCloseUploadDialog = useCallback(() => {
-    setUploadDialogOpen(false);
-  }, []);
-
-  const handleUploadSuccess = useCallback(() => {
-    enqueueSnackbar('File caricato con successo', { variant: 'success' });
-    refetch();
-    handleCloseUploadDialog();
-  }, [enqueueSnackbar, refetch, handleCloseUploadDialog]);
+  // Funzione per aggiornare lo stato di navigazione
+  const handleNavigationStateChange = (newNavigationState) => {
+    setNavigationState(newNavigationState);
+  };
 
   return (
-    <>
-      <Container maxWidth={settings.themeStretch ? false : 'lg'}>
+    <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
           <Typography variant="h4">Archivio File</Typography>
           {/* Pulsante di caricamento rimosso da qui, verrà mostrato solo all'interno delle cartelle */}
@@ -177,44 +166,30 @@ export default function FileManagerView() {
           <Stack alignItems="center" justifyContent="center" sx={{ py: 10 }}>
             <CircularProgress />
           </Stack>
-        ) : !fileManager || fileManager.length === 0 ? (
-          <EmptyContent
-            filled
-            title="Nessun file trovato"
-            description="Inizia caricando il tuo primo file"
-            sx={{ py: 10 }}
-            action={
-              <Button 
-                variant="contained" 
-                startIcon={<Iconify icon="eva:cloud-upload-fill" />}
-                onClick={handleOpenUploadDialog}
-              >
-                Carica File
-              </Button>
-            }
-          />
         ) : (
-          <FileManagerGridView
-            table={table}
-            data={processFileManagerData(fileManager)}
-            onRefresh={handleRefresh}
-            db={db}
-            categories={categories}
-            subjects={subjects}
-            details={details}
-          />
+          <>
+            {!fileManager || fileManager.length === 0 ? (
+              <EmptyContent
+                filled
+                title="Nessun file trovato"
+                description="Naviga in una cartella per caricare i file"
+                sx={{ py: 10 }}
+              />
+            ) : (
+              <FileManagerGridView
+                table={table}
+                data={processFileManagerData(fileManager)}
+                onRefresh={handleRefresh}
+                onNavigationStateChange={handleNavigationStateChange}
+                navigationState={navigationState}
+                db={db}
+                categories={categories}
+                subjects={subjects}
+                details={details}
+              />
+            )}
+          </>
         )}
       </Container>
-
-      <FileManagerUploadDialog
-        open={uploadDialogOpen}
-        onClose={handleCloseUploadDialog}
-        onUploadSuccess={handleUploadSuccess}
-        db={db}
-        categories={categories}
-        subjects={subjects}
-        details={details}
-      />
-    </>
-  );
-}
+    );
+  };

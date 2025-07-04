@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -28,6 +28,7 @@ export default function FileManagerUploadDialog({
   categories = [],
   subjects = {},
   details = {},
+  currentFolder,
 }) {
   const { enqueueSnackbar } = useSnackbar();
   const [files, setFiles] = useState([]);
@@ -37,10 +38,118 @@ export default function FileManagerUploadDialog({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedDetail, setSelectedDetail] = useState('');
+  const [isInitializing, setIsInitializing] = useState(false);
+  
+  // Ref per mantenere i valori stabili anche durante i re-render
+  const uploadParamsRef = useRef({
+    categoryId: '',
+    subjectId: '',
+    detailId: ''
+  });
 
   // Liste filtrate in base alle selezioni
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [availableDetails, setAvailableDetails] = useState([]);
+
+  useEffect(() => {
+    if (open && currentFolder) {
+      console.log('=== UPLOAD DIALOG DEBUG ===');
+      console.log('currentFolder completo:', JSON.stringify(currentFolder, null, 2));
+      console.log('Proprietà del currentFolder:');
+      console.log('- id:', currentFolder.id);
+      console.log('- name:', currentFolder.name);
+      console.log('- parentId:', currentFolder.parentId);
+      console.log('- categoryId:', currentFolder.categoryId);
+      console.log('- subjectId:', currentFolder.subjectId);
+      console.log('- categoryName:', currentFolder.categoryName);
+      console.log('- subjectName:', currentFolder.subjectName);
+      console.log('- type:', currentFolder.type);
+      
+      // Imposta flag di inizializzazione
+      setIsInitializing(true);
+      
+      // Reset delle selezioni
+      setSelectedCategory('');
+      setSelectedSubject('');
+      setSelectedDetail('');
+      
+      // Determina i valori da impostare
+      let categoryToSet = '';
+      let subjectToSet = '';
+      let detailToSet = '';
+      
+      // Se il currentFolder ha informazioni sulla gerarchia, usale
+      if (currentFolder.categoryId && currentFolder.subjectId) {
+        // Siamo in un dettaglio
+        categoryToSet = currentFolder.categoryId;
+        subjectToSet = currentFolder.subjectId;
+        detailToSet = currentFolder.id;
+        console.log('🔵 RICONOSCIUTO COME DETTAGLIO');
+        console.log('Categoria:', currentFolder.categoryName, '(ID:', currentFolder.categoryId, ')');
+        console.log('Soggetto:', currentFolder.subjectName, '(ID:', currentFolder.subjectId, ')');
+        console.log('Dettaglio:', currentFolder.name, '(ID:', currentFolder.id, ')');
+      } else if (currentFolder.categoryId && !currentFolder.subjectId) {
+        // Siamo in un soggetto
+        categoryToSet = currentFolder.categoryId;
+        subjectToSet = currentFolder.id;
+        detailToSet = '';
+        console.log('🟡 RICONOSCIUTO COME SOGGETTO');
+        console.log('Categoria:', currentFolder.categoryName, '(ID:', currentFolder.categoryId, ')');
+        console.log('Soggetto:', currentFolder.name, '(ID:', currentFolder.id, ')');
+      } else if (currentFolder.parentId && !currentFolder.categoryId) {
+        // Siamo in un soggetto che ha solo parentId (struttura alternativa)
+        categoryToSet = currentFolder.parentId;
+        subjectToSet = currentFolder.id;
+        detailToSet = '';
+        console.log('🟡 RICONOSCIUTO COME SOGGETTO (con parentId)');
+        console.log('Categoria (parentId):', currentFolder.parentId);
+        console.log('Soggetto:', currentFolder.name, '(ID:', currentFolder.id, ')');
+      } else if (!currentFolder.parentId && !currentFolder.categoryId) {
+        // Siamo in una categoria
+        categoryToSet = currentFolder.id;
+        subjectToSet = '';
+        detailToSet = '';
+        console.log('🟢 RICONOSCIUTO COME CATEGORIA');
+        console.log('Categoria:', currentFolder.name, '(ID:', currentFolder.id, ')');
+      } else {
+        console.log('❌ SITUAZIONE NON RICONOSCIUTA');
+        console.log('currentFolder.categoryId:', currentFolder.categoryId);
+        console.log('currentFolder.subjectId:', currentFolder.subjectId);
+        console.log('currentFolder.parentId:', currentFolder.parentId);
+        console.log('currentFolder.name:', currentFolder.name);
+      }
+      
+      console.log('🎯 Valori che verranno impostati:');
+      console.log('  - categoryToSet:', categoryToSet);
+      console.log('  - subjectToSet:', subjectToSet);
+      console.log('  - detailToSet:', detailToSet);
+      
+      // Salva i valori nella ref che rimane stabile
+      uploadParamsRef.current = {
+        categoryId: categoryToSet,
+        subjectId: subjectToSet || null,
+        detailId: detailToSet || null
+      };
+      
+      console.log('💾 Valori salvati nella ref:', uploadParamsRef.current);
+      
+      // Imposta i valori con un timeout per assicurarsi che gli altri useEffect abbiano terminato
+      setTimeout(() => {
+        console.log('🔧 Impostando i valori finali...');
+        setSelectedCategory(categoryToSet);
+        setSelectedSubject(subjectToSet);
+        setSelectedDetail(detailToSet);
+        setIsInitializing(false);
+        
+        console.log('✅ Valori impostati:');
+        console.log('  - selectedCategory:', categoryToSet);
+        console.log('  - selectedSubject:', subjectToSet);
+        console.log('  - selectedDetail:', detailToSet);
+      }, 200);
+      
+      console.log('=== FINE DEBUG ===');
+    }
+  }, [open, currentFolder, categories, subjects, details]);
 
   // Reset all when dialog is closed
   useEffect(() => {
@@ -61,10 +170,12 @@ export default function FileManagerUploadDialog({
     } else {
       setAvailableSubjects([]);
     }
-    // Reset subject and detail when category changes
-    setSelectedSubject('');
-    setSelectedDetail('');
-  }, [selectedCategory, subjects]);
+    // Reset subject and detail when category changes, ma NON durante l'inizializzazione
+    if (!isInitializing) {
+      setSelectedSubject('');
+      setSelectedDetail('');
+    }
+  }, [selectedCategory, subjects, isInitializing]);
 
   // Aggiorna i dettagli disponibili quando cambia il soggetto
   useEffect(() => {
@@ -73,9 +184,11 @@ export default function FileManagerUploadDialog({
     } else {
       setAvailableDetails([]);
     }
-    // Reset detail when subject changes
-    setSelectedDetail('');
-  }, [selectedSubject, details]);
+    // Reset detail when subject changes, ma NON durante l'inizializzazione
+    if (!isInitializing) {
+      setSelectedDetail('');
+    }
+  }, [selectedSubject, details, isInitializing]);
 
   const handleDrop = useCallback(
     (acceptedFiles) => {
@@ -91,8 +204,27 @@ export default function FileManagerUploadDialog({
   );
 
   const handleUpload = async () => {
-    if (!selectedCategory) {
-      enqueueSnackbar('Seleziona una categoria prima di caricare i file', { variant: 'warning' });
+    console.log('=== AVVIO UPLOAD ===');
+    console.log('selectedCategory (state):', selectedCategory);
+    console.log('selectedSubject (state):', selectedSubject);
+    console.log('selectedDetail (state):', selectedDetail);
+    console.log('🔍 Verifica valori prima dell\'upload:');
+    console.log('  - selectedCategory è vuoto?', !selectedCategory);
+    console.log('  - selectedSubject è vuoto?', !selectedSubject);
+    console.log('  - selectedDetail è vuoto?', !selectedDetail);
+    
+    console.log('💾 Valori dalla ref:', uploadParamsRef.current);
+    
+    // Usa i valori dalla ref che sono stabili
+    const { categoryId, subjectId, detailId } = uploadParamsRef.current;
+    
+    console.log('🎯 Valori finali per upload:');
+    console.log('  - categoryId:', categoryId);
+    console.log('  - subjectId:', subjectId);
+    console.log('  - detailId:', detailId);
+    
+    if (!categoryId) {
+      enqueueSnackbar('Errore nel riconoscimento della posizione corrente', { variant: 'error' });
       return;
     }
 
@@ -104,15 +236,17 @@ export default function FileManagerUploadDialog({
     setLoading(true);
     
     try {
-      const uploadPromises = files.map(file => 
-        uploadFile(
+      const uploadPromises = files.map(file => {
+        console.log('Caricando file:', file.name);
+        console.log('Con parametri dalla ref - Category:', categoryId, 'Subject:', subjectId || 'null', 'Detail:', detailId || 'null');
+        return uploadFile(
           db, 
           file, 
-          selectedCategory,
-          selectedSubject || null, 
-          selectedDetail || null
-        )
-      );
+          categoryId,
+          subjectId, 
+          detailId
+        );
+      });
       
       await Promise.all(uploadPromises);
       
@@ -153,6 +287,7 @@ export default function FileManagerUploadDialog({
             label="Categoria"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
+            disabled={!!currentFolder}
           >
             {categories.map((category) => (
               <MenuItem key={category.id} value={category.id}>
@@ -168,7 +303,7 @@ export default function FileManagerUploadDialog({
               label="Soggetto"
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              disabled={availableSubjects.length === 0}
+              disabled={!!currentFolder || availableSubjects.length === 0}
             >
               {availableSubjects.map((subject) => (
                 <MenuItem key={subject.id} value={subject.id}>
@@ -185,7 +320,7 @@ export default function FileManagerUploadDialog({
               label="Dettaglio"
               value={selectedDetail}
               onChange={(e) => setSelectedDetail(e.target.value)}
-              disabled={availableDetails.length === 0}
+              disabled={!!currentFolder || availableDetails.length === 0}
             >
               {availableDetails.map((detail) => (
                 <MenuItem key={detail.id} value={detail.id}>
@@ -239,4 +374,5 @@ FileManagerUploadDialog.propTypes = {
   categories: PropTypes.array,
   subjects: PropTypes.object,
   details: PropTypes.object,
+  currentFolder: PropTypes.object,
 };

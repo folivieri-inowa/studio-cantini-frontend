@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -26,11 +26,18 @@ export default function FileManagerGridView({
   dataFiltered = [],
   onDeleteItem,
   onRefresh,
+  onNavigationStateChange,
+  navigationState,
   db,
   categories = [],
   subjects = {},
   details = {},
 }) {
+  console.log('🔄 FileManagerGridView renderizzato');
+  console.log('📊 Data ricevuta:', data);
+  console.log('🗂️  Categories:', categories);
+  console.log('👥 Subjects:', subjects);
+  console.log('📋 Details:', details);
   const { enqueueSnackbar } = useSnackbar();
   const { selected, onSelectRow: onSelectItem } = table;
 
@@ -45,6 +52,63 @@ export default function FileManagerGridView({
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState('categories'); // 'categories', 'subjects', 'details'
   const [navigationHistory, setNavigationHistory] = useState([]); // Cronologia di navigazione
+
+  // Ripristina lo stato di navigazione se presente
+  useEffect(() => {
+    if (navigationState && navigationState.viewMode) {
+      setViewMode(navigationState.viewMode);
+      setCurrentFolder(navigationState.currentFolder);
+      setNavigationHistory(navigationState.navigationHistory);
+    }
+  }, [navigationState]);
+
+  // Funzione per aggiornare currentFolder con i nuovi dati
+  const updateCurrentFolderWithNewData = (newData, folderToUpdate) => {
+    if (!newData || !folderToUpdate || !folderToUpdate.id) return folderToUpdate;
+    
+    const findFolderInData = (searchData, targetId) => {
+      const found = searchData.find(item => item.id === targetId);
+      if (found) {
+        return found;
+      }
+      
+      // Cerca ricorsivamente nelle sottocartelle
+      const result = searchData.find(item => {
+        if (item.subfolder && item.subfolder.length > 0) {
+          return findFolderInData(item.subfolder, targetId);
+        }
+        return null;
+      });
+      
+      return result ? findFolderInData(result.subfolder, targetId) : null;
+    };
+
+    const updatedFolder = findFolderInData(newData, folderToUpdate.id);
+    if (updatedFolder) {
+      // Mantieni le informazioni di gerarchia se presenti
+      const mergedFolder = {
+        ...updatedFolder,
+        categoryId: folderToUpdate.categoryId,
+        categoryName: folderToUpdate.categoryName,
+        subjectId: folderToUpdate.subjectId,
+        subjectName: folderToUpdate.subjectName,
+        parentId: folderToUpdate.parentId
+      };
+      console.log('🔄 Folder aggiornato con nuovi dati:', mergedFolder);
+      return mergedFolder;
+    }
+    return folderToUpdate;
+  };
+
+  // Quando i dati cambiano, aggiorna currentFolder se presente
+  useEffect(() => {
+    if (data && data.length > 0 && currentFolder) {
+      const updatedFolder = updateCurrentFolderWithNewData(data, currentFolder);
+      if (updatedFolder !== currentFolder) {
+        setCurrentFolder(updatedFolder);
+      }
+    }
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debug per verificare la presenza di file e lo stato di navigazione
   console.log('Data ricevuta:', data);
@@ -69,16 +133,17 @@ export default function FileManagerGridView({
     console.log('File:', folder.files);
     
     // Salva lo stato corrente nella cronologia
-    setNavigationHistory([...navigationHistory, { 
+    const newNavigationHistory = [...navigationHistory, { 
       viewMode, 
       folder: currentFolder 
-    }]);
+    }];
+    setNavigationHistory(newNavigationHistory);
     
     // Aggiorna lo stato, assicurandosi che la cartella abbia la proprietà files inizializzata
     const updatedFolder = { ...folder };
     if (!updatedFolder.files) {
       updatedFolder.files = [];
-      console.log(`Inizializzata la proprietà files per la cartella ${updatedFolder.name}`);
+      // console.log(`Inizializzata la proprietà files per la cartella ${updatedFolder.name}`);
     }
     
     // Assicurati che ogni sottocartella abbia la proprietà files
@@ -87,12 +152,29 @@ export default function FileManagerGridView({
         if (!sub.files) {
           return { ...sub, files: [] };
         }
-        return sub;
+        // Arricchisci le sottocartelle con le informazioni sulla categoria padre
+        return { 
+          ...sub, 
+          categoryId: updatedFolder.id,
+          categoryName: updatedFolder.name,
+          files: sub.files || []
+        };
       });
     }
     
+    console.log('Cartella aggiornata con informazioni di gerarchia:', updatedFolder);
+    
     setCurrentFolder(updatedFolder);
     setViewMode('subjects');
+
+    // Aggiorna lo stato nel componente parent
+    if (onNavigationStateChange) {
+      onNavigationStateChange({
+        viewMode: 'subjects',
+        currentFolder: updatedFolder,
+        navigationHistory: newNavigationHistory
+      });
+    }
   };
 
   const handleOpenSubfolder = (subfolder) => {
@@ -107,16 +189,17 @@ export default function FileManagerGridView({
     console.log('File della sottocartella:', subfolder.files);
     
     // Salva lo stato corrente nella cronologia
-    setNavigationHistory([...navigationHistory, { 
+    const newNavigationHistory = [...navigationHistory, { 
       viewMode, 
       folder: currentFolder 
-    }]);
+    }];
+    setNavigationHistory(newNavigationHistory);
     
     // Aggiorna lo stato, assicurandosi che la sottocartella abbia la proprietà files inizializzata
     const updatedSubfolder = { ...subfolder };
     if (!updatedSubfolder.files) {
       updatedSubfolder.files = [];
-      console.log(`Inizializzata la proprietà files per la sottocartella ${updatedSubfolder.name}`);
+      // console.log(`Inizializzata la proprietà files per la sottocartella ${updatedSubfolder.name}`);
     }
     
     // Assicurati che ogni sottocartella abbia la proprietà files
@@ -129,41 +212,101 @@ export default function FileManagerGridView({
       });
     }
     
+    let newViewMode = viewMode;
+    
+    // Arricchisci il subfolder con le informazioni sulla gerarchia
+    // Se siamo in una categoria e stiamo entrando in un soggetto
+    if (viewMode === 'subjects' && currentFolder && !currentFolder.parentId) {
+      // Siamo in una categoria, entrando in un soggetto
+      updatedSubfolder.categoryId = currentFolder.id;
+      updatedSubfolder.categoryName = currentFolder.name;
+      updatedSubfolder.parentId = currentFolder.id; // Assicurati che abbia un parentId
+      console.log(`ENTRANDO IN SOGGETTO - categoryId: ${updatedSubfolder.categoryId}, categoryName: ${updatedSubfolder.categoryName}`);
+      console.log('Subfolder aggiornato:', updatedSubfolder);
+      // Stiamo entrando in un soggetto
+      newViewMode = 'subject-details';
+      setViewMode('subject-details');
+    }
+    // Se siamo in un soggetto e stiamo entrando in un dettaglio
+    else if (viewMode === 'subject-details' && currentFolder && currentFolder.categoryId) {
+      // Siamo in un soggetto, entrando in un dettaglio
+      updatedSubfolder.categoryId = currentFolder.categoryId;
+      updatedSubfolder.categoryName = currentFolder.categoryName;
+      updatedSubfolder.subjectId = currentFolder.id;
+      updatedSubfolder.subjectName = currentFolder.name;
+      updatedSubfolder.parentId = currentFolder.id; // Il parent è il soggetto
+      console.log(`ENTRANDO IN DETTAGLIO - categoryId: ${updatedSubfolder.categoryId}, subjectId: ${updatedSubfolder.subjectId}, detailId: ${updatedSubfolder.id}`);
+      console.log('Subfolder aggiornato:', updatedSubfolder);
+      // Stiamo entrando in un dettaglio
+      newViewMode = 'details';
+      setViewMode('details');
+    }
+    else {
+      console.log('Situazione non riconosciuta in handleOpenSubfolder');
+      console.log('viewMode:', viewMode);
+      console.log('currentFolder:', currentFolder);
+    }
+    
     setCurrentFolder(updatedSubfolder);
-    setViewMode('details');
+
+    // Aggiorna lo stato nel componente parent
+    if (onNavigationStateChange) {
+      onNavigationStateChange({
+        viewMode: newViewMode,
+        currentFolder: updatedSubfolder,
+        navigationHistory: newNavigationHistory
+      });
+    }
   };
 
   const handleBack = () => {
     console.log('Esecuzione handleBack, storia navigazione:', navigationHistory);
     
+    let newViewMode = viewMode;
+    let newCurrentFolder = currentFolder;
+    let newNavigationHistory = [...navigationHistory];
+    
     // Se c'è una cronologia, torna indietro all'ultimo stato
     if (navigationHistory.length > 0) {
       const lastState = navigationHistory[navigationHistory.length - 1];
       console.log('Tornando allo stato precedente:', lastState);
-      setViewMode(lastState.viewMode);
-      setCurrentFolder(lastState.folder);
+      newViewMode = lastState.viewMode;
+      newCurrentFolder = lastState.folder;
       // Rimuovi l'ultimo stato dalla cronologia
-      setNavigationHistory(navigationHistory.slice(0, -1));
+      newNavigationHistory = navigationHistory.slice(0, -1);
     } else {
       // Comportamento di fallback se non c'è cronologia
       console.log('Nessuna cronologia disponibile, usando il comportamento di fallback');
       if (viewMode === 'details') {
-        setViewMode('subjects');
+        newViewMode = 'subjects';
         // Cerca il parent folder in base all'ID
         const parentFolder = data.find(folder => folder.id === currentFolder.parentId);
         console.log('Ricerca parent folder:', parentFolder);
         if (parentFolder) {
-          setCurrentFolder(parentFolder);
+          newCurrentFolder = parentFolder;
         } else {
           console.log('Parent folder non trovato, tornando alle categorie');
-          setViewMode('categories');
-          setCurrentFolder(null);
+          newViewMode = 'categories';
+          newCurrentFolder = null;
         }
       } else if (viewMode === 'subjects') {
         console.log('Tornando alle categorie dalla sezione subjects');
-        setViewMode('categories');
-        setCurrentFolder(null);
+        newViewMode = 'categories';
+        newCurrentFolder = null;
       }
+    }
+    
+    setViewMode(newViewMode);
+    setCurrentFolder(newCurrentFolder);
+    setNavigationHistory(newNavigationHistory);
+
+    // Aggiorna lo stato nel componente parent
+    if (onNavigationStateChange) {
+      onNavigationStateChange({
+        viewMode: newViewMode,
+        currentFolder: newCurrentFolder,
+        navigationHistory: newNavigationHistory
+      });
     }
   };
 
@@ -177,6 +320,10 @@ export default function FileManagerGridView({
   };
 
   const handleOpenUploadDialog = () => {
+    console.log('🔵 GRID-VIEW: handleOpenUploadDialog chiamato');
+    console.log('=== APERTURA UPLOAD DIALOG ===');
+    console.log('currentFolder passato al dialog:', JSON.stringify(currentFolder, null, 2));
+    console.log('viewMode corrente:', viewMode);
     setUploadDialogOpen(true);
   };
 
@@ -186,9 +333,13 @@ export default function FileManagerGridView({
 
   const handleUploadSuccess = () => {
     enqueueSnackbar('File caricato con successo', { variant: 'success' });
+    // Invece di fare un refresh completo, rimani nella stessa posizione
+    // e aggiorna solo i dati necessari
     if (onRefresh) {
       onRefresh();
     }
+    // Chiudi il dialog di upload
+    setUploadDialogOpen(false);
   };
 
   const handleDeleteFile = async (file) => {
@@ -267,57 +418,104 @@ export default function FileManagerGridView({
               </Typography>
 
               <Box sx={{ flexGrow: 1 }} />
+
             </Stack>
 
-            {/* Sezione soggetti - modificata per essere mostrata sempre */}
-            <>
-              <FileManagerPanel
-                title="Soggetti"
-                subTitle={currentFolder?.subfolder?.length > 0 ? 
-                  `${currentFolder.subfolder.length} Elementi` : 
-                  'Nessun soggetto disponibile'}
-                collapse={false}
-              />
+            {/* Sezione soggetti - solo lista soggetti, nessun file o pulsante carica */}
+            {currentFolder?.subfolder && currentFolder.subfolder.length > 0 && (
+              <>
+                <FileManagerPanel
+                  title="Soggetti"
+                  subTitle={`${currentFolder.subfolder.length} Elementi`}
+                  collapse={false}
+                />
 
-              <Box
-                gap={3}
-                display="grid"
-                gridTemplateColumns={{
-                  xs: 'repeat(1, 1fr)',
-                  sm: 'repeat(2, 1fr)',
-                  md: 'repeat(3, 1fr)',
-                  lg: 'repeat(4, 1fr)',
-                }}
-                sx={{ mb: 3 }}
+                <Box
+                  gap={3}
+                  display="grid"
+                  gridTemplateColumns={{
+                    xs: 'repeat(1, 1fr)',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: 'repeat(4, 1fr)',
+                  }}
+                  sx={{ mb: 3 }}
+                >
+                  {currentFolder.subfolder.map((subfolder) => (
+                    <FileManagerSubfolderItem 
+                      key={subfolder.id} 
+                      subfolder={subfolder}
+                      sx={{ maxWidth: 'auto' }} 
+                      onOpen={() => handleOpenSubfolder(subfolder)}
+                    />
+                  ))}
+                </Box>
+              </>
+            )}
+          </>
+        );
+      
+      case 'subject-details':
+        return (
+          <>
+            <Stack direction="row" alignItems="center" sx={{ mb: 3 }}>
+              <Button
+                startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+                onClick={handleBack}
               >
-                {currentFolder?.subfolder && currentFolder.subfolder.length > 0 ? (
-                  <>
-                    {currentFolder.subfolder.map((subfolder) => (
-                      <FileManagerSubfolderItem 
-                        key={subfolder.id} 
-                        subfolder={subfolder}
-                        sx={{ maxWidth: 'auto' }} 
-                        onOpen={() => handleOpenSubfolder(subfolder)}
-                      />
-                    ))}
-                    
-                    {/* Aggiungi una cartella vuota in questa sezione */}
-                    {/* Bottone "Nuovo soggetto" rimosso */}
-                  </>
-                ) : (
-                  <FileManagerEmptyFolder 
-                    title="Nessun soggetto" 
-                    subtitle="Non ci sono soggetti disponibili" 
-                    sx={{ maxWidth: 'auto', gridColumn: 'span 4' }}
-                  />
-                )}
-              </Box>
-            </>
+                Indietro
+              </Button>
+              
+              <Typography variant="h6" sx={{ ml: 2 }}>
+                {currentFolder?.name}
+              </Typography>
 
-            {/* Sezione file - mostrata sempre con migliori indicazioni */}
+              <Box sx={{ flexGrow: 1 }} />
+
+              <Button
+                variant="contained"
+                startIcon={<Iconify icon="eva:cloud-upload-fill" />}
+                onClick={handleOpenUploadDialog}
+              >
+                Carica File
+              </Button>
+            </Stack>
+
+            {/* Sezione per le sottocartelle (Dettagli) se esistono */}
+            {currentFolder?.subfolder && currentFolder.subfolder.length > 0 && (
+              <>
+                <FileManagerPanel
+                  title="Dettagli"
+                  subTitle={`${currentFolder.subfolder.length} Elementi`}
+                  collapse={false}
+                />
+                <Box
+                  gap={3}
+                  display="grid"
+                  gridTemplateColumns={{
+                    xs: 'repeat(1, 1fr)',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: 'repeat(4, 1fr)',
+                  }}
+                  sx={{ mb: 3 }}
+                >
+                  {currentFolder.subfolder.map((subfolder) => (
+                    <FileManagerSubfolderItem
+                      key={subfolder.id}
+                      subfolder={subfolder}
+                      sx={{ maxWidth: 'auto' }}
+                      onOpen={() => handleOpenSubfolder(subfolder)}
+                    />
+                  ))}
+                </Box>
+              </>
+            )}
+
+            {/* Sezione File del Soggetto */}
             <>
               <FileManagerPanel
-                title="File"
+                title="File del Soggetto"
                 subTitle={`${currentFolder?.files?.length || 0} File${currentFolder?.files?.length === 1 ? '' : 's'}`}
                 collapse={false}
               />
@@ -342,11 +540,9 @@ export default function FileManagerGridView({
                     />
                   ))
                 ) : (
-                  <>
-                    <Typography variant="body1" sx={{ gridColumn: 'span 4', textAlign: 'center', color: 'text.disabled', my: 2 }}>
-                      Nessun file in questa cartella
-                    </Typography>
-                  </>
+                  <Typography variant="body1" sx={{ gridColumn: 'span 4', textAlign: 'center', color: 'text.disabled', my: 2 }}>
+                    Nessun file in questo soggetto
+                  </Typography>
                 )}
               </Box>
             </>
@@ -369,16 +565,24 @@ export default function FileManagerGridView({
               </Typography>
 
               <Box sx={{ flexGrow: 1 }} />
+
+              <Button
+                variant="contained"
+                startIcon={<Iconify icon="eva:cloud-upload-fill" />}
+                onClick={handleOpenUploadDialog}
+              >
+                Carica File
+              </Button>
             </Stack>
 
-            {currentFolder?.subfolder?.length > 0 && (
+            {/* Sezione per le sottocartelle (Dettagli) */}
+            {currentFolder?.subfolder && currentFolder.subfolder.length > 0 && (
               <>
                 <FileManagerPanel
                   title="Dettagli"
-                  subTitle={`${currentFolder?.subfolder?.length || 0} Elementi`}
+                  subTitle={`${currentFolder.subfolder.length} Elementi`}
                   collapse={false}
                 />
-
                 <Box
                   gap={3}
                   display="grid"
@@ -390,30 +594,22 @@ export default function FileManagerGridView({
                   }}
                   sx={{ mb: 3 }}
                 >
-                  {currentFolder?.subfolder?.map((detail) => (
-                    <FileManagerSubfolderItem 
-                      key={detail.id} 
-                      subfolder={detail}
-                      sx={{ maxWidth: 'auto' }} 
-                      onOpen={() => {
-                        // Aggiungi alla cronologia prima di navigare
-                        setNavigationHistory([...navigationHistory, { 
-                          viewMode, 
-                          folder: currentFolder 
-                        }]);
-                        setCurrentFolder(detail);
-                      }}
+                  {currentFolder.subfolder.map((subfolder) => (
+                    <FileManagerSubfolderItem
+                      key={subfolder.id}
+                      subfolder={subfolder}
+                      sx={{ maxWidth: 'auto' }}
+                      onOpen={() => handleOpenSubfolder(subfolder)}
                     />
                   ))}
-                  
                 </Box>
               </>
             )}
 
-            {/* Sezione file - mostrata sempre con migliori indicazioni */}
+            {/* Aggiunta la sezione File qui */}
             <>
               <FileManagerPanel
-                title="File"
+                title="File del Dettaglio"
                 subTitle={`${currentFolder?.files?.length || 0} File${currentFolder?.files?.length === 1 ? '' : 's'}`}
                 collapse={false}
               />
@@ -438,11 +634,9 @@ export default function FileManagerGridView({
                     />
                   ))
                 ) : (
-                  <>
-                    <Typography variant="body1" sx={{ gridColumn: 'span 4', textAlign: 'center', color: 'text.disabled', my: 2 }}>
-                      Nessun file in questa cartella
-                    </Typography>
-                  </>
+                  <Typography variant="body1" sx={{ gridColumn: 'span 4', textAlign: 'center', color: 'text.disabled', my: 2 }}>
+                    Nessun file in questo dettaglio
+                  </Typography>
                 )}
               </Box>
             </>
@@ -474,6 +668,7 @@ export default function FileManagerGridView({
         categories={categories}
         subjects={subjects}
         details={details}
+        currentFolder={currentFolder}
       />
     </Box>
   );
@@ -484,6 +679,12 @@ FileManagerGridView.propTypes = {
   dataFiltered: PropTypes.array,
   onDeleteItem: PropTypes.func,
   onRefresh: PropTypes.func,
+  onNavigationStateChange: PropTypes.func,
+  navigationState: PropTypes.shape({
+    viewMode: PropTypes.string,
+    currentFolder: PropTypes.object,
+    navigationHistory: PropTypes.array,
+  }),
   table: PropTypes.object,
   db: PropTypes.string,
   categories: PropTypes.array,

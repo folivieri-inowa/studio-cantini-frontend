@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -12,10 +12,11 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { useSnackbar } from 'src/components/snackbar';
+import { uploadFile } from 'src/api/file-manager';
+
 import Iconify from 'src/components/iconify';
 import { Upload } from 'src/components/upload';
-import { uploadFile } from 'src/api/file-manager';
+import { useSnackbar } from 'src/components/snackbar';
 
 // ----------------------------------------------------------------------
 

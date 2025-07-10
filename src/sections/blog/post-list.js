@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types';
 
+import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Grid from '@mui/material/Grid2';
 
 import Iconify from 'src/components/iconify';
 

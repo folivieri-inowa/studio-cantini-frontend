@@ -13,12 +13,12 @@ import { useBoolean } from 'src/hooks/use-boolean';
 
 import FormProvider from 'src/components/hook-form';
 
-import PrimaNotaNewEditDetails from './prima-nota-new-edit-details';
 import axios from '../../utils/axios';
 import { paths } from '../../routes/paths';
+import { BACKEND_API } from '../../config-global';
 import { useSnackbar } from '../../components/snackbar';
 import { useSettingsContext } from '../../components/settings';
-import { BACKEND_API } from '../../config-global';
+import PrimaNotaNewEditDetails from './prima-nota-new-edit-details';
 
 // ----------------------------------------------------------------------
 

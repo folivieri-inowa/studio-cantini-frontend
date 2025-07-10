@@ -3,19 +3,18 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
+import Divider from '@mui/material/Divider';
+import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
-import { useGetReportCategory } from '../../../../api/report';
-import { useSettingsContext } from '../../../../components/settings';
-import { useBoolean } from '../../../../hooks/use-boolean';
-import { capitalizeCase } from '../../../../utils/change-case';
-import axios, { endpoints } from '../../../../utils/axios';
-
 import DetailsQuickView from '../details-quick-view';
+import { useBoolean } from '../../../../hooks/use-boolean';
+import axios, { endpoints } from '../../../../utils/axios';
+import { useGetReportCategory } from '../../../../api/report';
+import { capitalizeCase } from '../../../../utils/change-case';
+import { useSettingsContext } from '../../../../components/settings';
 import CategoryAverageExpenseSubject from '../category-average-expense-subject';
 import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
 import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';

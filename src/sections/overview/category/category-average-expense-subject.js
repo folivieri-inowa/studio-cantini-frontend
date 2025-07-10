@@ -1,31 +1,34 @@
-import PropTypes from 'prop-types';
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
+import Tooltip from '@mui/material/Tooltip';
 import TableRow from '@mui/material/TableRow';
+import Collapse from '@mui/material/Collapse';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
 import CardHeader from '@mui/material/CardHeader';
-import TableContainer from '@mui/material/TableContainer';
-import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { TableHeadCustom } from 'src/components/table';
+import TableContainer from '@mui/material/TableContainer';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
 import { fCurrencyEur } from 'src/utils/format-number';
 import { capitalizeCase } from 'src/utils/change-case';
+
 import Scrollbar from 'src/components/scrollbar';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import Link from '@mui/material/Link';
-import TableHead from '@mui/material/TableHead';
-import Tooltip from '@mui/material/Tooltip';
+import { TableHeadCustom } from 'src/components/table';
+
 import Iconify from '../../../components/iconify';
 import { useBoolean } from '../../../hooks/use-boolean';
-import DetailsTransactionsQuickView from './details-transactions-quick-view';
-import { useSettingsContext } from '../../../components/settings';
 import DetailsChartQuickView from './details-chart-quick-view';
+import { useSettingsContext } from '../../../components/settings';
+import DetailsTransactionsQuickView from './details-transactions-quick-view';
 
 export default function CategoryAverageExpenseSubject({ title, subheader, tableData, tableLabels, onViewRow, ...other }) {
   return (

@@ -18,10 +18,9 @@ import { RHFSelect, RHFUpload, RHFTextField, RHFAutocomplete } from 'src/compone
 
 import { useGetOwners } from '../../api/owner';
 import Iconify from '../../components/iconify';
-import { useGetCategories } from '../../api/category';
-import { useSettingsContext } from '../../components/settings';
 import axios, { endpoints } from '../../utils/axios';
 import { PostDetailsSkeleton } from '../blog/post-skeleton';
+import { useSettingsContext } from '../../components/settings';
 
 // ----------------------------------------------------------------------
 

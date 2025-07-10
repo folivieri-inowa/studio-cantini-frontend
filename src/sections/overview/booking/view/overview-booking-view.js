@@ -1,8 +1,8 @@
 'use client';
 
+import Grid from '@mui/material/Grid2';
 import { useTheme } from '@mui/material/styles';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid2';
 
 import { _bookings, _bookingNew, _bookingReview, _bookingsOverview } from 'src/_mock';
 import {

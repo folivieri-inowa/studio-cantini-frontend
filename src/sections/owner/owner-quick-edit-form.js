@@ -1,7 +1,7 @@
 import * as Yup from 'yup';
 import PropTypes from 'prop-types';
-import { useForm, Controller } from 'react-hook-form';
 import { useMemo, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Stack from '@mui/material/Stack';
@@ -13,9 +13,10 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
-import { useSnackbar } from 'src/components/snackbar';
 import { useBoolean } from 'src/hooks/use-boolean';
-import FormProvider, { RHFTextField, RHFSwitch } from 'src/components/hook-form';
+
+import { useSnackbar } from 'src/components/snackbar';
+import FormProvider, { RHFSwitch, RHFTextField } from 'src/components/hook-form';
 
 import axios from '../../utils/axios';
 
@@ -90,7 +91,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
         cc: data.cc,
         iban: data.iban,
         initialBalance: data.initialBalance,
-        balanceDate: balanceDate,
+        balanceDate,
         isCreditCard: data.isCreditCard,
       });
 
@@ -100,7 +101,7 @@ export default function OwnerQuickEditForm({ currentOwner, open, onClose, onUpda
         cc: data.cc,
         iban: data.iban,
         initialBalance: data.initialBalance,
-        balanceDate: balanceDate,
+        balanceDate,
         isCreditCard: data.isCreditCard,
       });
 

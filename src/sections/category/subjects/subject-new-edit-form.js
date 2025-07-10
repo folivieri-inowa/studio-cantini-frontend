@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
 
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -12,7 +13,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 
-import { useEffect, useState } from 'react';
 import axios, { endpoints } from '../../../utils/axios';
 import { useSnackbar } from '../../../components/snackbar';
 import SubjectTableRow from '../../subject/subject-table-row';

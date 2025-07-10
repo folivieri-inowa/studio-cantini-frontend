@@ -26,10 +26,10 @@ import EmptyContent from 'src/components/empty-content';
 import { useSettingsContext } from 'src/components/settings';
 
 import ProductList from '../product-list';
-import PrimaNotaSort from '../prima-nota-sort';
 import CartIcon from '../common/cart-icon';
-import PrimaNotaSearch from '../prima-nota-search';
+import PrimaNotaSort from '../prima-nota-sort';
 import ProductFilters from '../product-filters';
+import PrimaNotaSearch from '../prima-nota-search';
 import { useCheckoutContext } from '../../checkout/context';
 import ProductFiltersResult from '../product-filters-result';
 

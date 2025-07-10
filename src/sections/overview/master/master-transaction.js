@@ -1,15 +1,14 @@
 import PropTypes from 'prop-types';
 
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
+import Alert from '@mui/material/Alert';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import CardHeader from '@mui/material/CardHeader';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import TableContainer from '@mui/material/TableContainer';
 
@@ -19,6 +18,14 @@ import { TableHeadCustom } from '../../../components/table';
 import { fCurrencyEur } from '../../../utils/format-number';
 
 // ----------------------------------------------------------------------
+
+// Funzione helper per gestire valori null/undefined e mostrare sempre 0
+const formatCurrencyWithZero = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return fCurrencyEur(0);
+  }
+  return fCurrencyEur(value);
+};
 
 export default function MasterTransaction({
   title,
@@ -39,7 +46,7 @@ export default function MasterTransaction({
         <Box sx={{ p: 3 }}>
           <Alert severity="info" sx={{ mb: 2 }}>
             <AlertTitle>Nessun dato disponibile</AlertTitle>
-            Non ci sono dati disponibili per il conto e l'anno selezionati. Prova a selezionare un altro anno o un altro conto.
+            Non ci sono dati disponibili per il conto e l&apos;anno selezionati. Prova a selezionare un altro anno o un altro conto.
           </Alert>
         </Box>
       ) : (
@@ -92,20 +99,20 @@ function MasterTransactionRow({ row, onViewRow }) {
         </Link>
       </TableCell>
 
-      <TableCell align="right">{fCurrencyEur(row.income)}</TableCell>
+      <TableCell align="right">{formatCurrencyWithZero(row.income)}</TableCell>
 
-      <TableCell align="right">{fCurrencyEur(row.expense)}</TableCell>
+      <TableCell align="right">{formatCurrencyWithZero(row.expense)}</TableCell>
 
-      <TableCell align="right">{fCurrencyEur(row.averageCost)}</TableCell>
+      <TableCell align="right">{formatCurrencyWithZero(row.averageCost)}</TableCell>
 
-      <TableCell align="right">{fCurrencyEur(row.totalExpense)}</TableCell>
+      <TableCell align="right">{formatCurrencyWithZero(row.totalExpense)}</TableCell>
 
       <TableCell align="right">
         <Label
           variant="soft"
-          color={parseFloat(row.difference) > 0 ? 'success' : 'error'}
+          color={parseFloat(row.difference || 0) > 0 ? 'success' : 'error'}
         >
-          {fCurrencyEur(row.difference)}
+          {formatCurrencyWithZero(row.difference)}
         </Label>
       </TableCell>
     </TableRow>

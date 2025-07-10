@@ -1,34 +1,44 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
-// MUI Components
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import Container from '@mui/material/Container';
-import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
+import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
+// MUI Components
+import { alpha } from '@mui/material/styles';
+import Container from '@mui/material/Container';
+import TableBody from '@mui/material/TableBody';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import TableContainer from '@mui/material/TableContainer';
 
 // Routes
 import { paths } from '../../../routes/paths';
 import { useRouter } from '../../../routes/hooks';
-import { RouterLink } from '../../../routes/components';
-
+import Iconify from '../../../components/iconify';
+import { applyFilter } from '../scadenziario-filter';
+import Scrollbar from '../../../components/scrollbar';
+// Scadenziario Components
 // Hooks and Components
 import { useBoolean } from '../../../hooks/use-boolean';
 import { useSnackbar } from '../../../components/snackbar';
-import Iconify from '../../../components/iconify';
-import Scrollbar from '../../../components/scrollbar';
+import ScadenziarioTableRow from '../scadenziario-table-row';
+import ScadenziarioEditModal from '../scadenziario-edit-modal';
 import { useSettingsContext } from '../../../components/settings';
-import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
 import { ConfirmDialog } from '../../../components/custom-dialog';
+import ScadenziarioCreateModal from '../scadenziario-create-modal';
+import ScadenziarioTableToolbar from '../scadenziario-table-toolbar';
+import ScadenziarioDetailsModal from '../scadenziario-details-modal';
+import ScadenziarioDashboard from '../scadenziario-dashboard-updated';
+import ScadenziarioNotifications from '../scadenziario-notifications';
+import CustomBreadcrumbs from '../../../components/custom-breadcrumbs';
+// API
+import { useEnhancedGetScadenziario } from '../../../api/enhanced-services';
+import ScadenziarioTableFiltersResult from '../scadenziario-table-filters-result';
 import {
   useTable,
   emptyRows,
@@ -40,22 +50,6 @@ import {
   TableSelectedAction,
   TablePaginationCustom,
 } from '../../../components/table';
-
-// API
-import { useGetScadenziario } from '../../../api/scadenziario-services';
-import { useEnhancedGetScadenziario } from '../../../api/enhanced-services';
-
-// Scadenziario Components
-import { formatCurrency } from '../scadenziario-utils';
-import ScadenziarioDashboard from '../scadenziario-dashboard-updated';
-import ScadenziarioNotifications from '../scadenziario-notifications';
-import ScadenziarioTableFiltersResult from '../scadenziario-table-filters-result';
-import ScadenziarioTableRow from '../scadenziario-table-row';
-import ScadenziarioTableToolbar from '../scadenziario-table-toolbar';
-import ScadenziarioCreateModal from '../scadenziario-create-modal';
-import ScadenziarioEditModal from '../scadenziario-edit-modal';
-import ScadenziarioDetailsModal from '../scadenziario-details-modal';
-import { applyFilter } from '../scadenziario-filter';
 
 // ----------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { HOST_API } from 'src/config-global';
+import { HOST_API } from '../config-global';
 
 // ----------------------------------------------------------------------
 
@@ -52,16 +52,25 @@ export const endpoints = {
     upload: '/api/file-manager/upload',
     delete: '/api/file-manager/delete',
   },
+  anomalie: {
+    analysis: '/api/anomalie/analysis',
+    stats: '/api/anomalie/stats',
+    filtri: '/api/anomalie/filtri',
+  },
 
   // ----------------------------------------------------------------------
   report: {
     master: '/api/report/master/',
+    base: '/api/reports',
     category: {
       details: '/api/report/category/details',
       subject: {
         details: '/api/report/category/subject/details',
       }
-    }
+    },
+    // Nuovi endpoint per il raggruppamento
+    categoriesSubjects: '/api/reports/categories-subjects',
+    groupAggregation: '/api/reports/group-aggregation',
   },
   // ----------------------------------------------------------------------
   chat: '/api/chat',

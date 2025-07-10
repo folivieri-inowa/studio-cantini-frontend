@@ -4,8 +4,6 @@ import { paths } from 'src/routes/paths';
 
 import { useTranslate } from 'src/locales';
 
-import Label from 'src/components/label';
-import Iconify from 'src/components/iconify';
 import SvgColor from 'src/components/svg-color';
 
 // ----------------------------------------------------------------------
@@ -61,6 +59,11 @@ export function useNavData() {
             title: t('Master'),
             path: paths.dashboard.root,
             icon: ICONS.dashboard,
+          },
+          {
+            title: t('Anomalie'),
+            path: paths.dashboard.anomalie.root,
+            icon: ICONS.analytics,
           },
           {
             title: t('File Manager'),

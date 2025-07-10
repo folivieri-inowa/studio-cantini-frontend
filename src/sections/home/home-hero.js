@@ -3,11 +3,11 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
+import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Rating from '@mui/material/Rating';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import { alpha, styled, useTheme } from '@mui/material/styles';
 

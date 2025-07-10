@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 
-import { fPercent, fCurrency, fCurrencyEur } from 'src/utils/format-number';
+import { fPercent, fCurrencyEur } from 'src/utils/format-number';
 
 import { bgGradient } from 'src/theme/css';
 
@@ -57,7 +57,7 @@ export default function BankingWidgetSummary({
         show: false,
       },
       y: {
-        formatter: (value) => fCurrency(value),
+        formatter: (value) => fCurrencyEur(value),
         title: {
           formatter: () => '',
         },

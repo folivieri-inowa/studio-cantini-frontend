@@ -6,10 +6,10 @@ import { useMemo, useEffect, useCallback } from 'react';
 
 import Chip from '@mui/material/Chip';
 import Card from '@mui/material/Card';
+import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import Switch from '@mui/material/Switch';
-import Grid from '@mui/material/Grid2';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';

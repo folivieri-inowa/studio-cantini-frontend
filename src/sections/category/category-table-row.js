@@ -9,9 +9,10 @@ import Typography from '@mui/material/Typography';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
+import axios from 'src/utils/axios';
+
 import Iconify from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-import axios from 'src/utils/axios';
 
 import CategoryQuickEditForm from './category-quick-edit-form';
 import SubjectNewEditForm from './subjects/subject-new-edit-form';

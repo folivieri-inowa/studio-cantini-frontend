@@ -1,10 +1,10 @@
 import { m } from 'framer-motion';
 
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import LinearProgress from '@mui/material/LinearProgress';

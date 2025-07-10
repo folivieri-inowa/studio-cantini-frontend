@@ -3,12 +3,12 @@ import PropTypes from 'prop-types';
 
 import Box from '@mui/material/Box';
 import Masonry from '@mui/lab/Masonry';
+import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Rating from '@mui/material/Rating';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import ListItemText from '@mui/material/ListItemText';
 import { alpha, useTheme } from '@mui/material/styles';

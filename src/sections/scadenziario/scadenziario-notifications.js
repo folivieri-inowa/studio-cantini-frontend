@@ -1,14 +1,14 @@
 // filepath: /Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/studio-cantini/src/sections/scadenziario/scadenziario-notifications.js
 import PropTypes from 'prop-types';
-import { useState, useEffect } from 'react';
-import { formatDistance } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { alpha } from '@mui/material/styles';
+import { formatDistance } from 'date-fns';
+import { useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Badge from '@mui/material/Badge';
 import Divider from '@mui/material/Divider';
+import { alpha } from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -169,13 +169,13 @@ function NotificationItem({ notification, onRead }) {
       
       if (diffDays < 0) {
         return { color: 'error.main', icon: 'eva:alert-triangle-fill' };  // Scaduto
-      } else if (diffDays <= 3) {
+      } if (diffDays <= 3) {
         return { color: 'error.main', icon: 'eva:alert-circle-fill' };    // Molto urgente (3 giorni)
-      } else if (diffDays <= 7) {
+      } if (diffDays <= 7) {
         return { color: 'warning.main', icon: 'eva:clock-fill' };        // Urgente (7 giorni)
-      } else {
+      } 
         return { color: 'info.main', icon: 'eva:calendar-fill' };        // Prossima scadenza
-      }
+      
     } catch (error) {
       return { color: 'info.main', icon: 'eva:info-fill' };
     }

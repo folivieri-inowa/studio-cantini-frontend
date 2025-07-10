@@ -1,6 +1,7 @@
 // Enhanced services for scadenziario
-import { getScadenziarioList } from './scadenziario-services';
 import useSWR from 'swr';
+
+import { getScadenziarioList } from './scadenziario-services';
 
 /**
  * Hook migliorato per recuperare l'elenco delle scadenze con gestione robusta degli errori

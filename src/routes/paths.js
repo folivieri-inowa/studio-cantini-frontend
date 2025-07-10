@@ -99,6 +99,9 @@ export const paths = {
         details: (data) => `${ROOTS.DASHBOARD}/master/category/${data.id}`
       },
     },
+    anomalie: {
+      root: `${ROOTS.DASHBOARD}/anomalie`,
+    },
     prima_nota: {
       root: `${ROOTS.DASHBOARD}/prima-nota`,
       new: `${ROOTS.DASHBOARD}/prima-nota/new`,

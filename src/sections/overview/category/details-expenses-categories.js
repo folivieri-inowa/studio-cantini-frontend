@@ -10,6 +10,7 @@ import CardHeader from '@mui/material/CardHeader';
 import { useResponsive } from 'src/hooks/use-responsive';
 
 import Chart, { useChart } from 'src/components/chart';
+
 import { fCurrencyEur } from '../../../utils/format-number';
 
 // ----------------------------------------------------------------------

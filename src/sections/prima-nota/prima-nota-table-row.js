@@ -1,6 +1,6 @@
+import { useMemo } from 'react';
 import { format } from 'date-fns';
 import PropTypes from 'prop-types';
-import { useEffect, useMemo } from 'react';
 
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -14,10 +14,10 @@ import ListItemText from '@mui/material/ListItemText';
 import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-import CustomPopover, { usePopover } from 'src/components/custom-popover';
 import { useSettingsContext } from 'src/components/settings';
-import { useGetOwners } from '../../api/owner';
+import CustomPopover, { usePopover } from 'src/components/custom-popover';
 
+import { useGetOwners } from '../../api/owner';
 import { fCurrencyEur } from '../../utils/format-number';
 import PrimaNotaSplitForm from './prima-nota-split-form';
 import PrimaNotaQuickEditForm from './prima-nota-quick-edit-form';
@@ -91,9 +91,7 @@ export default function PrimaNotaTableRow({
     }
   }
 
-  const getOwnerColor = (ownerId) => {
-    return ownerColorMap[ownerId] || 'info';
-  }
+  const getOwnerColor = (ownerId) => ownerColorMap[ownerId] || 'info'
 
   const getStatusLabel = (prop) => {
     switch (prop) {

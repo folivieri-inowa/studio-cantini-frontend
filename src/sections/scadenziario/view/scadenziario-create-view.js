@@ -1,17 +1,15 @@
 'use client';
 
 import * as Yup from 'yup';
+import { useMemo } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useCallback, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
@@ -19,12 +17,12 @@ import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
 import { useSnackbar } from 'src/components/snackbar';
-import FormProvider, {
-  RHFTextField,
-  RHFSelect,
-} from 'src/components/hook-form';
 import { useSettingsContext } from 'src/components/settings';
 import CustomBreadcrumbs from 'src/components/custom-breadcrumbs';
+import FormProvider, {
+  RHFSelect,
+  RHFTextField,
+} from 'src/components/hook-form';
 
 // ----------------------------------------------------------------------
 
@@ -66,11 +64,11 @@ export function ScadenziarioCreateView() {
     
     if (diffDays < 0) {
       return 'overdue'; // Scaduto
-    } else if (diffDays <= 15) {
+    } if (diffDays <= 15) {
       return 'upcoming'; // In scadenza
-    } else {
+    } 
       return 'future'; // Da pagare (futuro)
-    }
+    
   }
 
   const methods = useForm({

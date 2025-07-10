@@ -50,18 +50,18 @@ import {
 } from 'src/components/table';
 
 import axios from '../../../utils/axios';
+import { useGetOwners } from '../../../api/owner';
 import PrimaNotaTableRow from '../prima-nota-table-row';
+import { fTimestamp } from '../../../utils/format-time';
+import { useGetCategories } from '../../../api/category';
 import { useGetPrimaNota } from '../../../api/prima-nota';
 import { useSnackbar } from '../../../components/snackbar';
+import ImportHistoryDialog from '../import-history-dialog';
 import PrimaNotaTableToolbar from '../prima-nota-table-toolbar';
 import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
-import FormProvider, { RHFUpload, RHFTextField, RHFSelect } from '../../../components/hook-form';
-import { useGetOwners } from '../../../api/owner';
-import { fTimestamp } from '../../../utils/format-time';
-import { useGetCategories } from '../../../api/category';
-import ImportHistoryDialog from '../import-history-dialog';
+import FormProvider, { RHFUpload, RHFSelect, RHFTextField } from '../../../components/hook-form';
 
 // ----------------------------------------------------------------------
 
@@ -701,7 +701,7 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
                 error={!!errors.category}
                 helperText={errors?.category?.message}
               >
-                <option value=""></option>
+                <option value="" />
                 {categories?.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}

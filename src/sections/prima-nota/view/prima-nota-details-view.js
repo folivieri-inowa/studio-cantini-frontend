@@ -7,10 +7,10 @@ import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Card from '@mui/material/Card';
+import Grid from '@mui/material/Grid2';
 import Button from '@mui/material/Button';
 import { alpha } from '@mui/material/styles';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 
 import { paths } from 'src/routes/paths';
@@ -22,11 +22,12 @@ import { PRODUCT_PUBLISH_OPTIONS } from 'src/_mock';
 import Iconify from 'src/components/iconify';
 import EmptyContent from 'src/components/empty-content';
 import { useSettingsContext } from 'src/components/settings';
-import { ProductDetailsSkeleton } from '../prima-nota-skeleton';
+
+import ProductDetailsReview from '../product-details-review';
 import ProductDetailsToolbar from '../product-details-toolbar';
 import ProductDetailsSummary from '../product-details-summary';
+import { ProductDetailsSkeleton } from '../prima-nota-skeleton';
 import ProductDetailsCarousel from '../product-details-carousel';
-import ProductDetailsReview from '../product-details-review';
 import ProductDetailsDescription from '../product-details-description';
 
 

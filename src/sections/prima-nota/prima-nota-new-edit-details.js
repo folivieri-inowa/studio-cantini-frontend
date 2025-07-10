@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Divider from '@mui/material/Divider';
+import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Accordion from '@mui/material/Accordion';
 import Typography from '@mui/material/Typography';
+import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -18,17 +19,15 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
-import LoadingButton from '@mui/lab/LoadingButton';
 
 import { RHFSelect, RHFUpload, RHFTextField, RHFAutocomplete } from 'src/components/hook-form';
 
 import { useGetOwners } from '../../api/owner';
 import Iconify from '../../components/iconify';
-import { useGetCategories } from '../../api/category';
-import { useSettingsContext } from '../../components/settings';
-import { useSnackbar } from '../../components/snackbar';
 import axios, { endpoints } from '../../utils/axios';
+import { useSnackbar } from '../../components/snackbar';
 import { PostDetailsSkeleton } from '../blog/post-skeleton';
+import { useSettingsContext } from '../../components/settings';
 
 // ----------------------------------------------------------------------
 

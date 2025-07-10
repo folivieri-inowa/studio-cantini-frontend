@@ -4,7 +4,7 @@ import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import { styled, useTheme } from '@mui/material/styles';
 
-import { fCurrency, fCurrencyEur, fNumber } from 'src/utils/format-number';
+import { fCurrencyEur } from 'src/utils/format-number';
 
 import Chart, { useChart } from 'src/components/chart';
 

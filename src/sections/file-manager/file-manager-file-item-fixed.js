@@ -11,7 +11,7 @@ const fData = (size) => {
   if (!size) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(size) / Math.log(1024));
-  return `${(size / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+  return `${(size / 1024**i).toFixed(2)} ${units[i]}`;
 };
 
 const fDate = (date) => {

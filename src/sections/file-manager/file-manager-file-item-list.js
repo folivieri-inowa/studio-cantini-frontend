@@ -4,12 +4,11 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Drawer from '@mui/material/Drawer';
-import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
 import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
-import FileThumbnail from 'src/components/file-thumbnail';
+
 import FileManagerFileItem from './file-manager-file-item';
 
 // ----------------------------------------------------------------------

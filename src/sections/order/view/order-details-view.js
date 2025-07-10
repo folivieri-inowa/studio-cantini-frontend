@@ -3,9 +3,9 @@
 import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
 
+import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid2';
 
 import { paths } from 'src/routes/paths';
 

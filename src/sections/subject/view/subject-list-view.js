@@ -1,7 +1,7 @@
 'use client';
 
 import isEqual from 'lodash/isEqual';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
@@ -11,14 +11,10 @@ import TableBody from '@mui/material/TableBody';
 import TableContainer from '@mui/material/TableContainer';
 
 import { paths } from 'src/routes/paths';
-import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
-
-import { useBoolean } from 'src/hooks/use-boolean';
 
 import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
-import { ConfirmDialog } from 'src/components/custom-dialog';
 import { useSettingsContext } from 'src/components/settings';
 import CustomBreadcrumbs from 'src/components/custom-breadcrumbs';
 import {
@@ -32,10 +28,10 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
+import axios from '../../../utils/axios';
 import SubjectTableRow from '../subject-table-row';
 import { useGetSubjects } from '../../../api/subject';
 import SubjectTableFiltersResult from '../subject-table-filters-result';
-import axios from '../../../utils/axios';
 
 // ----------------------------------------------------------------------
 

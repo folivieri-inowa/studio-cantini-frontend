@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -9,10 +9,6 @@ import Typography from '@mui/material/Typography';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
-import { fTimestamp } from 'src/utils/format-time';
-
-import { _allFiles, FILE_TYPE_OPTIONS } from 'src/_mock';
-
 import Iconify from 'src/components/iconify';
 import EmptyContent from 'src/components/empty-content';
 import { fileFormat } from 'src/components/file-thumbnail';
@@ -20,9 +16,8 @@ import { useSettingsContext } from 'src/components/settings';
 import { useTable, getComparator } from 'src/components/table';
 
 import FileManagerGridView from '../file-manager-grid-view';
-import FileManagerFiltersResult from '../file-manager-filters-result';
-import FileManagerNewFolderDialog from '../file-manager-new-folder-dialog';
 import { useGetFileManager } from '../../../api/file-manager';
+import FileManagerFiltersResult from '../file-manager-filters-result';
 // ----------------------------------------------------------------------
 
 const defaultFilters = {
@@ -115,8 +110,7 @@ export default function FileManagerView() {
   );
 
   return (
-    <>
-      <Container maxWidth={settings.themeStretch ? false : 'lg'}>
+    <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="h4">Archivio File</Typography>
           <Button
@@ -156,7 +150,6 @@ export default function FileManagerView() {
           />
         )}
       </Container>
-    </>
   );
 }
 

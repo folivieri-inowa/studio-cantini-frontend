@@ -7,11 +7,12 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { useSettingsContext } from 'src/components/settings';
-import { useTable } from 'src/components/table';
-
-import EmptyContent from 'src/components/empty-content';
 import { useGetFileManager } from 'src/api/file-manager';
+
+import { useTable } from 'src/components/table';
+import EmptyContent from 'src/components/empty-content';
+import { useSettingsContext } from 'src/components/settings';
+
 import FileManagerGridView from '../file-manager-grid-view-new';
 
 // ----------------------------------------------------------------------

@@ -10,32 +10,31 @@ import Stack from '@mui/material/Stack';
 import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
+import TableRow from '@mui/material/TableRow';
 import { useTheme } from '@mui/material/styles';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import DialogTitle from '@mui/material/DialogTitle';
-import TableContainer from '@mui/material/TableContainer';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import LinearProgress from '@mui/material/LinearProgress';
 import CloseIcon from '@mui/icons-material/Close';
-import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import TableContainer from '@mui/material/TableContainer';
+import LinearProgress from '@mui/material/LinearProgress';
+import TablePagination from '@mui/material/TablePagination';
 
-import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
-import { fDate } from 'src/utils/format-time';
-import { useSettingsContext } from 'src/components/settings';
+
+import { useBoolean } from 'src/hooks/use-boolean';
 
 import axios from 'src/utils/axios';
+import { fDate } from 'src/utils/format-time';
+
 import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
 import { useSnackbar } from 'src/components/snackbar';
-import { useBoolean } from 'src/hooks/use-boolean';
+import { useSettingsContext } from 'src/components/settings';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------

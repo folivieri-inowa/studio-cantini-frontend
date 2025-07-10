@@ -6,7 +6,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
 
-import FileThumbnail, { fileFormat } from 'src/components/file-thumbnail';
+import FileThumbnail from 'src/components/file-thumbnail';
 
 // Utility functions for formatting
 const fData = (size) => {

@@ -2,25 +2,27 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-import Alert from '@mui/material/Alert';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
+import Select from '@mui/material/Select';
+import Divider from '@mui/material/Divider';
+import MenuItem from '@mui/material/MenuItem';
+import Snackbar from '@mui/material/Snackbar';
+import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import { paths } from '../../../../routes/paths';
+import GroupAggregation from '../group-aggregation';
 import { useRouter } from '../../../../routes/hooks';
 import MasterTransaction from '../master-transaction';
 import { useAuthContext } from '../../../../auth/hooks';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
-import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
+import { useGetCategoriesForAggregation } from '../../../../api/group-aggregation';
+import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 
 // ----------------------------------------------------------------------
 
@@ -30,6 +32,15 @@ export default function MasterAnalyticsView() {
   const [isLoading, setIsLoading] = useState(false);
   const settings = useSettingsContext();
   const { user } = useAuthContext();
+  
+  // Hook per ottenere le categorie per l'aggregazione
+  const {
+    categories,
+    categoriesLoading,
+    categoriesError,
+  } = useGetCategoriesForAggregation(settings.db);
+  
+  console.log('Categories from hook:', { categories, categoriesLoading, categoriesError });
   
   // Stato per lo Snackbar
   const [snackbar, setSnackbar] = useState({
@@ -164,7 +175,7 @@ export default function MasterAnalyticsView() {
           allAccountsOwner.report.globalReport[year] = { income: 0, expense: 0, months: {} };
 
           // Initialize months
-          for (let month = 1; month <= 12; month++) {
+          for (let month = 1; month <= 12; month += 1) {
             const monthKey = month.toString().padStart(2, '0');
             allAccountsOwner.report.globalReport[year].months[monthKey] = { income: 0, expense: 0 };
           }
@@ -217,7 +228,7 @@ export default function MasterAnalyticsView() {
             };
 
             // Initialize months
-            for (let month = 1; month <= 12; month++) {
+            for (let month = 1; month <= 12; month += 1) {
               const monthKey = month.toString().padStart(2, '0');
               allAccountsOwner.report.categoryReport[year][categoryId].months[monthKey] = { income: 0, expense: 0 };
             }
@@ -503,13 +514,13 @@ export default function MasterAnalyticsView() {
     // Special handling for 'all-accounts' case
     if (settings.owner.id === 'all-accounts') {
       // Use the categoryReport directly from settings.owner
-      const selectedReport = settings.owner.report?.categoryReport[settings.year];
-      if (!selectedReport) {
+      const allAccountsReport = settings.owner.report?.categoryReport[settings.year];
+      if (!allAccountsReport) {
         console.log(`Nessun dato disponibile per l'anno ${settings.year} per tutti i conti`);
         return [];
       }
 
-      return Object.entries(selectedReport).map(([category, values]) => {
+      return Object.entries(allAccountsReport).map(([category, values]) => {
         const totalExpense = parseFloat(values.totalExpense) || 0;
 
         // Find the last month of the year with an expense
@@ -553,13 +564,13 @@ export default function MasterAnalyticsView() {
     }
 
     // Prende il report dal dataset caricato
-    const selectedReport = selectedOwner.report?.categoryReport[settings.year];
-    if (!selectedReport) {
+    const ownerReport = selectedOwner.report?.categoryReport[settings.year];
+    if (!ownerReport) {
       console.log(`Nessun dato disponibile per l'anno ${settings.year} per il conto corrente ${selectedOwner.name}`);
       return [];
     }
 
-    return Object.entries(selectedReport).map(([category, values]) => {
+    return Object.entries(ownerReport).map(([category, values]) => {
       const totalExpense = parseFloat(values.totalExpense) || 0;
 
       // Trova l'ultimo mese dell'anno in cui c'è stata una spesa
@@ -581,15 +592,17 @@ export default function MasterAnalyticsView() {
       const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
       const roundedExpense = parseFloat(totalExpense.toFixed(2));
       const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-      const roundedAverageCost = parseFloat(averageCost.toFixed(2));        return {
-          id: category.toLowerCase().replace(/\s+/g, '-'),
-          category: values.name,
-          income: roundedIncome,
-          expense: roundedExpense,
-          difference: roundedDifference,
-          averageCost: roundedAverageCost,
-          totalExpense: roundedExpense,
-        };
+      const roundedAverageCost = parseFloat(averageCost.toFixed(2));
+      
+      return {
+        id: category.toLowerCase().replace(/\s+/g, '-'),
+        category: values.name,
+        income: roundedIncome,
+        expense: roundedExpense,
+        difference: roundedDifference,
+        averageCost: roundedAverageCost,
+        totalExpense: roundedExpense,
+      };
     });
   };
 
@@ -597,7 +610,7 @@ export default function MasterAnalyticsView() {
   const getYearlySalesData = () => {
     // Check if we have data and settings
     const globalReport = settings.owner?.report?.globalReport;
-    if (!globalReport) return { categories: [], series: [] };
+    if (!globalReport) return { chartCategories: [], series: [] };
 
     // Get current year and previous year
     const currentYear = settings.year;
@@ -606,11 +619,11 @@ export default function MasterAnalyticsView() {
     // Verify if we have data for both years
     if (!globalReport[currentYear]) {
       console.log(`Nessun dato disponibile per l'anno ${currentYear}`);
-      return { categories: [], series: [] };
+      return { chartCategories: [], series: [] };
     }
     
-    // Create categories array (months)
-    const categories = [
+    // Create chartCategories array (months)
+    const chartCategories = [
       'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
       'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
     ];
@@ -668,7 +681,7 @@ export default function MasterAnalyticsView() {
       });
     }
     
-    return { categories, series };
+    return { chartCategories, series };
   };
 
   const getChartData = () => {
@@ -880,6 +893,20 @@ export default function MasterAnalyticsView() {
           </Grid>
           <Grid size={12}>
             <Stack direction="column" spacing={3}>
+              
+              {/* Sezione Analisi Raggruppata */}
+              <Grid size={12}>
+                <GroupAggregation
+                  categories={categories}
+                  categoriesLoading={categoriesLoading}
+                  categoriesError={categoriesError}
+                  db={settings.db}
+                  availableYears={settings.owner?.report?.years || []}
+                  selectedYear={settings.year}
+                  onYearChange={settings.onChangeYear}
+                />
+              </Grid>
+              
               <Grid size={12}>
                 <MasterTransaction
                   title="Riepilogo per categorie"
@@ -924,7 +951,7 @@ export default function MasterAnalyticsView() {
               subheader="Confronto dettagliato entrate e uscite per anno"
               chart={{
                 colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
-                categories: getYearlySalesData().categories,
+                categories: getYearlySalesData().chartCategories,
                 series: getYearlySalesData().series,
               }}
             />

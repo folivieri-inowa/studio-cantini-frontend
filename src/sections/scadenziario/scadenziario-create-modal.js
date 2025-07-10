@@ -1,32 +1,29 @@
 'use client';
 
 import * as Yup from 'yup';
+import { useMemo, useCallback } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useCallback, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Grid from '@mui/material/Grid2';
-import Stack from '@mui/material/Stack';
 import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import Typography from '@mui/material/Typography';
-import LoadingButton from '@mui/lab/LoadingButton';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
+import Iconify from 'src/components/iconify';
 import { useSnackbar } from 'src/components/snackbar';
 import FormProvider, {
-  RHFTextField,
   RHFSelect,
+  RHFTextField,
 } from 'src/components/hook-form';
-import Iconify from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
@@ -53,11 +50,11 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
     
     if (diffDays < 0) {
       return 'overdue'; // Scaduto
-    } else if (diffDays <= 15) {
+    } if (diffDays <= 15) {
       return 'upcoming'; // In scadenza
-    } else {
+    } 
       return 'future'; // Da pagare (futuro)
-    }
+    
   };
 
   const defaultValues = useMemo(

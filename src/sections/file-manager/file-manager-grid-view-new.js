@@ -1,22 +1,24 @@
 import PropTypes from 'prop-types';
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+
 import { useBoolean } from 'src/hooks/use-boolean';
-import { useSnackbar } from 'src/components/snackbar';
+
+import { deleteFile } from 'src/api/file-manager';
 
 import Iconify from 'src/components/iconify';
-import { deleteFile } from 'src/api/file-manager';
+import { useSnackbar } from 'src/components/snackbar';
+
 import FileManagerPanel from './file-manager-panel';
 import FileManagerFileItem from './file-manager-file-item';
 import FileManagerFolderItem from './file-manager-folder-item';
-import FileManagerSubfolderItem from './file-manager-subfolder-item-new';
-import FileManagerEmptyFolder from './file-manager-empty-folder';
 import FileManagerFileDetails from './file-manager-file-details';
 import FileManagerUploadDialog from './file-manager-upload-dialog';
+import FileManagerSubfolderItem from './file-manager-subfolder-item-new';
 
 // ----------------------------------------------------------------------
 

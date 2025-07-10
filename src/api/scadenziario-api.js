@@ -1,7 +1,7 @@
 // File: api/scadenziario-api.js
-import axios from '../utils/axios';
 import useSWR from 'swr';
-import { updateScadenziarioStatus } from '../sections/scadenziario/scadenziario-utils';
+
+import axios from '../utils/axios';
 
 // URL del backend
 const BACKEND_URL = '/api/scadenziario';

@@ -18,7 +18,7 @@ export function useGroupAggregation(db) {
   const [calculationError, setCalculationError] = useState(null);
 
   // Funzione per calcolare l'aggregazione
-  const calculateAggregation = useCallback(async (groupData) => {
+  const calculateAggregation = useCallback(async (groupData, ownerId, year) => {
     if (!db || !groupData?.selection?.length) {
       return;
     }
@@ -57,7 +57,9 @@ export function useGroupAggregation(db) {
           groupName: groupData.groupName,
           selectedCategories,
           selectedSubjects,
-          selectedDetails
+          selectedDetails,
+          ownerId: ownerId === 'all-accounts' ? null : ownerId,
+          year: year ? parseInt(year, 10) : null
         }),
       });
 

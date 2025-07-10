@@ -71,6 +71,9 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
           return;
         }
 
+        console.log('DetailsTransactionsQuickView - Dati ricevuti:', data);
+        console.log('DetailsTransactionsQuickView - Struttura dati:', Object.keys(data || {}));
+
         const response = await axios.post(endpoints.prima_nota.filtered_list, data);
         if (response.status === 200) {
           // La struttura della risposta è response.data.data.data

@@ -21,16 +21,21 @@ export default function DetailsQuickView({ data, open, onClose }) {
 
   useEffect(() => {
     if (data) {
+      console.log('DetailsQuickView - Dati ricevuti:', data);
+      console.log('DetailsQuickView - Struttura dati:', Object.keys(data || {}));
+      console.log('DetailsQuickView - data.data:', data.data);
+      console.log('DetailsQuickView - data.data struttura:', Object.keys(data.data || {}));
+      
       setDetails(data.data);
     }
   }, [data]);
 
   // Genera la serie dei dati con colori
   const getChartData = () => {
-    if (!details) return [];
+    if (!details || !details.monthlyTotals) return [];
 
-    const currentYear = details.year;
-    const previousYear = details.prevYear;
+    const currentYear = details.year || new Date().getFullYear();
+    const previousYear = details.prevYear || (currentYear - 1);
 
     // Create arrays for income and expense data for both years
     const currentYearIncome = Array(12).fill(0);
@@ -39,13 +44,13 @@ export default function DetailsQuickView({ data, open, onClose }) {
     const previousYearExpense = Array(12).fill(0);
 
     // Populate arrays from monthlyTotals
-    Object.entries(details.monthlyTotals).forEach(([month, data]) => {
+    Object.entries(details.monthlyTotals).forEach(([month, monthData]) => {
       const monthIndex = parseInt(month, 10) - 1; // Convert to 0-based index
       if (monthIndex >= 0 && monthIndex < 12) {
-        currentYearIncome[monthIndex] = parseFloat(data.income.toFixed(2));
-        currentYearExpense[monthIndex] = parseFloat(data.expense.toFixed(2));
-        previousYearIncome[monthIndex] = parseFloat(data.prevIncome.toFixed(2));
-        previousYearExpense[monthIndex] = parseFloat(data.prevExpense.toFixed(2));
+        currentYearIncome[monthIndex] = parseFloat((monthData.income || 0).toFixed(2));
+        currentYearExpense[monthIndex] = parseFloat((monthData.expense || 0).toFixed(2));
+        previousYearIncome[monthIndex] = parseFloat((monthData.prevIncome || 0).toFixed(2));
+        previousYearExpense[monthIndex] = parseFloat((monthData.prevExpense || 0).toFixed(2));
       }
     });
 
@@ -69,19 +74,22 @@ export default function DetailsQuickView({ data, open, onClose }) {
     ];
   };
 
-  if (!details) {return null}
+  if (!details || !details.details) {
+    console.warn('DetailsQuickView - Dati non disponibili o incompleti');
+    return null;
+  }
 
   return (
     <Dialog fullWidth maxWidth="lg" open={open} onClose={onClose}>
       <DialogTitle>
         <Typography variant="h5" gutterBottom>
-          Dettaglio spese {details.details.title}, per l&#39;anno {details.year}
+          Dettaglio spese {details.details?.title || 'N/A'}, per l&#39;anno {details.year || 'N/A'}
         </Typography>
         <Typography variant="h6">
-          Spesa media mensile: {fCurrencyEur(details.details.averageCost)}
+          Spesa media mensile: {fCurrencyEur(details.details?.averageCost || 0)}
         </Typography>
         <Typography variant="h6">
-          Totale spesa: {fCurrencyEur(details.details.totalExpense)}
+          Totale spesa: {fCurrencyEur(details.details?.totalExpense || 0)}
         </Typography>
       </DialogTitle>
 

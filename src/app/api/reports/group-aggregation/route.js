@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     // Leggi i dati dal body della richiesta
     const body = await request.json();
-    const { db, groupName, selectedCategories, selectedSubjects } = body;
+    const { db, groupName, selectedCategories, selectedSubjects, selectedDetails, ownerId, year } = body;
 
     if (!db) {
       return NextResponse.json({ error: 'Database parameter is required' }, { status: 400 });
@@ -23,7 +23,10 @@ export async function POST(request) {
       db,
       groupName,
       selectedCategories,
-      selectedSubjects
+      selectedSubjects,
+      selectedDetails,
+      ownerId,
+      year
     });
 
     return NextResponse.json(response.data);

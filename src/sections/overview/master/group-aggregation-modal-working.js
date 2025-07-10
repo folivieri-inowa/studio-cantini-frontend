@@ -30,7 +30,10 @@ import TableContainer from '@mui/material/TableContainer';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import Iconify from '../../../components/iconify';
+import MasterTransaction from './master-transaction';
 import { fCurrencyEur } from '../../../utils/format-number';
+import CategoryDetailsModal from './category-details-modal';
+import ChartColumnMultiple from '../../_examples/extra/chart-view/chart-column-multiple';
 
 export default function GroupAggregationModalWorking({ 
   open, 
@@ -38,13 +41,38 @@ export default function GroupAggregationModalWorking({
   data, 
   categories = [], 
   loading, 
-  error 
+  error,
+  settings 
 }) {
   const [currentTab, setCurrentTab] = useState('overview');
   const [searchFilter, setSearchFilter] = useState('');
+  const [categoryDetailModal, setCategoryDetailModal] = useState({
+    open: false,
+    categoryData: null,
+    categoryName: null,
+    categoryId: null
+  });
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
+  };
+
+  const handleCategoryClick = (categoryData) => {
+    setCategoryDetailModal({
+      open: true,
+      categoryData,
+      categoryName: categoryData.name,
+      categoryId: categoryData.id
+    });
+  };
+
+  const handleCloseCategoryDetail = () => {
+    setCategoryDetailModal({
+      open: false,
+      categoryData: null,
+      categoryName: null,
+      categoryId: null
+    });
   };
 
   // Funzione per formattare le valute in stile europeo e gestire valori null/undefined
@@ -81,10 +109,10 @@ export default function GroupAggregationModalWorking({
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Stack spacing={1} alignItems="center">
                   <Typography variant="h4" color="primary">
-                    {formatNumber(stats.totalTransactions)}
+                    {formatCurrency(stats.totalTransactions > 0 ? stats.totalExpenses / 12 : 0)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Transazioni Totali
+                    Spesa Media Mensile
                   </Typography>
                 </Stack>
               </Grid>
@@ -125,49 +153,34 @@ export default function GroupAggregationModalWorking({
           </CardContent>
         </Card>
 
-        {/* Periodo e Media */}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card>
-              <CardHeader title="Periodo" />
-              <CardContent>
-                <Stack spacing={2}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      Dal:
-                    </Typography>
-                    <Typography variant="body2">
-                      {stats.dateRange.from ? new Date(stats.dateRange.from).toLocaleDateString('it-IT') : 'N/A'}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      Al:
-                    </Typography>
-                    <Typography variant="body2">
-                      {stats.dateRange.to ? new Date(stats.dateRange.to).toLocaleDateString('it-IT') : 'N/A'}
-                    </Typography>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card>
-              <CardHeader title="Media per Transazione" />
-              <CardContent>
-                <Stack spacing={1} alignItems="center">
-                  <Typography variant="h5" color="info.main">
-                    {formatCurrency(stats.averageAmount)}
-                  </Typography>
+        {/* Periodo */}
+        <Card>
+          <CardHeader title="Periodo" />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Importo Medio
+                    Dal:
+                  </Typography>
+                  <Typography variant="body2">
+                    {stats.dateRange.from ? new Date(stats.dateRange.from).toLocaleDateString('it-IT') : 'N/A'}
                   </Typography>
                 </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">
+                    Al:
+                  </Typography>
+                  <Typography variant="body2">
+                    {stats.dateRange.to ? new Date(stats.dateRange.to).toLocaleDateString('it-IT') : 'N/A'}
+                  </Typography>
+                </Stack>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         {/* Selezione */}
         <Card>
@@ -232,230 +245,6 @@ export default function GroupAggregationModalWorking({
           </CardContent>
         </Card>
       </Stack>
-    );
-  };
-
-  const renderCategoriesBreakdown = () => {
-    if (!data?.stats?.categoryBreakdown) return null;
-
-    return (
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Categoria</TableCell>
-              <TableCell align="right">Transazioni</TableCell>
-              <TableCell align="right">Entrate</TableCell>
-              <TableCell align="right">Uscite</TableCell>
-              <TableCell align="right">Totale</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.stats.categoryBreakdown.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {category.name}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Chip label={formatNumber(category.count)} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="success.main">
-                    {formatCurrency(category.income)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="error.main">
-                    {formatCurrency(category.expenses)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography 
-                    variant="body2" 
-                    fontWeight="medium"
-                    color={formatNumber(category.total) >= 0 ? "success.main" : "error.main"}
-                  >
-                    {formatCurrency(category.total)}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  };
-
-  const renderSubjectsBreakdown = () => {
-    if (!data?.stats?.subjectBreakdown || data.stats.subjectBreakdown.length === 0) {
-      return (
-        <Alert severity="info">
-          Nessun soggetto trovato per i filtri selezionati.
-        </Alert>
-      );
-    }
-
-    return (
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Soggetto</TableCell>
-              <TableCell align="right">Transazioni</TableCell>
-              <TableCell align="right">Entrate</TableCell>
-              <TableCell align="right">Uscite</TableCell>
-              <TableCell align="right">Totale</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.stats.subjectBreakdown.map((subject) => (
-              <TableRow key={subject.id}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {subject.name}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Chip label={formatNumber(subject.count)} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="success.main">
-                    {formatCurrency(subject.income)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="error.main">
-                    {formatCurrency(subject.expenses)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography 
-                    variant="body2" 
-                    fontWeight="medium"
-                    color={formatNumber(subject.total) >= 0 ? "success.main" : "error.main"}
-                  >
-                    {formatCurrency(subject.total)}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  };
-
-  const renderOwnersBreakdown = () => {
-    if (!data?.stats?.ownerBreakdown) return null;
-
-    return (
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Proprietario</TableCell>
-              <TableCell align="right">Transazioni</TableCell>
-              <TableCell align="right">Entrate</TableCell>
-              <TableCell align="right">Uscite</TableCell>
-              <TableCell align="right">Totale</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.stats.ownerBreakdown.map((owner) => (
-              <TableRow key={owner.id}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {owner.name}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Chip label={formatNumber(owner.count)} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="success.main">
-                    {formatCurrency(owner.income)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="error.main">
-                    {formatCurrency(owner.expenses)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography 
-                    variant="body2" 
-                    fontWeight="medium"
-                    color={formatNumber(owner.total) >= 0 ? "success.main" : "error.main"}
-                  >
-                    {formatCurrency(owner.total)}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  };
-
-  const renderDetailsBreakdown = () => {
-    if (!data?.stats?.detailBreakdown || data.stats.detailBreakdown.length === 0) {
-      return (
-        <Alert severity="info">
-          Nessun dettaglio disponibile per la selezione corrente.
-        </Alert>
-      );
-    }
-
-    return (
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Dettaglio</TableCell>
-              <TableCell align="right">Transazioni</TableCell>
-              <TableCell align="right">Entrate</TableCell>
-              <TableCell align="right">Uscite</TableCell>
-              <TableCell align="right">Totale</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.stats.detailBreakdown.map((detail) => (
-              <TableRow key={detail.id}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {detail.name}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Chip label={formatNumber(detail.count)} size="small" variant="outlined" />
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="success.main">
-                    {formatCurrency(detail.income)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="error.main">
-                    {formatCurrency(detail.expenses)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography 
-                    variant="body2" 
-                    fontWeight="medium"
-                    color={formatNumber(detail.total) >= 0 ? "success.main" : "error.main"}
-                  >
-                    {formatCurrency(detail.total)}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
     );
   };
 
@@ -575,82 +364,160 @@ export default function GroupAggregationModalWorking({
     );
   };
 
+  const renderAnalysis = () => {
+    if (!data?.stats) return null;
+
+    // Trasforma i dati del breakdown delle categorie per MasterTransaction
+    const getCategorySummary = () => {
+      if (!data.stats.categoryBreakdown) return [];
+
+      return data.stats.categoryBreakdown.map((category) => ({
+        id: category.id,
+        category: category.name,
+        income: formatNumber(category.income),
+        expense: formatNumber(category.expenses), 
+        difference: formatNumber(category.income - category.expenses),
+        averageCost: formatNumber(category.count > 0 ? category.expenses / category.count : 0),
+        totalExpense: formatNumber(category.expenses),
+      }));
+    };
+
+    // Prepara i dati per il grafico (usando gli stessi dati del breakdown)
+    const getChartData = () => {
+      if (!data.stats.categoryBreakdown) return [];
+
+      return [
+        {
+          name: 'Entrate',
+          data: data.stats.categoryBreakdown.map(cat => formatNumber(cat.income)),
+        },
+        {
+          name: 'Uscite', 
+          data: data.stats.categoryBreakdown.map(cat => formatNumber(cat.expenses)),
+        },
+      ];
+    };
+
+    const getChartCategories = () => {
+      if (!data.stats.categoryBreakdown) return [];
+      return data.stats.categoryBreakdown.map(cat => cat.name);
+    };
+
+    return (
+      <Stack spacing={3}>
+        {/* Tabella Riepilogo per Categorie */}
+        <MasterTransaction
+          title="Riepilogo per Categorie"
+          tableData={getCategorySummary()}
+          tableLabels={[
+            { id: 'category', label: 'Categoria' },
+            { id: 'income', label: 'Entrate', align: 'right' },
+            { id: 'expense', label: 'Uscite', align: 'right' },
+            { id: 'averageCost', label: 'Media per Transazione', align: 'right' },
+            { id: 'totalExpense', label: 'Totale Uscite', align: 'right' },
+            { id: 'difference', label: 'Differenza', align: 'right' },
+          ]}
+          handleViewRow={(categoryId) => {
+            const categoryData = data.stats.categoryBreakdown.find(cat => cat.id === categoryId);
+            if (categoryData) {
+              handleCategoryClick(categoryData);
+            }
+          }}
+        />
+
+        {/* Grafico */}
+        {data.stats.categoryBreakdown && data.stats.categoryBreakdown.length > 0 && (
+          <ChartColumnMultiple
+            title="Entrate/Uscite per Categoria"
+            categories={getChartCategories()}
+            series={getChartData()}
+          />
+        )}
+      </Stack>
+    );
+  };
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{
-        sx: { height: '90vh' }
-      }}
-    >
-      <DialogTitle>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">
-            Risultati Aggregazione Categorie
-          </Typography>
-          <IconButton onClick={onClose} size="small">
-            <Iconify icon="eva:close-fill" />
-          </IconButton>
-        </Stack>
-      </DialogTitle>
-      
-      <DialogContent sx={{ p: 0 }}>
-        {loading && (
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" sx={{ p: 3 }}>
-            <CircularProgress size={20} />
-            <Typography variant="body2">
-              Elaborazione dati in corso...
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { height: '90vh' }
+        }}
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6">
+              Risultati Aggregazione Categorie
             </Typography>
+            <IconButton onClick={onClose} size="small">
+              <Iconify icon="eva:close-fill" />
+            </IconButton>
           </Stack>
-        )}
+        </DialogTitle>
         
-        {error && (
-          <Box sx={{ p: 3 }}>
-            <Alert severity="error">
-              Errore: {error}
-            </Alert>
-          </Box>
-        )}
-        
-        {data && !loading && (
-          <Box sx={{ height: '100%' }}>
-            <Tabs value={currentTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}>
-              <Tab label="Panoramica" value="overview" />
-              <Tab label="Per Categoria" value="categories" />
-              <Tab label="Per Soggetto" value="subjects" />
-              <Tab label="Per Proprietario" value="owners" />
-              <Tab label="Dettagli" value="details" />
-              <Tab label="Transazioni" value="transactions" />
-            </Tabs>
-            
-            <Box sx={{ p: 3, height: 'calc(100% - 48px)', overflow: 'auto' }}>
-              {currentTab === 'overview' && renderOverview()}
-              {currentTab === 'categories' && renderCategoriesBreakdown()}
-              {currentTab === 'subjects' && renderSubjectsBreakdown()}
-              {currentTab === 'owners' && renderOwnersBreakdown()}
-              {currentTab === 'details' && renderDetailsBreakdown()}
-              {currentTab === 'transactions' && renderTransactions()}
+        <DialogContent sx={{ p: 0 }}>
+          {loading && (
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" sx={{ p: 3 }}>
+              <CircularProgress size={20} />
+              <Typography variant="body2">
+                Elaborazione dati in corso...
+              </Typography>
+            </Stack>
+          )}
+          
+          {error && (
+            <Box sx={{ p: 3 }}>
+              <Alert severity="error">
+                Errore: {error}
+              </Alert>
             </Box>
-          </Box>
-        )}
+          )}
+          
+          {data && !loading && (
+            <Box sx={{ height: '100%' }}>
+              <Tabs value={currentTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}>
+                <Tab label="Panoramica" value="overview" />
+                <Tab label="Analisi" value="analysis" />
+                <Tab label="Transazioni" value="transactions" />
+              </Tabs>
+              
+              <Box sx={{ p: 3, height: 'calc(100% - 48px)', overflow: 'auto' }}>
+                {currentTab === 'overview' && renderOverview()}
+                {currentTab === 'analysis' && renderAnalysis()}
+                {currentTab === 'transactions' && renderTransactions()}
+              </Box>
+            </Box>
+          )}
+          
+          {!loading && !error && !data && (
+            <Box sx={{ p: 3 }}>
+              <Alert severity="info">
+                Nessun dato disponibile per la visualizzazione
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
         
-        {!loading && !error && !data && (
-          <Box sx={{ p: 3 }}>
-            <Alert severity="info">
-              Nessun dato disponibile per la visualizzazione
-            </Alert>
-          </Box>
-        )}
-      </DialogContent>
-      
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="outlined">
-          Chiudi
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={onClose} variant="outlined">
+            Chiudi
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal Dettagli Categoria - Componente separato */}
+      <CategoryDetailsModal
+        open={categoryDetailModal.open}
+        onClose={handleCloseCategoryDetail}
+        categoryId={categoryDetailModal.categoryId}
+        categoryName={categoryDetailModal.categoryName}
+        settings={settings}
+      />
+    </>
   );
 }
 
@@ -661,4 +528,5 @@ GroupAggregationModalWorking.propTypes = {
   categories: PropTypes.array,
   loading: PropTypes.bool,
   error: PropTypes.string,
+  settings: PropTypes.object,
 };

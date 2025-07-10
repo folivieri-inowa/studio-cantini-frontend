@@ -904,6 +904,7 @@ export default function MasterAnalyticsView() {
                   availableYears={settings.owner?.report?.years || []}
                   selectedYear={settings.year}
                   onYearChange={settings.onChangeYear}
+                  settings={settings}
                 />
               </Grid>
               

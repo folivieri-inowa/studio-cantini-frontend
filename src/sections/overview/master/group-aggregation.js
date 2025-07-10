@@ -36,6 +36,7 @@ export default function GroupAggregation({
   availableYears = [],
   selectedYear = null,
   onYearChange = null,
+  settings = null,
   ...other 
 }) {
   const [selection, setSelection] = useState([]);
@@ -265,9 +266,13 @@ export default function GroupAggregation({
       groupName: `Aggregazione ${selection.length} categorie`
     };
 
-    await calculateAggregation(groupData);
+    // Passa owner e year al calcolo aggregazione
+    const ownerId = settings?.owner?.id || 'all-accounts';
+    const year = settings?.year || localSelectedYear;
+    
+    await calculateAggregation(groupData, ownerId, year);
     modalOpen.onTrue();
-  }, [selection, calculateAggregation, modalOpen]);
+  }, [selection, calculateAggregation, modalOpen, settings, localSelectedYear]);
 
   // Reset selezione
   const handleReset = useCallback(() => {
@@ -548,6 +553,7 @@ export default function GroupAggregation({
         categories={categories}
         loading={isCalculating}
         error={calculationError}
+        settings={settings}
       />
     </>
   );
@@ -563,4 +569,5 @@ GroupAggregation.propTypes = {
   availableYears: PropTypes.array,
   selectedYear: PropTypes.number,
   onYearChange: PropTypes.func,
+  settings: PropTypes.object,
 };

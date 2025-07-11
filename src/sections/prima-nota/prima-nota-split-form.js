@@ -41,7 +41,7 @@ export default function PrimaNotaSplitForm({ transaction, open, onClose, onUpdat
       category: '',
       subject: '',
       details: '',
-      status: 'completed',
+      status: transaction?.status || 'completed',
     },
   });
 
@@ -67,7 +67,7 @@ export default function PrimaNotaSplitForm({ transaction, open, onClose, onUpdat
         category: '',
         subject: '',
         details: '',
-        status: 'completed',
+        status: transaction?.status || 'completed',
       });
     }
   }, [open, reset, transaction]);

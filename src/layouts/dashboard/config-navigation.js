@@ -60,11 +60,11 @@ export function useNavData() {
             path: paths.dashboard.root,
             icon: ICONS.dashboard,
           },
-          {
+          /* {
             title: t('Anomalie'),
             path: paths.dashboard.anomalie.root,
             icon: ICONS.analytics,
-          },
+          }, */
           {
             title: t('File Manager'),
             path: paths.dashboard.fileManager,

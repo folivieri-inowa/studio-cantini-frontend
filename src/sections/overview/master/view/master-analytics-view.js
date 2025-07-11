@@ -775,10 +775,10 @@ export default function MasterAnalyticsView() {
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
           <Stack direction="column" spacing={3}>
             <Typography variant="h4" component="div">
-              {user?.firstname} {user?.lastname}
+              {user?.firstname || user?.firstName || ''} {user?.lastname || user?.lastName || ''}
             </Typography>
 
-            {data && settings.owner && (
+            {data && settings.owner && settings.owner.report && settings.owner.report.years && (
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="body1" component="div">
                   Riepilogo spese per categoria dell&#39;anno
@@ -787,13 +787,13 @@ export default function MasterAnalyticsView() {
                   id="current-year"
                   label="Anno"
                   onChange={handleYearChange}
-                  value={settings.year}
+                  value={settings.year || ''}
                   variant="standard"
                   sx={{
                     width: 65,
                   }}
                 >
-                  {settings.owner.report.years.map((option) => (
+                  {settings.owner && settings.owner.report.years.map((option) => (
                     <MenuItem key={option} value={option}>
                       {option}
                     </MenuItem>
@@ -806,7 +806,7 @@ export default function MasterAnalyticsView() {
                   id="current-owner"
                   label="Conto corrente"
                   onChange={handleOwnerChange}
-                  defaultValue={settings.owner.id}
+                  value={settings.owner?.id || ''}
                   variant="standard"
                   sx={{
                     width: '700',
@@ -851,7 +851,7 @@ export default function MasterAnalyticsView() {
           </Stack>
         </Stack>
       </Stack>
-      {data && settings.owner ? (
+      {data && settings.owner && settings.owner.report ? (
         <Grid container spacing={3}>
           <Grid size={12}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>

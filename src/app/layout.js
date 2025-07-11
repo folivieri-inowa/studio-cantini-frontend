@@ -58,6 +58,10 @@ export default function RootLayout({ children }) {
                 themeLayout: 'vertical', // 'vertical' | 'horizontal' | 'mini'
                 themeColorPresets: 'default', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
                 themeStretch: false,
+                // Valori di default per il sistema di gestione
+                db: null,
+                year: null,
+                owner: null,
               }}
             >
               <ThemeProvider>

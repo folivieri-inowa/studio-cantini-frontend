@@ -6,6 +6,7 @@ import { avatarGroupClasses } from '@mui/material/AvatarGroup';
 const COLORS = ['default', 'primary', 'secondary', 'info', 'success', 'warning', 'error'];
 
 const colorByName = (name) => {
+  if (!name || typeof name !== 'string') return 'default';
   const charAt = name.charAt(0).toLowerCase();
 
   if (['a', 'c', 'f'].includes(charAt)) return 'primary';

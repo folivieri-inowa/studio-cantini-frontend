@@ -17,6 +17,7 @@ import CardHeader from '@mui/material/CardHeader';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
+import CardContent from '@mui/material/CardContent';
 import FormControl from '@mui/material/FormControl';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -42,6 +43,7 @@ export default function GroupAggregation({
   const [selection, setSelection] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
   const [localSelectedYear, setLocalSelectedYear] = useState(selectedYear);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Collassato di default
   
   // Sincronizza lo stato locale con le props
   useEffect(() => {
@@ -289,35 +291,45 @@ export default function GroupAggregation({
         <CardHeader
           title={title}
           subheader={subheader}
+          action={
+            <IconButton
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              aria-label="espandi/collassa"
+            >
+              <Iconify icon={isCollapsed ? 'eva:arrow-down-fill' : 'eva:arrow-up-fill'} />
+            </IconButton>
+          }
         />
-        <Stack spacing={3} sx={{ p: 3 }}>
-          {/* Filtri superiori */}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
-            <Stack direction="row" spacing={2} sx={{ flexGrow: 1 }}>
-              <Chip 
-                label={`${stats.selectedCategories} categorie`}
-                color={stats.selectedCategories > 0 ? 'primary' : 'default'}
-                variant="outlined"
-              />
-              <Chip 
-                label={`${stats.selectedSubjects} soggetti`}
-                color={stats.selectedSubjects > 0 ? 'primary' : 'default'}
-                variant="outlined"
-              />
-              <Chip 
-                label={`${stats.selectedDetails} dettagli`}
-                color={stats.selectedDetails > 0 ? 'primary' : 'default'}
-                variant="outlined"
-              />
-            </Stack>
-            
-            {/* Dropdown filtro per anno */}
-            {availableYears.length > 1 && (
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>Anno</InputLabel>
-                <Select
-                  value={localSelectedYear || ''}
-                  label="Anno"
+        <Collapse in={!isCollapsed}>
+          <CardContent>
+            <Stack spacing={3}>
+              {/* Filtri superiori */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
+                <Stack direction="row" spacing={2} sx={{ flexGrow: 1 }}>
+                  <Chip 
+                    label={`${stats.selectedCategories} categorie`}
+                    color={stats.selectedCategories > 0 ? 'primary' : 'default'}
+                    variant="outlined"
+                  />
+                  <Chip 
+                    label={`${stats.selectedSubjects} soggetti`}
+                    color={stats.selectedSubjects > 0 ? 'primary' : 'default'}
+                    variant="outlined"
+                  />
+                  <Chip 
+                    label={`${stats.selectedDetails} dettagli`}
+                    color={stats.selectedDetails > 0 ? 'primary' : 'default'}
+                    variant="outlined"
+                  />
+                </Stack>
+                
+                {/* Dropdown filtro per anno */}
+                {availableYears.length > 1 && (
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>Anno</InputLabel>
+                    <Select
+                      value={localSelectedYear || ''}
+                      label="Anno"
                   onChange={handleYearChange}
                 >
                   <MenuItem value="">Tutti gli anni</MenuItem>
@@ -542,7 +554,9 @@ export default function GroupAggregation({
               {isCalculating ? 'Calcolo...' : 'Visualizza Analisi'}
             </Button>
           </Stack>
-        </Stack>
+            </Stack>
+          </CardContent>
+        </Collapse>
       </Card>
 
       {/* Modal per visualizzare i risultati */}

@@ -201,11 +201,17 @@ export default function PrimaNotaSpitDetails({ maxAmount, control, setValue, wat
               ),
             }}
             onChange={(e) => {
-              const newValue = e.target.value < 0 ? e.target.value : e.target.value * -1;
-              if (maxAmount > newValue) {
-                setValue('negativeAmount', maxAmount);
-              }else {
-                setValue('negativeAmount', newValue);
+              const inputValue = parseFloat(e.target.value) || 0;
+              const newValue = inputValue < 0 ? inputValue : inputValue * -1;
+              
+              // Arrotonda a 2 cifre decimali
+              const roundedValue = Math.round(newValue * 100) / 100;
+              
+              // Limita il valore negativo al massimo importo scorporabile
+              if (Math.abs(roundedValue) > Math.abs(maxAmount)) {
+                setValue('negativeAmount', Math.round(maxAmount * 100) / 100);
+              } else {
+                setValue('negativeAmount', roundedValue);
               }
             }}
             disabled={maxAmount > 0}
@@ -224,11 +230,15 @@ export default function PrimaNotaSpitDetails({ maxAmount, control, setValue, wat
             }}
             disabled={maxAmount < 0}
             onChange={(e) => {
-              // Assicura che il valore sia sempre positivo
-              const newValue = Math.abs(parseFloat(e.target.value));
-              if (maxAmount < newValue) {
-                setValue('positiveAmount', maxAmount);
-              }else {
+              const inputValue = parseFloat(e.target.value) || 0;
+              // Assicura che il valore sia sempre positivo e arrotondato a 2 cifre decimali
+              const newValue = Math.round(Math.abs(inputValue) * 100) / 100;
+              
+              // Limita il valore positivo al massimo importo scorporabile
+              const maxAbs = Math.round(Math.abs(maxAmount) * 100) / 100;
+              if (newValue > maxAbs) {
+                setValue('positiveAmount', maxAbs);
+              } else {
                 setValue('positiveAmount', newValue);
               }
             }}

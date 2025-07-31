@@ -262,6 +262,14 @@ export default function GroupAggregationModalWorking({
       const searchTerm = searchFilter.toLowerCase();
       const description = (transaction.description || '').toLowerCase();
       const amount = Math.abs(parseFloat(transaction.amount) || 0).toString();
+      
+      // Prepara diverse rappresentazioni dell'importo per supportare sia virgola che punto
+      const amountWithComma = amount.replace('.', ','); // Converte 123.45 in 123,45
+      const amountFormatted = new Intl.NumberFormat('it-IT', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(Math.abs(parseFloat(transaction.amount) || 0)).toLowerCase(); // Formato completo con €
+      
       const categoryName = (transaction.categoryname || '').toLowerCase();
       const subjectName = (transaction.subjectname || '').toLowerCase();
       const detailName = (transaction.detailname || '').toLowerCase();
@@ -269,6 +277,8 @@ export default function GroupAggregationModalWorking({
       
       return description.includes(searchTerm) || 
              amount.includes(searchTerm) ||
+             amountWithComma.includes(searchTerm) ||
+             amountFormatted.includes(searchTerm) ||
              categoryName.includes(searchTerm) ||
              subjectName.includes(searchTerm) ||
              detailName.includes(searchTerm) ||

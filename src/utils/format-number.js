@@ -15,12 +15,15 @@ export function fCurrencyEur(number) {
     return '€0,00';
   }
   
-  const format = numeral(Number(number)).format('0,0.00');
+  // Usa direttamente Intl.NumberFormat per una formattazione corretta italiana
+  const euroFormatted = new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(number));
 
-  // Modifica il formato: sostituisci la virgola con il punto per le migliaia, e il punto con la virgola per i decimali
-  const euroFormatted = format.replace(',', 'X').replace('.', ',').replace('X', '.');
-
-  return `€${euroFormatted}`;
+  return euroFormatted;
 }
 
 export function fCurrency(number) {

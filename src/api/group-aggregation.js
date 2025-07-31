@@ -47,6 +47,14 @@ export function useGroupAggregation(db) {
         }
       });
 
+      console.log('Debug - Selezione inviata al backend:', {
+        selectedCategories,
+        selectedSubjects,
+        selectedDetails,
+        ownerId: ownerId === 'all-accounts' ? null : ownerId,
+        year: year ? parseInt(year, 10) : null
+      });
+
       const response = await fetch(endpoints.report.groupAggregation, {
         method: 'POST',
         headers: {

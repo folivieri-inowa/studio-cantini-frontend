@@ -79,7 +79,7 @@ export default function PrimaNotaSplitForm({ transaction, open, onClose, onUpdat
       const dataToSend = {
         ...data,
         db,
-        amount: parseFloat(data.positiveAmount || data.negativeAmount),
+        amount: Math.round(parseFloat(data.positiveAmount || data.negativeAmount) * 100) / 100,
         documents: data.documents || [],
       }
 

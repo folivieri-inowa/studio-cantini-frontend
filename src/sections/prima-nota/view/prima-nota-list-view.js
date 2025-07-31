@@ -791,9 +791,19 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
       const txDescription = transaction.description.toLowerCase();
       const txAmount = transaction.amount ? transaction.amount.toString() : '';
       
-      // Check if all search terms are included in the description or amount
+      // Prepara diverse rappresentazioni dell'importo per supportare sia virgola che punto
+      const txAmountWithComma = txAmount.replace('.', ','); // Converte 123.45 in 123,45
+      const txAmountFormatted = new Intl.NumberFormat('it-IT', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(transaction.amount).toLowerCase(); // Formato completo con €
+      
+      // Check if all search terms are included in the description or amount (in any format)
       return searchTerms.every(term => 
-        txDescription.includes(term) || txAmount.includes(term)
+        txDescription.includes(term) || 
+        txAmount.includes(term) || 
+        txAmountWithComma.includes(term) ||
+        txAmountFormatted.includes(term)
       );
     });
   }

@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 import PropTypes from 'prop-types';
 
-import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
@@ -139,13 +138,9 @@ export default function PrimaNotaTableRow({
 
         {editable && (
           <TableCell align="right">
-            <Stack direction="row" spacing={1}>
-              <TableCell align="right">
-                <IconButton color={popover.open ? 'primary' : 'default'} onClick={popover.onOpen}>
-                  <Iconify icon="eva:more-vertical-fill" />
-                </IconButton>
-              </TableCell>
-            </Stack>
+            <IconButton color={popover.open ? 'primary' : 'default'} onClick={popover.onOpen}>
+              <Iconify icon="eva:more-vertical-fill" />
+            </IconButton>
           </TableCell>
         )}
       </TableRow>

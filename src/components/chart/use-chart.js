@@ -120,6 +120,14 @@ export default function useChart(options) {
       x: {
         show: true,
       },
+      y: {
+        formatter: (value) => {
+          if (value === null || value === undefined || Number.isNaN(value)) {
+            return '0';
+          }
+          return value;
+        },
+      },
     },
 
     // Legend

@@ -31,9 +31,9 @@ const StyledChart = styled(Chart)(({ theme }) => ({
 export default function AnalyticsCurrentVisits({ title, subheader, chart, ...other }) {
   const theme = useTheme();
 
-  const { colors, series, options } = chart;
+  const { colors, series = [], options } = chart;
 
-  const chartSeries = series.map((i) => i.value);
+  const chartSeries = series.map((i) => i?.value || 0);
 
   const chartOptions = useChart({
     chart: {

@@ -10,7 +10,7 @@ import { fCurrencyEur } from '../../../../utils/format-number';
 
 // ----------------------------------------------------------------------
 
-export default function ChartColumnMultiple({ series, title, subheader, categories, ...other }) {
+export default function ChartColumnMultiple({ series = [], title, subheader, categories = [], ...other }) {
   const chartOptions = useChart({
     stroke: {
       show: true,
@@ -22,12 +22,22 @@ export default function ChartColumnMultiple({ series, title, subheader, categori
     },
     yaxis: {
       labels: {
-        formatter: (value) => `${fCurrencyEur(parseFloat(value.toFixed(2)))}`,
+        formatter: (value) => {
+          if (value === null || value === undefined || Number.isNaN(value)) {
+            return fCurrencyEur(0);
+          }
+          return fCurrencyEur(parseFloat(value.toFixed(2)));
+        },
       },
     },
     tooltip: {
       y: {
-        formatter: (value) => `${fCurrencyEur(parseFloat(value.toFixed(2)))}`,
+        formatter: (value) => {
+          if (value === null || value === undefined || Number.isNaN(value)) {
+            return fCurrencyEur(0);
+          }
+          return fCurrencyEur(parseFloat(value.toFixed(2)));
+        },
       },
     },
     plotOptions: { bar: { columnWidth: '36%' } },
@@ -40,7 +50,14 @@ export default function ChartColumnMultiple({ series, title, subheader, categori
         subheader={subheader}
         />
       <Box sx={{ mt: 3, mx: 3 }}>
-        <Chart dir="ltr" type="bar" series={series} options={chartOptions} width="100%" height={320} />
+        <Chart 
+          dir="ltr" 
+          type="bar" 
+          series={Array.isArray(series) ? series : []} 
+          options={chartOptions} 
+          width="100%" 
+          height={320} 
+        />
       </Box>
     </Card>
   );

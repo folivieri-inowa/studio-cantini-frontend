@@ -458,16 +458,16 @@ export default function MasterAnalyticsView() {
 
     const incomeData = sortedMonths.map(([month, date]) => ({
       x: `${settings.year}-${month.padStart(2, '0')}`, // Formato YYYY-MM
-      y: parseFloat(date.income.toFixed(2)),
+      y: parseFloat((date?.income ?? 0).toFixed(2)),
     }));
 
-    const totalIncome = parseFloat(selectedReport?.income.toFixed(2)) || 0;
+    const totalIncome = parseFloat((selectedReport?.income ?? 0).toFixed(2));
 
     // Calcolo variazione percentuale rispetto al mese precedente
     let percentChange = 0;
     if (sortedMonths.length > 1) {
-      const lastMonthIncome = parseFloat(sortedMonths[sortedMonths.length - 1][1].income.toFixed(2)); // Income dell'ultimo mese
-      const prevMonthIncome = parseFloat(sortedMonths[sortedMonths.length - 2][1].income.toFixed(2)); // Income del mese precedente
+      const lastMonthIncome = parseFloat((sortedMonths[sortedMonths.length - 1][1]?.income ?? 0).toFixed(2)); // Income dell'ultimo mese
+      const prevMonthIncome = parseFloat((sortedMonths[sortedMonths.length - 2][1]?.income ?? 0).toFixed(2)); // Income del mese precedente
 
       if (prevMonthIncome !== 0) {
         percentChange = parseFloat(((lastMonthIncome - prevMonthIncome) / prevMonthIncome * 100).toFixed(2));
@@ -489,16 +489,16 @@ export default function MasterAnalyticsView() {
 
     const expenseData = sortedMonths.map(([month, date]) => ({
       x: `${settings.year}-${month.padStart(2, '0')}`, // Formato YYYY-MM
-      y: parseFloat(date.expense.toFixed(2)),
+      y: parseFloat((date?.expense ?? 0).toFixed(2)),
     }));
 
-    const totalExpense = parseFloat(selectedReport?.expense.toFixed(2)) || 0;
+    const totalExpense = parseFloat((selectedReport?.expense ?? 0).toFixed(2));
 
     // Calcolo variazione percentuale rispetto al mese precedente
     let percentChange = 0;
     if (sortedMonths.length > 1) {
-      const lastMonthExpense = parseFloat(sortedMonths[sortedMonths.length - 1][1].expense.toFixed(2)); // Spesa dell'ultimo mese
-      const prevMonthExpense = parseFloat(sortedMonths[sortedMonths.length - 2][1].expense.toFixed(2)); // Spesa del mese precedente
+      const lastMonthExpense = parseFloat((sortedMonths[sortedMonths.length - 1][1]?.expense ?? 0).toFixed(2)); // Spesa dell'ultimo mese
+      const prevMonthExpense = parseFloat((sortedMonths[sortedMonths.length - 2][1]?.expense ?? 0).toFixed(2)); // Spesa del mese precedente
 
       if (prevMonthExpense !== 0) {
         percentChange = parseFloat(((lastMonthExpense - prevMonthExpense) / prevMonthExpense * 100).toFixed(2));
@@ -878,7 +878,7 @@ export default function MasterAnalyticsView() {
                 icon="eva:diagonal-arrow-left-down-fill"
                 percent={getGlobalIncome().percentChange}
                 total={getGlobalIncome().totalIncome}
-                chart={{ series: getGlobalIncome().incomeData }}
+                chart={{ series: getGlobalIncome().incomeData || [] }}
               />
 
               <BankingWidgetSummary
@@ -887,7 +887,7 @@ export default function MasterAnalyticsView() {
                 icon="eva:diagonal-arrow-right-up-fill"
                 percent={getGlobalExpense().percentChange}
                 total={getGlobalExpense().totalExpense}
-                chart={{ series: getGlobalExpense().expenseData }}
+                chart={{ series: getGlobalExpense().expenseData || [] }}
               />
             </Stack>
           </Grid>

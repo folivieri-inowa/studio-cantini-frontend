@@ -3,11 +3,19 @@ import numeral from 'numeral';
 // ----------------------------------------------------------------------
 
 export function fNumber(number) {
-  return numeral(number).format();
+  if (number === null || number === undefined || Number.isNaN(Number(number))) {
+    return '0';
+  }
+  return numeral(Number(number)).format();
 }
 
 export function fCurrencyEur(number) {
-  const format = number ? numeral(number).format('0,0.00') : '0,00';
+  // Gestione sicura per valori null, undefined, NaN o stringa vuota
+  if (number === null || number === undefined || Number.isNaN(Number(number)) || number === '') {
+    return '€0,00';
+  }
+  
+  const format = numeral(Number(number)).format('0,0.00');
 
   // Modifica il formato: sostituisci la virgola con il punto per le migliaia, e il punto con la virgola per i decimali
   const euroFormatted = format.replace(',', 'X').replace('.', ',').replace('X', '.');
@@ -22,7 +30,10 @@ export function fCurrency(number) {
 }
 
 export function fPercent(number) {
-  const format = number ? numeral(Number(number) / 100).format('0.0%') : '';
+  if (number === null || number === undefined || Number.isNaN(Number(number))) {
+    return '0.0%';
+  }
+  const format = numeral(Number(number) / 100).format('0.0%');
 
   return result(format, '.0');
 }

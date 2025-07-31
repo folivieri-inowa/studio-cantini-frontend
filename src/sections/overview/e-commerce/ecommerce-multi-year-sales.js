@@ -9,18 +9,22 @@ import Chart, { useChart } from 'src/components/chart';
 // ----------------------------------------------------------------------
 
 export default function EcommerceMultiYearSales({ title, subheader, chart, ...other }) {
-  const { colors, categories, series } = chart;
+  const { colors = [], categories = [], series = [] } = chart || {};
 
   // Combina tutti i dati delle serie in un unico array
   const combinedSeries = [];
   
   // Attraversa tutte le serie annuali
-  series.forEach((yearData) => {
-    // Aggiungi ogni serie di dati all'array combinedSeries
-    yearData.data.forEach((dataSeries) => {
-      combinedSeries.push(dataSeries);
+  if (Array.isArray(series)) {
+    series.forEach((yearData) => {
+      // Aggiungi ogni serie di dati all'array combinedSeries
+      if (yearData && Array.isArray(yearData.data)) {
+        yearData.data.forEach((dataSeries) => {
+          combinedSeries.push(dataSeries);
+        });
+      }
     });
-  });
+  }
 
   const chartOptions = useChart({
     colors,
@@ -33,7 +37,12 @@ export default function EcommerceMultiYearSales({ title, subheader, chart, ...ot
     },
     tooltip: {
       y: {
-        formatter: (value) => `€${value.toFixed(2)}`,
+        formatter: (value) => {
+          if (value === null || value === undefined || Number.isNaN(value)) {
+            return '€0.00';
+          }
+          return `€${value.toFixed(2)}`;
+        },
       },
     },
   });

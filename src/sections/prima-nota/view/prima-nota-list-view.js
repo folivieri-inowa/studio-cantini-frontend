@@ -61,6 +61,7 @@ import PrimaNotaTableToolbar from '../prima-nota-table-toolbar';
 import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
+import PrimaNotaTotalModal from '../prima-nota-total-modal';
 import FormProvider, { RHFUpload, RHFSelect, RHFTextField } from '../../../components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -113,6 +114,7 @@ export default function PrimaNotaListView() {
   const importData = useBoolean();
   const confirm = useBoolean();
   const importHistory = useBoolean();
+  const totalModal = useBoolean();
 
   // table.order = 'desc';
   // table.orderBy = 'date';
@@ -300,6 +302,11 @@ export default function PrimaNotaListView() {
               }}
               action={
                 <>
+                  <Tooltip title="Calcola totale">
+                    <IconButton color="primary" onClick={totalModal.onTrue}>
+                      <Iconify icon="solar:calculator-bold" />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Modifica">
                     <IconButton color="primary" onClick={quickEdit.onTrue}>
                       <Iconify icon="solar:pen-bold" />
@@ -428,6 +435,12 @@ export default function PrimaNotaListView() {
         open={importHistory}
         onClose={importHistory.onFalse}
         onUpdate={refetch}
+      />
+
+      <PrimaNotaTotalModal
+        open={totalModal.value}
+        onClose={totalModal.onFalse}
+        transactions={dataFiltered.filter((row) => table.selected.includes(row.id))}
       />
     </>
   );

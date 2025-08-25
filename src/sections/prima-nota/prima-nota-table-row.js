@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 import PropTypes from 'prop-types';
 
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
 import MenuItem from '@mui/material/MenuItem';
@@ -30,6 +32,7 @@ export default function PrimaNotaTableRow({
   onUpdate,
   onSelectRow,
   onImportData,
+  onToggleStatsExclusion,
   selectColumns = true,
   editable = true,
   showStatus = true
@@ -41,6 +44,7 @@ export default function PrimaNotaTableRow({
     ownername,
     ownerid,
     status,
+    excluded_from_stats,
   } = row;
 
   const settings = useSettingsContext();
@@ -136,6 +140,41 @@ export default function PrimaNotaTableRow({
           </TableCell>
         )}
 
+        <TableCell align="center">
+          <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+            <Tooltip title="Modifica rapida">
+              <IconButton
+                size="small"
+                onClick={(target) => {
+                  editPopover.onOpen(target);
+                }}
+                sx={{ 
+                  color: '#1976d2', // Blu Material-UI
+                  '&:hover': {
+                    bgcolor: '#e3f2fd', // Blu chiaro
+                    color: '#1565c0'    // Blu scuro al hover
+                  }
+                }}
+              >
+                <Iconify icon="solar:pen-bold" width={18} />
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
+              <IconButton
+                size="small"
+                onClick={() => onToggleStatsExclusion && onToggleStatsExclusion(row.id, excluded_from_stats)}
+                color={excluded_from_stats ? 'warning' : 'success'}
+              >
+                <Iconify 
+                  icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
+                  width={18}
+                />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </TableCell>
+
         {editable && (
           <TableCell align="right">
             <IconButton color={popover.open ? 'primary' : 'default'} onClick={popover.onOpen}>
@@ -151,15 +190,6 @@ export default function PrimaNotaTableRow({
         arrow="right-top"
         sx={{ p: 1 }}
       >
-        <MenuItem
-          onClick={(target) => {
-            editPopover.onOpen(target)
-            popover.onClose();
-          }}
-        >
-          <Iconify icon="solar:pen-bold" /> Modifica
-        </MenuItem>
-
         <MenuItem
           onClick={(target) => {
             splitPopover.onOpen(target);
@@ -228,4 +258,5 @@ PrimaNotaTableRow.propTypes = {
   editable: PropTypes.bool,
   showStatus: PropTypes.bool,
   onImportData: PropTypes.func,
+  onToggleStatsExclusion: PropTypes.func,
 };

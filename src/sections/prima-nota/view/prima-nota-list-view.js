@@ -72,6 +72,7 @@ const TABLE_HEAD = [
   { id: 'owner', label: 'Intestatario conto', width: 180 },
   { id: 'amount', label: 'Importo' },
   { id: 'status', label: 'Stato' },
+  { id: 'actions', label: 'Azioni', width: 120 },
   { id: '', width: 88 },
 ];
 
@@ -88,6 +89,7 @@ const defaultFilters = {
   startDate: null,
   endDate: null,
   categories: [],
+  excludedFromStats: 'all', // 'all', 'included', 'excluded'
 };
 
 // ----------------------------------------------------------------------
@@ -233,6 +235,30 @@ export default function PrimaNotaListView() {
     [importData]
   );
 
+  const handleToggleStatsExclusion = useCallback(
+    async (id, currentExcluded) => {
+      try {
+        const response = await axios.post('/api/prima-nota/toggle-stats-exclusion', {
+          id,
+          db: settings.db,
+          excludedFromStats: !currentExcluded
+        });
+
+        if (response.status === 200) {
+          refetch();
+          enqueueSnackbar(
+            !currentExcluded 
+              ? 'Record escluso dalle statistiche' 
+              : 'Record incluso nelle statistiche'
+          );
+        }
+      } catch (error) {
+        enqueueSnackbar('Si è verificato un errore', { variant: 'error' });
+      }
+    },
+    [enqueueSnackbar, refetch, settings.db]
+  );
+
   return (
     <>
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
@@ -371,6 +397,7 @@ export default function PrimaNotaListView() {
                             onEditRow={() => handleEditRow(row.id)}
                             onViewRow={() => handleViewRow(row.id)}
                             onImportData={() => handleImportRow(row)}
+                            onToggleStatsExclusion={handleToggleStatsExclusion}
                             onUpdate={refetch}
                           />
                         ))}
@@ -767,7 +794,7 @@ UploadDialog.propTypes = {
 // ----------------------------------------------------------------------
 
 function applyFilter({ inputData, comparator, filters, dateError }) {
-  const { name, description, status, startDate, endDate, owner, categories } = filters;
+  const { name, description, status, startDate, endDate, owner, categories, excludedFromStats } = filters;
 
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
@@ -823,6 +850,15 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
 
   if (categories.length) {
     inputData = inputData.filter((transaction) => categories.includes(transaction.categoryid));
+  }
+
+  // Filtro per inclusione/esclusione dalle statistiche
+  if (excludedFromStats && excludedFromStats !== 'all') {
+    if (excludedFromStats === 'included') {
+      inputData = inputData.filter((transaction) => !transaction.excluded_from_stats);
+    } else if (excludedFromStats === 'excluded') {
+      inputData = inputData.filter((transaction) => transaction.excluded_from_stats);
+    }
   }
 
   if (!dateError) {

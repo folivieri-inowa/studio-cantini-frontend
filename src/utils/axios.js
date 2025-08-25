@@ -33,6 +33,7 @@ export const endpoints = {
     import_history: '/api/prima-nota/import-history',
     import_details: '/api/prima-nota/import-history/details',
     undo_import: '/api/prima-nota/undo-import',
+    toggle_stats_exclusion: '/api/prima-nota/toggle-stats-exclusion',
   },
   owner: {
     list: '/api/owner/list'

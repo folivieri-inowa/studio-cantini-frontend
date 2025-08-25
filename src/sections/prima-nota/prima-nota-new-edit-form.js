@@ -55,6 +55,7 @@ export default function PrimaNotaNewEditForm({ currentTransaction }) {
       status: currentTransaction?.status || 'completed',
       positiveAmount: currentTransaction?.amount > 0 ? Math.abs(currentTransaction.amount) : null,
       negativeAmount: currentTransaction?.amount < 0 ? Math.abs(currentTransaction.amount) : null,
+      excludedFromStats: currentTransaction?.excluded_from_stats || false,
       id: currentTransaction?.id,
     }),
     [currentTransaction]
@@ -127,7 +128,7 @@ export default function PrimaNotaNewEditForm({ currentTransaction }) {
 
       if (isEdit) {
         // Se siamo in modalità modifica
-        response = await axios.post('/api/prima-nota/update', dataToSend);
+        response = await axios.post('/api/prima-nota/edit', dataToSend);
         if (response.status === 200) {
           loadingSend.onFalse();
           router.push(paths.dashboard.prima_nota.root);
@@ -167,6 +168,7 @@ export default function PrimaNotaNewEditForm({ currentTransaction }) {
           watch={watch}
           errors={errors}
           trigger={trigger}
+          edit={isEdit}
         />
       </Card>
 

@@ -81,10 +81,17 @@ export default function PrimaNotaTableToolbar({
     [onFilters]
   );
 
+  const handleFilterExcludedFromStats = useCallback(
+    (event) => {
+      onFilters('excludedFromStats', event.target.value);
+    },
+    [onFilters]
+  );
+
   return (
     <>
       <Box sx={{ p: 2.5 }}>
-        {/* Prima riga con i campi di filtro */}
+        {/* Prima riga: Data inizio, Data fine, Stato, Conto corrente e Statistiche */}
         <Stack spacing={2} direction="row" alignItems="center" sx={{ mb: 2 }}>
           <DatePicker
             label="Data inizio"
@@ -147,6 +154,7 @@ export default function PrimaNotaTableToolbar({
                   ))}
                 </Select>
               </FormControl>
+
               <FormControl
                 sx={{
                   flexShrink: 0,
@@ -186,52 +194,77 @@ export default function PrimaNotaTableToolbar({
                   width: { xs: 1, md: '20%' },
                 }}
               >
-                <InputLabel>Categoria</InputLabel>
+                <InputLabel>Filtro Visibilità</InputLabel>
                 <Select
-                  multiple
-                  value={filters.categories}
-                  onChange={handleFilterCategory}
-                  input={<OutlinedInput label="categories" />}
-                  renderValue={(selected) =>
-                    selected
-                      .map((id) => categoriesOptions.find((option) => option.id === id)?.name)
-                      .join(', ')
-                  }
-                  sx={{ textTransform: 'capitalize' }}
+                  value={filters.excludedFromStats}
+                  onChange={handleFilterExcludedFromStats}
+                  input={<OutlinedInput label="Filtro Visibilità" />}
                   variant="standard"
                 >
-                  {categoriesOptions.map((option) => (
-                    <MenuItem key={option.name} value={option.id}>
-                      <Checkbox
-                        disableRipple
-                        size="small"
-                        checked={filters.categories.includes(option.id)}
-                      />
-                      {option.name}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="all">Tutte le transazioni</MenuItem>
+                  <MenuItem value="included">Solo incluse nelle statistiche</MenuItem>
+                  <MenuItem value="excluded">Solo escluse dalle statistiche</MenuItem>
                 </Select>
               </FormControl>
             </>
           )}
         </Stack>
 
-        {/* Seconda riga con solo il campo di ricerca descrizione */}
-        <TextField
-          fullWidth
-          value={filters.description}
-          onChange={handleFilterDescription}
-          placeholder="Ricerca in descrizione o importo"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
+        {/* Seconda riga: Ricerca (sinistra) e Categoria (destra) */}
+        <Stack spacing={2} direction="row" alignItems="center" sx={{ mb: 0 }}>
+          <TextField
+            value={filters.description}
+            onChange={handleFilterDescription}
+            placeholder="Ricerca in descrizione o importo"
+            sx={{
+              width: { xs: 1, md: '60%' },
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {stateFilter && (
+            <FormControl
+              sx={{
+                flexShrink: 0,
+                width: { xs: 1, md: '40%' },
+              }}
+            >
+              <InputLabel>Categoria</InputLabel>
+              <Select
+                multiple
+                value={filters.categories}
+                onChange={handleFilterCategory}
+                input={<OutlinedInput label="categories" />}
+                renderValue={(selected) =>
+                  selected
+                    .map((id) => categoriesOptions.find((option) => option.id === id)?.name)
+                    .join(', ')
+                }
+                sx={{ textTransform: 'capitalize' }}
+                variant="standard"
+              >
+                {categoriesOptions.map((option) => (
+                  <MenuItem key={option.name} value={option.id}>
+                    <Checkbox
+                      disableRipple
+                      size="small"
+                      checked={filters.categories.includes(option.id)}
+                    />
+                    {option.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Stack>
       </Box>
 
       <CustomPopover

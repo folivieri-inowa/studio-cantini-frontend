@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
@@ -16,6 +17,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -31,7 +33,7 @@ import { useSettingsContext } from '../../components/settings';
 
 // ----------------------------------------------------------------------
 
-export default function PrimaNotaNewEditDetails({ control, setValue, watch, errors, edit=false}) {
+export default function PrimaNotaNewEditDetails({ control, setValue, watch, errors, edit=false, showExcludeFromStats=true}) {
   const [ownersList, setOwnersList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [subjectList, setSubjectList] = useState([]);
@@ -399,7 +401,7 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, erro
             label="Stato"
             InputLabelProps={{ shrink: true }}
             onChange={handleStatusChange}
-            sx={{ maxWidth: '30%' }}
+            sx={{ maxWidth: showExcludeFromStats ? '30%' : '50%' }}
           >
             {STATUS.map((statusValue, index) => (
               <MenuItem key={`status-${index}`} value={statusValue.value}>
@@ -407,6 +409,20 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, erro
               </MenuItem>
             ))}
           </RHFSelect>
+
+          {showExcludeFromStats && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={Boolean(watch('excludedFromStats'))}
+                  onChange={(event) => setValue('excludedFromStats', event.target.checked)}
+                  color="error"
+                />
+              }
+              label="Escludi dalle statistiche"
+              sx={{ maxWidth: '30%' }}
+            />
+          )}
         </Stack>
         <Stack direction={{ sm: 'column', md: 'row' }} spacing={2}>
           <Controller
@@ -911,4 +927,5 @@ PrimaNotaNewEditDetails.propTypes = {
   trigger: PropTypes.func,
   errors: PropTypes.object,
   edit: PropTypes.bool,
+  showExcludeFromStats: PropTypes.bool,
 };

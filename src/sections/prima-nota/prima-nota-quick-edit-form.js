@@ -54,6 +54,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
       details: transaction?.detailid || '',
       documents: transaction?.documents || [],
       status: transaction?.status || 'completed',
+      excludedFromStats: transaction?.excluded_from_stats || false,
     },
   });
 
@@ -193,6 +194,7 @@ export default function PrimaNotaQuickEditForm({ transaction, open, onClose, onU
             watch={watch}
             trigger={trigger}
             errors={errors}
+            showExcludeFromStats={false}
           />
         </DialogContent>
 

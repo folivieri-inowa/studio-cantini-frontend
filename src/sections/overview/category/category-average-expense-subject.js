@@ -56,10 +56,10 @@ export default function CategoryAverageExpenseSubject({ title, subheader, tableD
             <TableHeadCustom headLabel={tableLabels} />
 
             <TableBody>
-              {tableData && tableData.averageMonthlyCosts && tableData.averageMonthlyCosts.map((row) => (
+              {tableData && tableData.averageMonthlyCosts && tableData.averageMonthlyCosts.map((row, index) => (
                 <CategoryAverageExpenseSubjectRow
                   categoryId={tableData.categoryId}
-                  key={`${row.id || row.category}`}
+                  key={row.id || row.category || `subject-${index}`}
                   row={row}
                   onViewRow={onViewRow}
                 />
@@ -196,8 +196,8 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {row.values.map((value) => (
-                      <TableRow key={`${value.id}-${row.id}`}>
+                    {row.values.map((value, index) => (
+                      <TableRow key={`${value.id || `detail-${index}`}-${row.id || `row-${index}`}`}>
                         <TableCell sx={{ width: '5%' }}/>
                         {value.detailsId ? (
                           <Link

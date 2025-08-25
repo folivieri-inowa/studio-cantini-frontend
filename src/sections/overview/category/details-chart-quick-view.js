@@ -41,7 +41,7 @@ export default function DetailsChartQuickView({ data, open, onClose }) {
   return (
     <Dialog fullWidth maxWidth="lg" open={open} onClose={onClose}>
       <DialogTitle>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" component="span" gutterBottom>
           Dettaglio distribuzione spese {chartData.subjectName}
         </Typography>
       </DialogTitle>

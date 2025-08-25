@@ -153,13 +153,13 @@ export default function CategoryDetailsView({ categoryId }) {
             title="Riepilogo spese per soggetto"
             tableData={reportCategory} // Popoliamo la tabella con i dati API
             tableLabels={[
-              { id: "", label: "" },
+              { id: "expand", label: "" },
               { id: "subject", label: "Soggetto" },
               { id: "averageExpense", label: "Media spese mensile (€)", align: 'right' },
               { id: "totalExpense", label: "Uscite (€)", align: 'right'},
               { id: "totalIncome", label: "Entrate (€)", align: 'right'},
               { id: "difference", label: "Delta (€)", align: 'right'},
-              { id: "", label: ""}
+              { id: "actions", label: ""}
             ]}
             onViewRow={async (prop) => {
               await getSubjectDetails(prop)

@@ -28,7 +28,7 @@ export default function CategorySummaryTable({ title, subheader, tableData, tabl
             <TableHeadCustom headLabel={tableLabels} />
 
             <TableBody>{tableData.map((row, index) => (
-              <CategorySummaryRow key={index} row={row} />))}
+              <CategorySummaryRow key={row.id || `category-${index}`} row={row} />))}
             </TableBody>
           </Table>
         </Scrollbar>

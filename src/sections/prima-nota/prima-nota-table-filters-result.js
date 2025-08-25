@@ -6,7 +6,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 
-import Iconify from 'src/components/iconify';
+import Iconify from '../../components/iconify';
 
 // ----------------------------------------------------------------------
 
@@ -37,12 +37,12 @@ export default function PrimaNotaTableFiltersResult({
       </Box>
 
       <Stack flexGrow={1} spacing={1} direction="row" flexWrap="wrap" alignItems="center">
-        {!!filters.status.length && (
+        {!!(filters.status?.length) && (
           <Block label="Stato:">
             {filters.status.map((item) => (
               <Chip
                 key={item}
-                label={publishOptions.find((i)=> i.value === item).label}
+                label={publishOptions?.find((i)=> i.value === item)?.label || item}
                 size="small"
                 onDelete={() => handleRemoveStatus(item)}
               />
@@ -50,12 +50,12 @@ export default function PrimaNotaTableFiltersResult({
           </Block>
         )}
 
-        {!!filters.owner.length && (
+        {!!(filters.owner?.length) && (
           <Block label="Conto corrente:">
             {filters.owner.map((item) => (
               <Chip
                 key={item}
-                label={ownersOptions.find((i)=> i.id === item).name}
+                label={ownersOptions?.find((i)=> i.id === item)?.name || item}
                 size="small"
                 // onDelete={() => handleRemoveStatus(item)}
               />
@@ -63,12 +63,12 @@ export default function PrimaNotaTableFiltersResult({
           </Block>
         )}
 
-        {!!filters.categories.length && (
+        {!!(filters.categories?.length) && (
           <Block label="Categoria:">
             {filters.categories.map((item) => (
               <Chip
                 key={item}
-                label={categoriesOptions.find((i)=> i.id === item).name}
+                label={categoriesOptions?.find((i)=> i.id === item)?.name || item}
                 size="small"
                 // onDelete={() => handleRemoveStatus(item)}
               />

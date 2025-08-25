@@ -83,7 +83,7 @@ export default function DetailsQuickView({ data, open, onClose }) {
   return (
     <Dialog fullWidth maxWidth="lg" open={open} onClose={onClose}>
       <DialogTitle>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" component="span" gutterBottom>
           Dettaglio spese {details.details?.title || 'N/A'}, per l&#39;anno {details.year || 'N/A'}
         </Typography>
         <Typography variant="h6">

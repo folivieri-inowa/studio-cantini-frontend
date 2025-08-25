@@ -29,9 +29,10 @@ import {
 // ----------------------------------------------------------------------
 
 const defaultFilters = {
-  owner: '',
+  owner: [],
   description: '',
-  status: []
+  status: [],
+  categories: []
 };
 
 const PUBLISH_OPTIONS = [
@@ -150,7 +151,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
   return (
     <Dialog fullWidth maxWidth="lg" open={open} onClose={onClose}>
       <DialogTitle>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" component="span" gutterBottom>
           Elenco movimenti
         </Typography>
       </DialogTitle>
@@ -173,6 +174,9 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
               onResetFilters={handleResetFilters}
               //
               results={dataFiltered.length}
+              publishOptions={PUBLISH_OPTIONS}
+              ownersOptions={[]}
+              categoriesOptions={[]}
               sx={{ p: 2.5, pt: 0 }}
             />
           )}
@@ -203,9 +207,9 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
                           table.page * table.rowsPerPage,
                           table.page * table.rowsPerPage + table.rowsPerPage
                         )
-                        .map((row) => (
+                        .map((row, index) => (
                           <PrimaNotaTableRow
-                            key={row._id || `row-${Math.random()}`}
+                            key={row._id || `row-${index}`}
                             row={row}
                             selectColumns={false}
                             editable={false}

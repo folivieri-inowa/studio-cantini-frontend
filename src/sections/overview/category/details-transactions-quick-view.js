@@ -23,7 +23,7 @@ import {
   TableNoData,
   getComparator, TableSkeleton, TableEmptyRows,
   TableHeadCustom,
-  TableSelectedAction, TablePaginationCustom,
+  TablePaginationCustom,
 } from '../../../components/table';
 
 // ----------------------------------------------------------------------
@@ -178,11 +178,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
           )}
 
           <TableContainer sx={{ position: 'relative', overflow: 'unset' }}>
-            <TableSelectedAction
-              dense={table.dense}
-              numSelected={table.selected.length}
-              rowCount={tableData.length}
-            />
+            {/* TableSelectedAction rimossa perché questa è una vista di sola consultazione */}
 
             <Scrollbar>
               <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }}>

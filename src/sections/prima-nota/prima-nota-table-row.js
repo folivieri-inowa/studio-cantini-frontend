@@ -141,38 +141,43 @@ export default function PrimaNotaTableRow({
         )}
 
         <TableCell align="center">
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-            <Tooltip title="Modifica rapida">
-              <IconButton
-                size="small"
-                onClick={(target) => {
-                  editPopover.onOpen(target);
-                }}
-                sx={{ 
-                  color: '#1976d2', // Blu Material-UI
-                  '&:hover': {
-                    bgcolor: '#e3f2fd', // Blu chiaro
-                    color: '#1565c0'    // Blu scuro al hover
-                  }
-                }}
-              >
-                <Iconify icon="solar:pen-bold" width={18} />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
-              <IconButton
-                size="small"
-                onClick={() => onToggleStatsExclusion && onToggleStatsExclusion(row.id, excluded_from_stats)}
-                color={excluded_from_stats ? 'warning' : 'success'}
-              >
-                <Iconify 
-                  icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
-                  width={18}
-                />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+          {editable ? (
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
+              <Tooltip title="Modifica rapida">
+                <IconButton
+                  size="small"
+                  onClick={(target) => {
+                    editPopover.onOpen(target);
+                  }}
+                  sx={{ 
+                    color: '#1976d2', // Blu Material-UI
+                    '&:hover': {
+                      bgcolor: '#e3f2fd', // Blu chiaro
+                      color: '#1565c0'    // Blu scuro al hover
+                    }
+                  }}
+                >
+                  <Iconify icon="solar:pen-bold" width={18} />
+                </IconButton>
+              </Tooltip>
+              
+              <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
+                <IconButton
+                  size="small"
+                  onClick={() => onToggleStatsExclusion && onToggleStatsExclusion(row.id, excluded_from_stats)}
+                  color={excluded_from_stats ? 'warning' : 'success'}
+                >
+                  <Iconify 
+                    icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
+                    width={18}
+                  />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          ) : (
+            // Modalità consultazione: mostra solo un trattino o spazio vuoto
+            <span>-</span>
+          )}
         </TableCell>
 
         {editable && (

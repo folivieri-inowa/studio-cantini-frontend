@@ -5,6 +5,7 @@ import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
@@ -86,7 +87,9 @@ export default function DetailsQuickView({ data, open, onClose }) {
           Dettaglio spese {details.details?.title || 'N/A'}, per l&#39;anno {details.year || 'N/A'}
         </Typography>
         <Typography variant="h6">
-          Spesa media mensile: {fCurrencyEur(details.details?.averageCost || 0)}
+          <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
+            <span>Spesa media mensile: {fCurrencyEur(details.details?.averageCost || 0)}</span>
+          </Tooltip>
         </Typography>
         <Typography variant="h6">
           Totale spesa: {fCurrencyEur(details.details?.totalExpense || 0)}

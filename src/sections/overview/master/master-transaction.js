@@ -103,8 +103,6 @@ function MasterTransactionRow({ row, onViewRow }) {
 
       <TableCell align="right">{formatCurrencyWithZero(row.expense)}</TableCell>
 
-      <TableCell align="right">{formatCurrencyWithZero(row.averageCost)}</TableCell>
-
       <TableCell align="right">{formatCurrencyWithZero(row.totalExpense)}</TableCell>
 
       <TableCell align="right">

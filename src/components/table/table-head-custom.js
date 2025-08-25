@@ -62,8 +62,10 @@ export default function TableHeadCustom({
                 onClick={() => {
                   onSort(headCell.id);
                 }}
+                sx={{ display: 'flex', alignItems: 'center' }}
               >
                 {headCell.label}
+                {headCell.tooltip && headCell.tooltip}
 
                 {orderBy === headCell.id ? (
                   <Box sx={{ ...visuallyHidden }}>
@@ -72,7 +74,10 @@ export default function TableHeadCustom({
                 ) : null}
               </TableSortLabel>
             ) : (
-              headCell.label
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {headCell.label}
+                {headCell.tooltip && headCell.tooltip}
+              </Box>
             )}
           </TableCell>
         ))}

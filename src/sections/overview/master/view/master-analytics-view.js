@@ -528,26 +528,10 @@ export default function MasterAnalyticsView() {
       return Object.entries(allAccountsReport).map(([category, values]) => {
         const totalExpense = parseFloat(values.totalExpense) || 0;
 
-        // Find the last month of the year with an expense
-        const months = Object.entries(values.months).sort(
-          ([a], [b]) => parseInt(a, 10) - parseInt(b, 10)
-        );
-
-        const lastMonthWithExpense = months.reduce((lastMonth, [month, monthData]) => {
-          if (monthData.expense > 0) {
-            return Math.max(lastMonth, parseInt(month, 10));
-          }
-          return lastMonth;
-        }, 0);
-
-        // Calculate the average based on months from January to the last month with expenses
-        const averageCost = lastMonthWithExpense > 0 ? totalExpense / lastMonthWithExpense : 0;
-
         // Round values to two decimal places for greater precision
         const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
         const roundedExpense = parseFloat(totalExpense.toFixed(2));
         const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-        const roundedAverageCost = parseFloat(averageCost.toFixed(2));
 
         return {
           id: category.toLowerCase().replace(/\s+/g, '-'),
@@ -555,7 +539,6 @@ export default function MasterAnalyticsView() {
           income: roundedIncome,
           expense: roundedExpense,
           difference: roundedDifference,
-          averageCost: roundedAverageCost,
           totalExpense: roundedExpense,
         };
       });
@@ -578,26 +561,10 @@ export default function MasterAnalyticsView() {
     return Object.entries(ownerReport).map(([category, values]) => {
       const totalExpense = parseFloat(values.totalExpense) || 0;
 
-      // Trova l'ultimo mese dell'anno in cui c'è stata una spesa
-      const months = Object.entries(values.months).sort(
-        ([a], [b]) => parseInt(a, 10) - parseInt(b, 10)
-      );
-
-      const lastMonthWithExpense = months.reduce((lastMonth, [month, monthData]) => {
-        if (monthData.expense > 0) {
-          return Math.max(lastMonth, parseInt(month, 10));
-        }
-        return lastMonth;
-      }, 0);
-
-      // Calcola la media basata sui mesi da gennaio fino all'ultimo mese con spese
-      const averageCost = lastMonthWithExpense > 0 ? totalExpense / lastMonthWithExpense : 0;
-
       // Arrotonda i valori a due decimali per maggiore precisione
       const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
       const roundedExpense = parseFloat(totalExpense.toFixed(2));
       const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-      const roundedAverageCost = parseFloat(averageCost.toFixed(2));
       
       return {
         id: category.toLowerCase().replace(/\s+/g, '-'),
@@ -605,7 +572,6 @@ export default function MasterAnalyticsView() {
         income: roundedIncome,
         expense: roundedExpense,
         difference: roundedDifference,
-        averageCost: roundedAverageCost,
         totalExpense: roundedExpense,
       };
     });
@@ -922,7 +888,6 @@ export default function MasterAnalyticsView() {
                     { id: 'category', label: 'Categoria' },
                     { id: 'income', label: 'Entrate (€)', align: 'right' },
                     { id: 'expense', label: 'Uscite (€)', align: 'right' },
-                    { id: 'averageCost', label: 'Media spese mensile (€)', align: 'right' },
                     { id: 'totalExpense', label: 'Totale spese annuale (€)', align: 'right' },
                     { id: 'difference', label: 'Delta annuale (€)', align: 'right' },
                   ]}

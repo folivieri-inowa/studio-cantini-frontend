@@ -144,7 +144,9 @@ function CategoryDetailsSubjectRow({ row, categoryId, onViewRow, onViewDetails, 
         </TableCell>
         
         <TableCell align="right">
-          {formatCurrencyWithZero(averageCost)}
+          <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
+            <span>{formatCurrencyWithZero(averageCost)}</span>
+          </Tooltip>
         </TableCell>
         
         <TableCell align="right">
@@ -233,8 +235,11 @@ function CategoryDetailsSubjectRow({ row, categoryId, onViewRow, onViewDetails, 
                         </TableCell>
                         <TableCell align="right">
                           {parseFloat(value.averageCost || 0) > 0 
-                            ? formatCurrencyWithZero(value.averageCost) 
-                            : (
+                            ? (
+                              <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
+                                <span>{formatCurrencyWithZero(value.averageCost)}</span>
+                              </Tooltip>
+                            ) : (
                               <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
                                 <span style={{ color: '#999' }}>€0,00*</span>
                               </Tooltip>

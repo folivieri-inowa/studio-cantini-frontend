@@ -100,7 +100,13 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
   }
 
   const handleOpenDetails = (prop) => {
-    setChartData({category: categoryId, subject: row.id, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year,})
+    setChartData({
+      category: categoryId, 
+      subject: row.id, 
+      db: settings.db, 
+      owner: settings.owner ? settings.owner.id : 'all-accounts', 
+      year: settings.year
+    })
     qucikViewDetails.onTrue()
   }
 
@@ -119,10 +125,18 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
             <IconButton size="small" onClick={() => setOpen(!open)}>
               {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
             </IconButton>
-          ) : null}
+          ) : (
+            <Box sx={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {/* Spazio vuoto per mantenere l'allineamento */}
+            </Box>
+          )}
         </TableCell>
         <TableCell sx={{ width: '40%' }}>{capitalizeCase(row.category)}</TableCell>
-        <TableCell align="right">{fCurrencyEur(row.averageCost)}</TableCell>
+        <TableCell align="right">
+          <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
+            <span>{fCurrencyEur(row.averageCost)}</span>
+          </Tooltip>
+        </TableCell>
         <TableCell align="right">{fCurrencyEur(row.totalExpense)}</TableCell>
         <TableCell align="right">{fCurrencyEur(row.totalIncome)}</TableCell>
         <TableCell align="right">
@@ -130,14 +144,34 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
         </TableCell>
         {hasValues ? (
           <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-            <Tooltip title="Vedi dettaglio spese" placement="top" arrow>
-              <IconButton color={quickView.value ? 'inherit' : 'default'} onClick={()=>handleOpenDetails(row.values)}>
-                <Iconify icon="solar:eye-bold" />
+            <Tooltip title="Vedi statistiche e grafici" placement="top" arrow>
+              <IconButton 
+                color={quickView.value ? 'inherit' : 'default'} 
+                onClick={() => handleOpenDetails(row.values)}
+              >
+                <Iconify icon="solar:chart-2-bold" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+              <IconButton 
+                color={quickView.value ? 'inherit' : 'default'} 
+                onClick={() => handleOpenQuickView({ subject: row.id, category: categoryId })}
+              >
+                <Iconify icon="solar:document-text-bold" />
               </IconButton>
             </Tooltip>
           </TableCell>
         ) : (
-          <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }} />
+          <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+            <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+              <IconButton 
+                color={quickView.value ? 'inherit' : 'default'} 
+                onClick={() => handleOpenQuickView({ subject: row.id, category: categoryId })}
+              >
+                <Iconify icon="solar:document-text-bold" />
+              </IconButton>
+            </Tooltip>
+          </TableCell>
         )}
       </TableRow>
 
@@ -180,8 +214,11 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                         )}
                         <TableCell align="right">
                           {parseFloat(value.averageCost) > 0 
-                            ? fCurrencyEur(value.averageCost) 
-                            : (
+                            ? (
+                              <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
+                                <span>{fCurrencyEur(value.averageCost)}</span>
+                              </Tooltip>
+                            ) : (
                               <Tooltip title="Nessuna transazione trovata per questo dettaglio nell'anno corrente">
                                 <span style={{ color: '#999' }}>€0,00*</span>
                               </Tooltip>
@@ -211,13 +248,44 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                         <TableCell align="right">
                           {fCurrencyEur(parseFloat(value.totalIncome || 0) - parseFloat(value.totalExpense || 0))}
                         </TableCell>
-                        <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-                          <Tooltip title="Vedi dettaglio spese" placement="top" arrow>
-                            <IconButton color={quickView.value ? 'inherit' : 'default'} onClick={()=>handleOpenQuickView({ details: value.id, subject: row.id, category: categoryId })}>
-                              <Iconify icon="solar:eye-bold" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
+                        {(parseFloat(value.totalExpense) > 0 || parseFloat(value.totalIncome) > 0) ? (
+                          <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+                            <Tooltip title="Vedi statistiche e grafici" placement="top" arrow>
+                              <IconButton color={qucikViewDetails.value ? 'inherit' : 'default'} onClick={() => {
+                                setChartData({
+                                  category: categoryId, 
+                                  subject: row.id, 
+                                  details: value.id,
+                                  db: settings.db, 
+                                  owner: settings.owner ? settings.owner.id : 'all-accounts', 
+                                  year: settings.year
+                                });
+                                qucikViewDetails.onTrue();
+                              }}>
+                                <Iconify icon="solar:chart-2-bold" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+                              <IconButton 
+                                color={quickView.value ? 'inherit' : 'default'} 
+                                onClick={() => handleOpenQuickView({ details: value.id, subject: row.id, category: categoryId })}
+                              >
+                                <Iconify icon="solar:document-text-bold" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        ) : (
+                          <TableCell align="center" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+                            <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+                              <IconButton 
+                                color={quickView.value ? 'inherit' : 'default'} 
+                                onClick={() => handleOpenQuickView({ details: value.id, subject: row.id, category: categoryId })}
+                              >
+                                <Iconify icon="solar:document-text-bold" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

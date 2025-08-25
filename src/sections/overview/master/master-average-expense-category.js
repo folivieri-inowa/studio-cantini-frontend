@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
+import Tooltip from '@mui/material/Tooltip';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -53,7 +54,11 @@ function MasterAverageExpenseCategoryRow({ row }) {
 
         <TableCell sx={{ width: '50%' }}>{row.category}</TableCell>
 
-        <TableCell>{fCurrencyEur(row.averageCost)}</TableCell>
+        <TableCell>
+          <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
+            <span>{fCurrencyEur(row.averageCost)}</span>
+          </Tooltip>
+        </TableCell>
       </TableRow>
   );
 }

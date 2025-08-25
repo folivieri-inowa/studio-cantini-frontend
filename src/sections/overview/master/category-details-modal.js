@@ -19,11 +19,11 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import Iconify from '../../../components/iconify';
 import { capitalizeCase } from '../../../utils/change-case';
-import { useGetCategoryDetails } from '../../../api/category-details';
 import DetailsQuickView from '../category/details-quick-view';
-import DetailsTransactionsQuickView from '../category/details-transactions-quick-view';
-import EcommerceMultiYearSales from '../e-commerce/ecommerce-multi-year-sales';
+import { useGetCategoryDetails } from '../../../api/category-details';
 import CategoryDetailsSubjectTable from './category-details-subject-table';
+import EcommerceMultiYearSales from '../e-commerce/ecommerce-multi-year-sales';
+import DetailsTransactionsQuickView from '../category/details-transactions-quick-view';
 import ChartColumnMultiple from '../../_examples/extra/chart-view/chart-column-multiple';
 
 export default function CategoryDetailsModal({ 

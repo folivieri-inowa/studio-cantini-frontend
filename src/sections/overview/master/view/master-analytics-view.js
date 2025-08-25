@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Grid from '@mui/material/Grid2';
 import Alert from '@mui/material/Alert';
@@ -32,6 +32,11 @@ export default function MasterAnalyticsView() {
   const [isLoading, setIsLoading] = useState(false);
   const settings = useSettingsContext();
   const { user } = useAuthContext();
+  
+  // Ordina alfabeticamente i conti correnti
+  const sortedData = useMemo(() => 
+    data ? data.slice().sort((a, b) => a.name.localeCompare(b.name)) : []
+  , [data]);
   
   // Hook per ottenere le categorie per l'aggregazione
   const {
@@ -815,7 +820,7 @@ export default function MasterAnalyticsView() {
                   <MenuItem key="all-accounts" value="all-accounts">
                     Tutti i conti
                   </MenuItem>
-                  {data.map((option) => (
+                  {sortedData.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
                       {option.name} | {option.cc}{' '}
                       {option.isCreditCard && '(Carta di Credito)'}

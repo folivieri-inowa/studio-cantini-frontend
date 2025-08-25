@@ -57,11 +57,11 @@ import { useGetCategories } from '../../../api/category';
 import { useGetPrimaNota } from '../../../api/prima-nota';
 import { useSnackbar } from '../../../components/snackbar';
 import ImportHistoryDialog from '../import-history-dialog';
+import PrimaNotaTotalModal from '../prima-nota-total-modal';
 import PrimaNotaTableToolbar from '../prima-nota-table-toolbar';
 import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
-import PrimaNotaTotalModal from '../prima-nota-total-modal';
 import FormProvider, { RHFUpload, RHFSelect, RHFTextField } from '../../../components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -125,6 +125,11 @@ export default function PrimaNotaListView() {
       table.setRowsPerPage(rowsPerPage);
     }
   }, [owners.length, rowsPerPage, table, transactions]);
+
+  // Ordina i conti correnti alfabeticamente per nome
+  const sortedOwners = useMemo(() => 
+    owners ? owners.slice().sort((a, b) => a.name.localeCompare(b.name)) : []
+  , [owners]);
 
   const dateError =
     filters.startDate && filters.endDate
@@ -268,7 +273,7 @@ export default function PrimaNotaListView() {
             filters={filters}
             onFilters={handleFilters}
             publishOptions={PUBLISH_OPTIONS}
-            ownersOptions={owners}
+            ownersOptions={sortedOwners}
             categoriesOptions={categories}
             onImportOpen={importData.onTrue}
             onHistoryOpen={importHistory.onTrue}
@@ -284,7 +289,7 @@ export default function PrimaNotaListView() {
               results={dataFiltered.length}
               sx={{ p: 2.5, pt: 0 }}
               publishOptions={PUBLISH_OPTIONS}
-              ownersOptions={owners}
+              ownersOptions={sortedOwners}
               categoriesOptions={categories}
             />
           )}

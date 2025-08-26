@@ -33,7 +33,7 @@ import { useSettingsContext } from '../../components/settings';
 
 // ----------------------------------------------------------------------
 
-export default function PrimaNotaNewEditDetails({ control, setValue, watch, errors, edit=false, showExcludeFromStats=true}) {
+export default function PrimaNotaNewEditDetails({ control, setValue, watch, getValues, errors, edit=false, showExcludeFromStats=true}) {
   const [ownersList, setOwnersList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [subjectList, setSubjectList] = useState([]);
@@ -440,70 +440,114 @@ export default function PrimaNotaNewEditDetails({ control, setValue, watch, erro
                     fullWidth: true,
                     error: !!error,
                     helperText: error?.message,
+                    sx: { minWidth: '180px', maxWidth: '220px' }
                   },
                 }}
               />
             )}
           />
-          <RHFTextField
-            type="number"
+          <Controller
             name="negativeAmount"
-            label="Dare"
-            placeholder="0.00"
-            inputProps={{ 
-              step: "0.01",
-              min: "-999999999.99", 
-              max: "0" 
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Box sx={{ typography: 'subtitle2', color: 'text.disabled' }}>€</Box>
-                </InputAdornment>
-              ),
-            }}
-            onChange={(e) => {
-              // Limitiamo a 2 cifre decimali
-              let value = parseFloat(e.target.value);
-              if (!Number.isNaN(value)) {
-                value = Math.round(value * 100) / 100;
-                const newValue = value < 0 ? value : value * -1;
-                setValue('negativeAmount', newValue);
-              }
-            }}
-            disabled={watch('amount') > 0}
+            control={control}
+            render={({ field: { onChange, value, ...field } }) => (
+              <TextField
+                {...field}
+                type="number"
+                label="Dare"
+                placeholder="0.00"
+                value={value || ''}
+                sx={{ flex: 1 }}
+                inputProps={{ 
+                  step: "0.01",
+                  min: "-999999999.99", 
+                  max: "0" 
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Box sx={{ typography: 'subtitle2', color: 'text.disabled' }}>€</Box>
+                    </InputAdornment>
+                  ),
+                }}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  
+                  // Se il campo è vuoto, imposta null
+                  if (!inputValue || inputValue === '') {
+                    onChange(null);
+                    return;
+                  }
+                  
+                  // Limitiamo a 2 cifre decimali
+                  let numericValue = parseFloat(inputValue);
+                  if (!Number.isNaN(numericValue)) {
+                    numericValue = Math.round(numericValue * 100) / 100;
+                    const newValue = numericValue < 0 ? numericValue : numericValue * -1;
+                    onChange(newValue);
+                    
+                    // Azzeriamo il campo opposto per evitare conflitti
+                    const currentPositive = getValues('positiveAmount');
+                    if (currentPositive && currentPositive > 0) {
+                      setValue('positiveAmount', null);
+                    }
+                  }
+                }}
+              />
+            )}
           />
-          <RHFTextField
-            type="number"
+          <Controller
             name="positiveAmount"
-            label="Avere"
-            placeholder="0.00"
-            inputProps={{ 
-              step: "0.01",
-              min: "0", 
-              max: "999999999.99" 
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Box sx={{ typography: 'subtitle2', color: 'text.disabled' }}>€</Box>
-                </InputAdornment>
-              ),
-            }}
-            onChange={(e) => {
-              // Limitiamo a 2 cifre decimali
-              let value = parseFloat(e.target.value);
-              if (!Number.isNaN(value)) {
-                value = Math.round(value * 100) / 100;
-                setValue('positiveAmount', value);
-              }
-            }}
-            disabled={watch('amount') < 0}
+            control={control}
+            render={({ field: { onChange, value, ...field } }) => (
+              <TextField
+                {...field}
+                type="number"
+                label="Avere"
+                placeholder="0.00"
+                value={value || ''}
+                sx={{ flex: 1 }}
+                inputProps={{ 
+                  step: "0.01",
+                  min: "0", 
+                  max: "999999999.99" 
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Box sx={{ typography: 'subtitle2', color: 'text.disabled' }}>€</Box>
+                    </InputAdornment>
+                  ),
+                }}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  
+                  // Se il campo è vuoto, imposta null
+                  if (!inputValue || inputValue === '') {
+                    onChange(null);
+                    return;
+                  }
+                  
+                  // Limitiamo a 2 cifre decimali
+                  let numericValue = parseFloat(inputValue);
+                  if (!Number.isNaN(numericValue)) {
+                    numericValue = Math.round(numericValue * 100) / 100;
+                    onChange(numericValue);
+                    
+                    // Azzeriamo il campo opposto per evitare conflitti
+                    const currentNegative = getValues('negativeAmount');
+                    if (currentNegative && currentNegative < 0) {
+                      setValue('negativeAmount', null);
+                    }
+                  }
+                }}
+              />
+            )}
           />
           <RHFSelect
             name="paymentType"
             label="Metodo di pagamento"
             InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: '180px', maxWidth: '220px' }}
           >
             {PAYMENT_METHODS.map((method, index) => (
               <MenuItem key={index} value={method}>
@@ -924,6 +968,7 @@ PrimaNotaNewEditDetails.propTypes = {
   control: PropTypes.object,
   setValue: PropTypes.func,
   watch: PropTypes.func,
+  getValues: PropTypes.func,
   trigger: PropTypes.func,
   errors: PropTypes.object,
   edit: PropTypes.bool,

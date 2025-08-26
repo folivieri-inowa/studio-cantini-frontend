@@ -71,6 +71,7 @@ export default function PrimaNotaNewEditForm({ currentTransaction }) {
     control,
     setValue,
     watch,
+    getValues,
     handleSubmit,
     trigger,
     formState: { isSubmitting, errors },
@@ -166,6 +167,7 @@ export default function PrimaNotaNewEditForm({ currentTransaction }) {
           control={control}
           setValue={setValue}
           watch={watch}
+          getValues={getValues}
           errors={errors}
           trigger={trigger}
           edit={isEdit}

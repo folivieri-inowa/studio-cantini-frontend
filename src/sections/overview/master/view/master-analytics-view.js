@@ -128,13 +128,10 @@ export default function MasterAnalyticsView() {
     
     // Only set activeFilter on initial load
     if (isInitialLoad) {
-      console.log('🔄 Initial load - checking year:', settings.year);
-      
       if (settings.year === 'all-years') {
         // Use setTimeout to ensure state is updated after React finishes rendering
         setTimeout(() => {
           setActiveFilter('all-time');
-          console.log('✅ Set activeFilter to "all-time" on initial load');
         }, 0);
       }
       
@@ -156,7 +153,7 @@ export default function MasterAnalyticsView() {
     categoriesError,
   } = useGetCategoriesForAggregation(settings.db);
   
-  console.log('Categories from hook:', { categories, categoriesLoading, categoriesError });
+  // Categories loaded
   
   // Stato per lo Snackbar
   const [snackbar, setSnackbar] = useState({
@@ -168,7 +165,6 @@ export default function MasterAnalyticsView() {
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
     try {
-      console.log('Fetching master data from API...');
       // Aggiungiamo un timestamp come parametro per evitare la cache
       const timestamp = new Date().getTime();
       // Il backend usa path parameter: /api/report/master/:db
@@ -177,35 +173,11 @@ export default function MasterAnalyticsView() {
           _t: timestamp
         }
       });
-      console.log('Master data received:', response.data);
 
-      // Controlla se il saldo iniziale è presente nei dati
       // Il backend restituisce un array direttamente
       const responseData = Array.isArray(response.data) ? response.data : (response.data.data || []);
-      
-      if (responseData && responseData.length > 0) {
-        const firstOwner = responseData[0];
-        console.log('Primo owner:', firstOwner);
-        console.log('Saldo iniziale del primo owner:', {
-          initialBalance: firstOwner.initialBalance,
-          tipo: typeof firstOwner.initialBalance,
-          valoreConvertitoFloat: parseFloat(firstOwner.initialBalance || 0)
-        });
-      }
-
-      // Usa responseData già calcolato sopra
       const fetchedData = responseData;
       setData(fetchedData);
-      
-      // Log per debug dei dati caricati
-      console.log('📊 Data structure after fetch:', {
-        totalOwners: fetchedData?.length || 0,
-        owners: fetchedData?.map(o => ({
-          id: o.id,
-          name: o.name,
-          years: o.report?.years
-        })) || []
-      });
       
       // Calculate transaction statistics
       const totalTransactions = fetchedData.reduce((sum, owner) => {
@@ -234,7 +206,6 @@ export default function MasterAnalyticsView() {
           if (yearToRestore === 'all-years' || savedOwner.report.years.includes(yearToRestore)) {
             settings.onChangeOwner(savedOwner);
             settings.onChangeYear(yearToRestore);
-            console.log('Restored filter preferences:', { owner: preferences.owner, year: yearToRestore });
             return;
           }
         }
@@ -246,7 +217,6 @@ export default function MasterAnalyticsView() {
         const currentOwner = fetchedData.find(owner => owner.id === settings.owner.id);
         if (currentOwner) {
           // Aggiorna l'owner con i dati freschi
-          console.log('Aggiornamento owner esistente:', currentOwner);
           settings.onChangeOwner(currentOwner);
         }
       } else if (fetchedData.length > 0) {
@@ -468,7 +438,7 @@ export default function MasterAnalyticsView() {
           severity: 'info'
         });
         
-        console.log(`L'anno ${currentYear} non è disponibile per il conto selezionato. Seleziono automaticamente l'anno ${firstAvailableYear}`);
+        // Anno non disponibile, seleziono automaticamente
         
         // Aggiorna prima l'owner e poi l'anno per evitare problemi di rendering
         settings.onChangeOwner(selectedOwner);
@@ -524,11 +494,7 @@ export default function MasterAnalyticsView() {
       const oldestYear = availableYears[0];
       const newestYear = availableYears[availableYears.length - 1];
       
-      console.log('Tutto il periodo - visualizzazione completa:', {
-        owner: settings.owner.name,
-        availableYears: settings.owner.report.years,
-        period: `${oldestYear}-${newestYear}`
-      });
+      // Visualizzazione periodo completo
       
       // Imposta l'anno speciale "all-years" per indicare che vogliamo tutti i dati
       handleYearChange({ target: { value: 'all-years' } }, true);
@@ -595,11 +561,7 @@ export default function MasterAnalyticsView() {
       // Filtro per anno specifico (include anche i nuovi filtri semplificati)
       const targetYear = filterValue;
       
-      console.log('Checking year availability:', {
-        targetYear,
-        filterLabel: filter.label,
-        currentOwnerYears: settings.owner?.report?.years,
-      });
+      // Checking year availability
       
       // Verifica se l'anno è disponibile per l'owner corrente
       if (settings.owner?.report?.years?.includes(targetYear)) {
@@ -631,7 +593,7 @@ export default function MasterAnalyticsView() {
         }
         
         if (ownerWithYear) {
-          console.log('Found owner with year:', ownerWithYear.name, targetYear);
+          // Found owner with year
           handleOwnerChange({ target: { value: ownerWithYear.id } }, true);
           setTimeout(() => {
             handleYearChange({ target: { value: targetYear } }, true);
@@ -692,15 +654,7 @@ export default function MasterAnalyticsView() {
     const endYear = customEndDate.getFullYear().toString();
     const endMonth = customEndDate.getMonth() + 1;
 
-    console.log('🗓️ Applicazione filtro custom:', {
-      startDate: customStartDate.toLocaleDateString('it-IT'),
-      endDate: customEndDate.toLocaleDateString('it-IT'),
-      startYear,
-      startMonth,
-      endYear,
-      endMonth,
-      dateFilter: { startYear, startMonth, endYear, endMonth }
-    });
+    // Applicazione filtro custom
 
     // Imposta il filtro date
     setDateFilter({ startYear, startMonth, endYear, endMonth });
@@ -753,17 +707,7 @@ export default function MasterAnalyticsView() {
     const included = current >= start && current <= end;
     
     // Debug: mostra solo i primi check per evitare spam
-    if (Math.random() < 0.05) { // Log solo 5% dei check
-      console.log('🔍 shouldIncludeMonth check:', { 
-        year, 
-        month, 
-        current, 
-        start, 
-        end, 
-        included,
-        dateFilter 
-      });
-    }
+    // Debug disabled
     
     return included;
   }, [dateFilter]);
@@ -771,7 +715,7 @@ export default function MasterAnalyticsView() {
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
     if (!data || !data.length || !settings.owner) {
-      console.log('Nessun dato o proprietario selezionato');
+      // Nessun dato
       return { balance: 0, lastUpdate: new Date(), percentChange: 0, description: 'Nessun dato disponibile' };
     }
 
@@ -781,20 +725,12 @@ export default function MasterAnalyticsView() {
     const initialBalance = owner.initialBalance ? parseFloat(owner.initialBalance) : 0;
     const balanceDate = owner.balanceDate ? new Date(owner.balanceDate) : null;
 
-    console.log('Dati saldo:', {
-      initialBalance,
-      balanceDate,
-      ownerInitialBalance: owner.initialBalance,
-      tipoInitialBalance: typeof owner.initialBalance
-    });
-
     // Calcoliamo il saldo come: saldo iniziale + entrate - uscite
     // per tutti gli anni disponibili fino all'anno selezionato
     const currentYear = parseInt(settings.year, 10);
 
     // Ottieni tutti gli anni disponibili e ordinali
     if (!owner.report?.globalReport) {
-      console.log('Nessun report globale disponibile');
       return { balance: 0, lastUpdate: new Date(), percentChange: 0, description: 'Nessun dato disponibile' };
     }
     const availableYears = Object.keys(owner.report.globalReport).map(y => parseInt(y, 10)).sort();
@@ -842,7 +778,7 @@ export default function MasterAnalyticsView() {
             // Aggiorniamo lastTransaction solo se questa data è più recente
             if (newDate > lastTransaction) {
               lastTransaction = newDate;
-              console.log(`Nuova data di aggiornamento saldo: ${lastMonth}/${year}, ultimo giorno: ${lastDay}, data: ${lastTransaction.toLocaleDateString()}`);
+              // Data aggiornamento saldo
             }
           }
 
@@ -867,15 +803,6 @@ export default function MasterAnalyticsView() {
     const roundedPreviousExpense = parseFloat(previousYearTotalExpense.toFixed(2));
     const previousYearBalance = parseFloat((roundedInitialBalance + roundedPreviousIncome - roundedPreviousExpense).toFixed(2));
 
-    console.log('Calcolo saldo finale:', {
-      initialBalance: roundedInitialBalance,
-      totalIncome: roundedTotalIncome,
-      totalExpense: roundedTotalExpense,
-      currentBalance,
-      previousYearBalance,
-      lastTransaction: lastTransaction.toLocaleDateString('it-IT')
-    });
-
     // Calcolo della variazione percentuale rispetto all'anno precedente
     let percentChange = 0;
     if (previousYearBalance !== 0) {
@@ -893,7 +820,7 @@ export default function MasterAnalyticsView() {
       ? `Saldo aggiornato al ${formattedDate}`
       : `Saldo calcolato in base alle transazioni fino al ${lastTransaction.getFullYear()}`;
 
-    console.log('Descrizione saldo:', description);
+    // Descrizione saldo
 
     return {
       balance: currentBalance,
@@ -904,6 +831,7 @@ export default function MasterAnalyticsView() {
   };
 
   const getGlobalIncome = () => {
+    if (!settings?.owner) return { incomeData: [], totalIncome: 0, percentChange: 0 };
     const globalReport = settings.owner?.report?.globalReport;
     if (!globalReport) return { incomeData: [], totalIncome: 0, percentChange: 0 };
 
@@ -991,6 +919,7 @@ export default function MasterAnalyticsView() {
   };
 
   const getGlobalExpense = () => {
+    if (!settings?.owner) return { expenseData: [], totalExpense: 0, percentChange: 0 };
     const globalReport = settings.owner?.report?.globalReport;
     if (!globalReport) return { expenseData: [], totalExpense: 0, percentChange: 0 };
 
@@ -1123,7 +1052,7 @@ export default function MasterAnalyticsView() {
     if (settings.owner.id === 'all-accounts') {
       const categoryReports = settings.owner.report?.categoryReport;
       if (!categoryReports) {
-        console.log('Nessun dato disponibile per tutti i conti');
+        // Nessun dato disponibile
         return [];
       }
 
@@ -1133,7 +1062,7 @@ export default function MasterAnalyticsView() {
         : categoryReports[settings.year];
 
       if (!aggregatedData) {
-        console.log(`Nessun dato disponibile per ${isAllYears ? 'tutti gli anni' : `l'anno ${settings.year}`} per tutti i conti`);
+        // Nessun dato per anno
         return [];
       }
 
@@ -1156,13 +1085,13 @@ export default function MasterAnalyticsView() {
     // Regular case: find the owner in the data array
     const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
     if (!selectedOwner) {
-      console.log('Conto corrente selezionato non trovato nei dati');
+      // Conto non trovato
       return [];
     }
 
     const categoryReports = selectedOwner.report?.categoryReport;
     if (!categoryReports) {
-      console.log('Nessun categoryReport disponibile');
+      // Nessun categoryReport
       return [];
     }
 
@@ -1172,7 +1101,7 @@ export default function MasterAnalyticsView() {
       : categoryReports[settings.year];
 
     if (!aggregatedData) {
-      console.log(`Nessun dato disponibile per ${isAllYears ? 'tutti gli anni' : `l'anno ${settings.year}`} per il conto ${selectedOwner.name}`);
+      // Nessun dato per anno specifico
       return [];
     }
 
@@ -1243,7 +1172,6 @@ export default function MasterAnalyticsView() {
     
     // Verify if we have data for both years
     if (!globalReport[currentYear]) {
-      console.log(`Nessun dato disponibile per l'anno ${currentYear}`);
       return { chartCategories: [], series: [] };
     }
     
@@ -1318,7 +1246,6 @@ export default function MasterAnalyticsView() {
 
   const getChartData = () => {
     if (!data || !settings.year || !settings.owner) {
-      console.log('Dati mancanti per il grafico: nessun dato, anno o owner');
       return [];
     }
 
@@ -1331,7 +1258,6 @@ export default function MasterAnalyticsView() {
       // Regular case: find the owner in the data array
       const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
       if (!selectedOwner) {
-        console.log('Owner selezionato non trovato nei dati');
         return [];
       }
 
@@ -1339,16 +1265,20 @@ export default function MasterAnalyticsView() {
     }
 
     if (!globalReport) {
-      console.log('Nessun report globale disponibile');
       return [];
     }
 
     const currentYear = settings.year; // Anno selezionato
+    
+    // Per 'all-years' non mostriamo il grafico mensile (non ha senso mostrare tutti gli anni)
+    if (currentYear === 'all-years') {
+      return [];
+    }
+    
     const previousYear = (parseInt(settings.year, 10) - 1).toString(); // Anno precedente
 
-    // Verifica se ci sono dati per l'anno corrente (skip per 'all-years')
-    if (currentYear !== 'all-years' && !globalReport[currentYear]) {
-      console.log(`Nessun dato disponibile per l'anno ${currentYear}`);
+    // Verifica se ci sono dati per l'anno corrente
+    if (!globalReport[currentYear]) {
       // Se non ci sono dati per l'anno corrente, mostriamo un messaggio all'utente
       // se lo Snackbar non è già aperto
       if (!snackbar.open) {
@@ -1403,6 +1333,32 @@ export default function MasterAnalyticsView() {
       },
     ];
   };
+
+  // Memoize i risultati per evitare chiamate multiple durante il render
+  const currentBalanceData = useMemo(() => {
+    if (!data || !settings.owner) return { balance: 0, percentChange: 0, description: '', lastUpdate: new Date() };
+    return getCurrentBalance();
+  }, [data, settings.owner, settings.year, dateFilter]);
+  
+  const globalIncomeData = useMemo(() => {
+    if (!data || !settings.owner) return { incomeData: [], totalIncome: 0, percentChange: 0 };
+    return getGlobalIncome();
+  }, [data, settings.owner, settings.year, dateFilter]);
+  
+  const globalExpenseData = useMemo(() => {
+    if (!data || !settings.owner) return { expenseData: [], totalExpense: 0, percentChange: 0 };
+    return getGlobalExpense();
+  }, [data, settings.owner, settings.year, dateFilter]);
+  
+  const chartData = useMemo(() => {
+    if (!data || !settings.owner) return [];
+    return getChartData();
+  }, [data, settings.owner, settings.year, dateFilter]);
+  
+  const categorySummaryData = useMemo(() => {
+    if (!data || !settings.owner) return [];
+    return getCategorySummary();
+  }, [data, settings.owner, settings.year, dateFilter]);
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
@@ -1635,7 +1591,7 @@ export default function MasterAnalyticsView() {
           </>
         )}
       </Stack>
-      {data && settings.owner && settings.owner.report ? (
+      {data && settings.owner && settings.owner.report && currentBalanceData && globalIncomeData && globalExpenseData ? (
         <Grid container spacing={3}>
           <Grid size={12}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
@@ -1643,11 +1599,11 @@ export default function MasterAnalyticsView() {
                 <BankingWidgetSummary
                   title="Saldo corrente"
                   icon="solar:wallet-money-bold"
-                  percent={getCurrentBalance().percentChange}
-                  total={getCurrentBalance().balance}
-                  description={getCurrentBalance().description}
+                  percent={currentBalanceData.percentChange || 0}
+                  total={currentBalanceData.balance || 0}
+                  description={currentBalanceData.description || ''}
                   color="info"
-                  chart={{ series: [] }}  // Non mostriamo il grafico per il saldo
+                  chart={{ series: [] }}
                   sx={{
                     '&::before, &::after': {
                       backgroundColor: (theme) => theme.palette.info.lighter,
@@ -1660,18 +1616,18 @@ export default function MasterAnalyticsView() {
               <BankingWidgetSummary
                 title="Entrate"
                 icon="eva:diagonal-arrow-left-down-fill"
-                percent={getGlobalIncome().percentChange}
-                total={getGlobalIncome().totalIncome}
-                chart={{ series: getGlobalIncome().incomeData || [] }}
+                percent={globalIncomeData.percentChange || 0}
+                total={globalIncomeData.totalIncome || 0}
+                chart={{ series: globalIncomeData.incomeData || [] }}
               />
 
               <BankingWidgetSummary
                 title="Uscite"
                 color="warning"
                 icon="eva:diagonal-arrow-right-up-fill"
-                percent={getGlobalExpense().percentChange}
-                total={getGlobalExpense().totalExpense}
-                chart={{ series: getGlobalExpense().expenseData || [] }}
+                percent={globalExpenseData.percentChange || 0}
+                total={globalExpenseData.totalExpense || 0}
+                chart={{ series: globalExpenseData.expenseData || [] }}
               />
             </Stack>
           </Grid>
@@ -1694,7 +1650,7 @@ export default function MasterAnalyticsView() {
                 <MasterTransaction
                   title="Riepilogo per categorie"
                   handleViewRow={handleViewRow}
-                  tableData={getCategorySummary()} // Dati riepilogativi delle categorie
+                  tableData={categorySummaryData} // Dati riepilogativi delle categorie
                   tableLabels={[
                     { id: 'category', label: 'Categoria' },
                     { id: 'income', label: 'Entrate (€)', align: 'right' },
@@ -1723,7 +1679,7 @@ export default function MasterAnalyticsView() {
                 'Nov',
                 'Dic',
               ]}
-              series={getChartData()}
+              series={chartData || []}
             />
           </Grid>
           

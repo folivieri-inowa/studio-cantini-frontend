@@ -20,14 +20,14 @@ export default function BankingWidgetSummary({
   icon,
   percent,
   color = 'primary',
-  chart,
+  chart = {},
   description,
   sx,
   ...other
 }) {
   const theme = useTheme();
 
-  const { series = [], options = {} } = chart || {};
+  const { series = [], options = {} } = chart;
 
   const chartOptions = useChart({
     colors: [theme.palette[color].dark],
@@ -128,14 +128,16 @@ export default function BankingWidgetSummary({
         )}
       </Stack>
 
-      <Chart
-        dir="ltr"
-        type="area"
-        series={[{ data: Array.isArray(series) ? series : [] }]}
-        options={chartOptions}
-        width="100%"
-        height={120}
-      />
+      {series && Array.isArray(series) && series.length > 0 && (
+        <Chart
+          dir="ltr"
+          type="area"
+          series={[{ data: series }]}
+          options={chartOptions}
+          width="100%"
+          height={120}
+        />
+      )}
     </Stack>
   );
 }

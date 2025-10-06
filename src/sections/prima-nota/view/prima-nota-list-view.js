@@ -70,7 +70,7 @@ const TABLE_HEAD = [
   { id: 'date', label: 'Data' },
   { id: 'description', label: 'Descrizione' },
   { id: 'owner', label: 'Intestatario conto', width: 180 },
-  { id: 'amount', label: 'Importo' },
+  { id: 'amount', label: 'Importo', align: 'right' },
   { id: 'status', label: 'Stato' },
   { id: 'actions', label: 'Azioni', width: 120 },
   { id: '', width: 88 },

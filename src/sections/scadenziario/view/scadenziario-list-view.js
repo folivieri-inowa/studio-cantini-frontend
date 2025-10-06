@@ -58,7 +58,7 @@ const TABLE_HEAD = [
   { id: 'description', label: 'Descrizione' },
   { id: 'causale', label: 'Causale' },
   { id: 'date', label: 'Data scadenza' },
-  { id: 'amount', label: 'Importo' },
+  { id: 'amount', label: 'Importo', align: 'right' },
   { id: 'paymentDate', label: 'Data pagamento' },
   { id: 'status', label: 'Stato pagamento' },
   { id: '', width: 88 },

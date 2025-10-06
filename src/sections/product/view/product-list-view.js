@@ -48,7 +48,7 @@ const TABLE_HEAD = [
   { id: 'name', label: 'Product' },
   { id: 'createdAt', label: 'Create at', width: 160 },
   { id: 'inventoryType', label: 'Stock', width: 160 },
-  { id: 'price', label: 'Price', width: 140 },
+  { id: 'price', label: 'Price', width: 140, align: 'right' },
   { id: 'publish', label: 'Publish', width: 110 },
   { id: '', width: 88 },
 ];

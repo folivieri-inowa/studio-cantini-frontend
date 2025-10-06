@@ -53,11 +53,11 @@ function CategorySummaryRow({ row }) {
     <TableRow>
         <TableCell>{capitalizeCase(row.subcategory)}</TableCell>
 
-        <TableCell>{fCurrencyEur(row.income)}</TableCell>
+        <TableCell align="right">{fCurrencyEur(row.income)}</TableCell>
 
-        <TableCell>{fCurrencyEur(row.expense)}</TableCell>
+        <TableCell align="right">{fCurrencyEur(row.expense)}</TableCell>
 
-        <TableCell>
+        <TableCell align="right">
           <Label
             variant="soft"
             color={parseFloat(row.difference.toFixed(2)) > 0 ? 'success' : 'error'}

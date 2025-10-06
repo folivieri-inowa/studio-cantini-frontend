@@ -55,20 +55,24 @@ export function useGroupAggregation(db) {
         year: year ? parseInt(year, 10) : null
       });
 
+      const requestBody = {
+        db,
+        groupName: groupData.groupName,
+        selectedCategories,
+        selectedSubjects,
+        selectedDetails,
+        ownerId: ownerId === 'all-accounts' ? null : ownerId,
+        year: year ? parseInt(year, 10) : null
+      };
+
+      console.log('Debug - Request body completo:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(endpoints.report.groupAggregation, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          db,
-          groupName: groupData.groupName,
-          selectedCategories,
-          selectedSubjects,
-          selectedDetails,
-          ownerId: ownerId === 'all-accounts' ? null : ownerId,
-          year: year ? parseInt(year, 10) : null
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -76,6 +80,12 @@ export function useGroupAggregation(db) {
       }
 
       const data = await response.json();
+      console.log('Debug - Risposta dal backend:', {
+        totalTransactions: data?.stats?.totalTransactions,
+        totalExpenses: data?.stats?.totalExpenses,
+        totalIncome: data?.stats?.totalIncome,
+        categoryCount: data?.stats?.categoryBreakdown?.length
+      });
       setCurrentAggregation(data);
       
     } catch (error) {

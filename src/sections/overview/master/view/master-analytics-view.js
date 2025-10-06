@@ -2,14 +2,15 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
-import Grid from '@mui/material/Grid2';
 import Alert from '@mui/material/Alert';
-import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
-import Divider from '@mui/material/Divider';
-import MenuItem from '@mui/material/MenuItem';
-import Snackbar from '@mui/material/Snackbar';
+import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid2';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { paths } from '../../../../routes/paths';
@@ -26,16 +27,102 @@ import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-colum
 
 // ----------------------------------------------------------------------
 
+// LocalStorage utilities for filter preferences
+const STORAGE_KEY = 'master-filter-preferences';
+
+const saveFilterPreferences = (owner, year) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ owner, year, timestamp: Date.now() }));
+  } catch (error) {
+    console.error('Error saving filter preferences:', error);
+  }
+};
+
+const loadFilterPreferences = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.error('Error loading filter preferences:', error);
+    return null;
+  }
+};
+
+// Quick filter presets
+const QUICK_FILTERS = [
+  { 
+    id: 'current-year', 
+    label: 'Anno corrente', 
+    getValue: () => new Date().getFullYear().toString(), 
+    type: 'year' 
+  },
+  { 
+    id: 'last-year', 
+    label: 'Anno scorso', 
+    getValue: () => (new Date().getFullYear() - 1).toString(), 
+    type: 'year' 
+  },
+  { 
+    id: 'current-month', 
+    label: 'Mese corrente', 
+    getValue: () => {
+      const now = new Date();
+      return {
+        year: now.getFullYear().toString(),
+        startMonth: now.getMonth() + 1,
+        endMonth: now.getMonth() + 1
+      };
+    }, 
+    type: 'month' 
+  },
+  { 
+    id: 'last-6-months', 
+    label: 'Ultimi 6 mesi', 
+    getValue: () => {
+      const now = new Date();
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      return {
+        startYear: sixMonthsAgo.getFullYear().toString(),
+        startMonth: sixMonthsAgo.getMonth() + 1,
+        endYear: now.getFullYear().toString(),
+        endMonth: now.getMonth() + 1
+      };
+    }, 
+    type: 'range' 
+  },
+  { 
+    id: 'all-time', 
+    label: 'Tutto il periodo', 
+    getValue: () => 'all', 
+    type: 'all' 
+  },
+];
+
+// ----------------------------------------------------------------------
+
 export default function MasterAnalyticsView() {
   const router = useRouter();
   const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [transactionStats, setTransactionStats] = useState({ total: 0, filtered: 0 });
+  const [activeFilter, setActiveFilter] = useState(null); // Traccia quale filtro rapido è attivo
+  const [dateFilter, setDateFilter] = useState(null); // { startYear, startMonth, endYear, endMonth }
   const settings = useSettingsContext();
   const { user } = useAuthContext();
   
-  // Ordina alfabeticamente i conti correnti
+  // Load saved preferences on mount
+  useEffect(() => {
+    const preferences = loadFilterPreferences();
+    if (preferences && preferences.owner && preferences.year) {
+      console.log('Loading saved filter preferences:', preferences);
+      // Preferences will be applied after data is loaded
+    }
+  }, []);
+  
+  // Ordina alfabeticamente i conti correnti e filtra l'eventuale 'all-accounts' dal backend
   const sortedData = useMemo(() => 
-    data ? data.slice().sort((a, b) => a.name.localeCompare(b.name)) : []
+    data ? data.slice()
+      .filter(owner => owner.id !== 'all-accounts') // Rimuovi duplicato 'Tutti i conti'
+      .sort((a, b) => a.name.localeCompare(b.name)) : []
   , [data]);
   
   // Hook per ottenere le categorie per l'aggregazione
@@ -56,22 +143,24 @@ export default function MasterAnalyticsView() {
 
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
-    setIsLoading(true);
     try {
       console.log('Fetching master data from API...');
       // Aggiungiamo un timestamp come parametro per evitare la cache
       const timestamp = new Date().getTime();
-      const response = await axios.get(endpoints.report.master, {
+      // Il backend usa path parameter: /api/report/master/:db
+      const response = await axios.get(`${endpoints.report.master}${settings.db}`, {
         params: {
-          db: settings.db,
           _t: timestamp
         }
       });
-      console.log('Master data received:', response.data.data);
+      console.log('Master data received:', response.data);
 
       // Controlla se il saldo iniziale è presente nei dati
-      if (response.data.data && response.data.data.length > 0) {
-        const firstOwner = response.data.data[0];
+      // Il backend restituisce un array direttamente
+      const responseData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      
+      if (responseData && responseData.length > 0) {
+        const firstOwner = responseData[0];
         console.log('Primo owner:', firstOwner);
         console.log('Saldo iniziale del primo owner:', {
           initialBalance: firstOwner.initialBalance,
@@ -80,30 +169,80 @@ export default function MasterAnalyticsView() {
         });
       }
 
-      setData(response.data.data);
+      // Usa responseData già calcolato sopra
+      const fetchedData = responseData;
+      setData(fetchedData);
+      
+      // Log per debug dei dati caricati
+      console.log('📊 Data structure after fetch:', {
+        totalOwners: fetchedData?.length || 0,
+        owners: fetchedData?.map(o => ({
+          id: o.id,
+          name: o.name,
+          years: o.report?.years
+        })) || []
+      });
+      
+      // Calculate transaction statistics
+      const totalTransactions = fetchedData.reduce((sum, owner) => {
+        if (owner.report && owner.report.globalReport) {
+          return sum + Object.values(owner.report.globalReport).reduce((yearSum, yearData) => 
+            yearSum + Object.values(yearData.months || {}).reduce((monthSum, monthData) => 
+              monthSum + (monthData.transactionCount || 0), 0), 0);
+        }
+        return sum;
+      }, 0);
+      
+      setTransactionStats({ total: totalTransactions, filtered: totalTransactions });
+
+      // Try to restore saved preferences first
+      const preferences = loadFilterPreferences();
+      const shouldRestorePrefs = preferences && !settings.owner;
+      
+      if (shouldRestorePrefs) {
+        // Find the saved owner in the data
+        const savedOwner = fetchedData.find(o => o.id === preferences.owner);
+        
+        if (savedOwner && savedOwner.report && savedOwner.report.years && savedOwner.report.years.length > 0) {
+          // Non ripristinare 'all-years' - usa invece l'anno più recente
+          let yearToRestore = preferences.year;
+          
+          if (preferences.year === 'all-years') {
+            // Trova l'anno più recente (ordina in modo decrescente e prendi il primo)
+            const sortedYears = [...savedOwner.report.years].sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+            yearToRestore = sortedYears[0];
+            console.log('Converting all-years to most recent year:', yearToRestore);
+          }
+          
+          if (yearToRestore && savedOwner.report.years.includes(yearToRestore)) {
+            settings.onChangeOwner(savedOwner);
+            settings.onChangeYear(yearToRestore);
+            console.log('Restored filter preferences:', { owner: preferences.owner, year: yearToRestore });
+            return;
+          }
+        }
+      }
 
       // Aggiorna l'owner corrente se esiste, altrimenti imposta il primo della lista
-      if (settings.owner && response.data.data.length > 0) {
+      if (settings.owner && fetchedData.length > 0) {
         // Trova l'owner corrispondente nei nuovi dati
-        const currentOwner = response.data.data.find(owner => owner.id === settings.owner.id);
+        const currentOwner = fetchedData.find(owner => owner.id === settings.owner.id);
         if (currentOwner) {
           // Aggiorna l'owner con i dati freschi
           console.log('Aggiornamento owner esistente:', currentOwner);
           settings.onChangeOwner(currentOwner);
         }
-      } else if (response.data.data.length > 0) {
+      } else if (fetchedData.length > 0) {
         // Se non c'è un owner selezionato, imposta il primo
-        settings.onChangeOwner(response.data.data[0]);
+        settings.onChangeOwner(fetchedData[0]);
       }
 
       // Solo se non c'è ancora un anno selezionato, impostiamo il primo anno disponibile
-      if (!settings.year && response.data.data.length > 0 && response.data.data[0].report?.years?.length) {
-        settings.onChangeYear(response.data.data[0].report.years[0]);
+      if (!settings.year && fetchedData.length > 0 && fetchedData[0].report?.years?.length) {
+        settings.onChangeYear(fetchedData[0].report.years[0]);
       }
     } catch (error) {
       console.error('Error fetching master data:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -114,13 +253,27 @@ export default function MasterAnalyticsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.db]); // Riesegui quando cambia il database
 
-  const handleYearChange = (event) => {
+  const handleYearChange = useCallback((event, fromQuickFilter = false) => {
     const newYear = event.target.value;
     const currentOwnerId = settings.owner?.id;
+    
+    // Reset active filter quando l'utente cambia manualmente l'anno
+    if (!fromQuickFilter) {
+      setActiveFilter(null);
+    }
+    
+    // "all-years" è un valore speciale per visualizzare tutti i dati storici
+    // Non richiede validazione perché viene gestito dalle funzioni di aggregazione
+    if (newYear === 'all-years') {
+      settings.onChangeYear(newYear);
+      saveFilterPreferences(settings.owner?.id, newYear);
+      return;
+    }
     
     // Se siamo nel caso "Tutti i conti", non abbiamo bisogno di verificare l'anno
     if (currentOwnerId === 'all-accounts') {
       settings.onChangeYear(newYear);
+      saveFilterPreferences(settings.owner?.id, newYear);
       return;
     }
 
@@ -141,10 +294,16 @@ export default function MasterAnalyticsView() {
     }
     
     settings.onChangeYear(newYear);
-  };
+    saveFilterPreferences(settings.owner?.id, newYear);
+  }, [data, settings, setSnackbar, setActiveFilter]);
 
-  const handleOwnerChange = (event) => {
+  const handleOwnerChange = useCallback((event, fromQuickFilter = false) => {
     const selectedValue = event.target.value;
+
+    // Reset active filter quando l'utente cambia manualmente il conto
+    if (!fromQuickFilter) {
+      setActiveFilter(null);
+    }
 
     if (selectedValue === 'all-accounts') {
       // Create a special owner object that represents all accounts combined
@@ -301,8 +460,178 @@ export default function MasterAnalyticsView() {
         // L'anno corrente è disponibile, aggiorna solo l'owner
         settings.onChangeOwner(selectedOwner);
       }
+      
+      // Save preferences
+      saveFilterPreferences(selectedOwner.id, settings.year);
     }
-  };
+  }, [data, settings, setActiveFilter]);
+
+  const handleQuickFilter = useCallback((filterId) => {
+    const filter = QUICK_FILTERS.find(f => f.id === filterId);
+    if (!filter) return;
+    
+    const filterValue = filter.getValue();
+    
+    // Imposta questo filtro come attivo
+    setActiveFilter(filterId);
+    
+    // Se non ci sono dati, mostra errore
+    if (!data || data.length === 0) {
+      setSnackbar({
+        open: true,
+        message: 'Dati non ancora caricati. Attendi il caricamento e riprova.',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    // Gestione basata sul tipo di filtro
+    if (filter.type === 'all') {
+      // Per "Tutto il periodo", usiamo il valore speciale "all-years" come anno
+      // Questo farà sì che il dashboard aggreghi tutti gli anni disponibili
+      if (!settings.owner || !settings.owner.report || !settings.owner.report.years || settings.owner.report.years.length === 0) {
+        setSnackbar({
+          open: true,
+          message: 'Nessun dato disponibili per il conto selezionato',
+          severity: 'warning'
+        });
+        return;
+      }
+      
+      // Trova l'anno più vecchio e più recente
+      const availableYears = settings.owner.report.years.map(y => parseInt(y, 10)).sort((a, b) => a - b);
+      const oldestYear = availableYears[0];
+      const newestYear = availableYears[availableYears.length - 1];
+      
+      console.log('Tutto il periodo - visualizzazione completa:', {
+        owner: settings.owner.name,
+        availableYears: settings.owner.report.years,
+        period: `${oldestYear}-${newestYear}`
+      });
+      
+      // Imposta l'anno speciale "all-years" per indicare che vogliamo tutti i dati
+      handleYearChange({ target: { value: 'all-years' } }, true);
+      
+      // Reset date filter per visualizzare tutto
+      setDateFilter(null);
+      
+      setSnackbar({
+        open: true,
+        message: `Visualizzazione periodo completo (${oldestYear} - ${newestYear}) per ${settings.owner.name}`,
+        severity: 'success'
+      });
+      
+    } else if (filter.type === 'month') {
+      // Filtro per mese singolo
+      const { year, startMonth, endMonth } = filterValue;
+      const monthName = new Date(year, startMonth - 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+      
+      // Imposta l'anno
+      handleYearChange({ target: { value: year } }, true);
+      
+      // Imposta il filtro per il mese
+      setDateFilter({
+        startYear: year,
+        startMonth,
+        endYear: year,
+        endMonth
+      });
+      
+      setSnackbar({
+        open: true,
+        message: `Visualizzazione ${monthName} per ${settings.owner.name}`,
+        severity: 'success'
+      });
+      
+    } else if (filter.type === 'range') {
+      // Filtro per range di mesi
+      const { startYear, startMonth, endYear, endMonth } = filterValue;
+      const startDate = new Date(startYear, startMonth - 1);
+      const endDate = new Date(endYear, endMonth - 1);
+      
+      const startMonthName = startDate.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' });
+      const endMonthName = endDate.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' });
+      
+      // Se attraversa più anni, usa 'all-years', altrimenti usa l'anno finale
+      const yearToSet = startYear !== endYear ? 'all-years' : endYear;
+      handleYearChange({ target: { value: yearToSet } }, true);
+      
+      // Imposta il filtro per il range
+      setDateFilter({
+        startYear,
+        startMonth,
+        endYear,
+        endMonth
+      });
+      
+      setSnackbar({
+        open: true,
+        message: `Visualizzazione ${startMonthName} - ${endMonthName} per ${settings.owner.name}`,
+        severity: 'success'
+      });
+      
+    } else if (filter.type === 'year') {
+      // Filtro per anno specifico (include anche i nuovi filtri semplificati)
+      const targetYear = filterValue;
+      
+      console.log('Checking year availability:', {
+        targetYear,
+        filterLabel: filter.label,
+        currentOwnerYears: settings.owner?.report?.years,
+      });
+      
+      // Verifica se l'anno è disponibile per l'owner corrente
+      if (settings.owner?.report?.years?.includes(targetYear)) {
+        handleYearChange({ target: { value: targetYear } }, true);
+        
+        // Reset date filter per visualizzare l'anno intero
+        setDateFilter(null);
+        
+        setSnackbar({
+          open: true,
+          message: `Visualizzazione anno ${targetYear} per ${settings.owner.name}`,
+          severity: 'success'
+        });
+      } else {
+        // Cerca un owner che ha dati per questo anno
+        let ownerWithYear = null;
+        if (data && data.length > 0) {
+          const allAccounts = data.find(o => o.id === 'all-accounts');
+          if (allAccounts && allAccounts.report?.years?.includes(targetYear)) {
+            ownerWithYear = allAccounts;
+          } else {
+            ownerWithYear = data.find(owner => 
+              owner.id !== 'all-accounts' &&
+              owner.report && 
+              owner.report.years && 
+              owner.report.years.includes(targetYear)
+            );
+          }
+        }
+        
+        if (ownerWithYear) {
+          console.log('Found owner with year:', ownerWithYear.name, targetYear);
+          handleOwnerChange({ target: { value: ownerWithYear.id } }, true);
+          setTimeout(() => {
+            handleYearChange({ target: { value: targetYear } }, true);
+          }, 150);
+          
+          setSnackbar({
+            open: true,
+            message: `Passato a "${ownerWithYear.name}" per visualizzare l'anno ${targetYear}`,
+            severity: 'success'
+          });
+        } else {
+          console.warn('Year not found in any owner:', targetYear);
+          setSnackbar({
+            open: true,
+            message: `L'anno ${targetYear} non ha dati disponibili. Verifica che ci siano transazioni per quest'anno.`,
+            severity: 'error'
+          });
+        }
+      }
+    }
+  }, [data, settings.owner, handleYearChange, handleOwnerChange, setSnackbar, setActiveFilter, setDateFilter]);
 
   const handleViewRow = useCallback(
     (id) => {
@@ -315,6 +644,23 @@ export default function MasterAnalyticsView() {
   const handleCloseSnackbar = useCallback(() => {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
+
+  // Helper function per filtrare i mesi in base al dateFilter
+  const shouldIncludeMonth = useCallback((year, month) => {
+    if (!dateFilter) return true;
+    
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10);
+    const startYearNum = parseInt(dateFilter.startYear, 10);
+    const endYearNum = parseInt(dateFilter.endYear, 10);
+    
+    // Converte anno-mese in un numero per confronto facile (es. 2025-10 diventa 202510)
+    const current = yearNum * 100 + monthNum;
+    const start = startYearNum * 100 + dateFilter.startMonth;
+    const end = endYearNum * 100 + dateFilter.endMonth;
+    
+    return current >= start && current <= end;
+  }, [dateFilter]);
 
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
@@ -452,85 +798,241 @@ export default function MasterAnalyticsView() {
   };
 
   const getGlobalIncome = () => {
-    const selectedReport = settings.owner?.report?.globalReport[settings.year];
+    const globalReport = settings.owner?.report?.globalReport;
+    if (!globalReport) return { incomeData: [], totalIncome: 0, percentChange: 0 };
 
-    if (!selectedReport) return { incomeData: [], totalIncome: 0, percentChange: 0 };
+    const isAllYears = settings.year === 'all-years';
+    const yearsToProcess = isAllYears ? (settings.owner.report?.years || []) : [settings.year];
 
-    // Ordiniamo i mesi
-    const sortedMonths = Object.entries(selectedReport.months).sort(
-      ([a], [b]) => Number(a) - Number(b)
-    );
+    if (!isAllYears) {
+      // Logica originale per un singolo anno
+      const selectedReport = globalReport[settings.year];
+      if (!selectedReport) return { incomeData: [], totalIncome: 0, percentChange: 0 };
 
-    const incomeData = sortedMonths.map(([month, date]) => ({
-      x: `${settings.year}-${month.padStart(2, '0')}`, // Formato YYYY-MM
-      y: parseFloat((date?.income ?? 0).toFixed(2)),
-    }));
+      const sortedMonths = Object.entries(selectedReport.months).sort(
+        ([a], [b]) => Number(a) - Number(b)
+      );
 
-    const totalIncome = parseFloat((selectedReport?.income ?? 0).toFixed(2));
+      // Applica filtro mese se attivo
+      const filteredMonths = sortedMonths.filter(([month]) => 
+        shouldIncludeMonth(settings.year, month)
+      );
 
-    // Calcolo variazione percentuale rispetto al mese precedente
+      const incomeData = filteredMonths.map(([month, date]) => ({
+        x: `${settings.year}-${month.padStart(2, '0')}`,
+        y: parseFloat((date?.income ?? 0).toFixed(2)),
+      }));
+
+      // Ricalcola totalIncome solo per i mesi filtrati
+      const totalIncome = parseFloat(
+        filteredMonths.reduce((sum, [, date]) => sum + (date?.income ?? 0), 0).toFixed(2)
+      );
+
+      let percentChange = 0;
+      if (filteredMonths.length > 1) {
+        const lastMonthIncome = parseFloat((filteredMonths[filteredMonths.length - 1][1]?.income ?? 0).toFixed(2));
+        const prevMonthIncome = parseFloat((filteredMonths[filteredMonths.length - 2][1]?.income ?? 0).toFixed(2));
+        if (prevMonthIncome !== 0) {
+          percentChange = parseFloat(((lastMonthIncome - prevMonthIncome) / prevMonthIncome * 100).toFixed(2));
+        }
+      }
+
+      return { incomeData, totalIncome, percentChange };
+    }
+
+    // Aggregazione multi-anno per 'all-years'
+    const allMonthsData = [];
+    let totalIncome = 0;
+
+    yearsToProcess.sort().forEach(year => {
+      const yearReport = globalReport[year];
+      if (!yearReport) return;
+
+      const sortedMonths = Object.entries(yearReport.months).sort(
+        ([a], [b]) => Number(a) - Number(b)
+      );
+
+      // Applica filtro mese se attivo
+      const filteredMonths = sortedMonths.filter(([month]) => 
+        shouldIncludeMonth(year, month)
+      );
+
+      filteredMonths.forEach(([month, date]) => {
+        const monthIncome = parseFloat(date?.income ?? 0);
+        totalIncome += monthIncome;
+        allMonthsData.push({
+          x: `${year}-${month.padStart(2, '0')}`,
+          y: parseFloat(monthIncome.toFixed(2)),
+        });
+      });
+    });
+
+    // Calcolo percentuale di crescita tra primo e ultimo mese del periodo
     let percentChange = 0;
-    if (sortedMonths.length > 1) {
-      const lastMonthIncome = parseFloat((sortedMonths[sortedMonths.length - 1][1]?.income ?? 0).toFixed(2)); // Income dell'ultimo mese
-      const prevMonthIncome = parseFloat((sortedMonths[sortedMonths.length - 2][1]?.income ?? 0).toFixed(2)); // Income del mese precedente
-
-      if (prevMonthIncome !== 0) {
-        percentChange = parseFloat(((lastMonthIncome - prevMonthIncome) / prevMonthIncome * 100).toFixed(2));
+    if (allMonthsData.length > 1) {
+      const firstMonthIncome = allMonthsData[0].y;
+      const lastMonthIncome = allMonthsData[allMonthsData.length - 1].y;
+      if (firstMonthIncome !== 0) {
+        percentChange = parseFloat(((lastMonthIncome - firstMonthIncome) / firstMonthIncome * 100).toFixed(2));
       }
     }
 
-    return { incomeData, totalIncome, percentChange };
+    return { 
+      incomeData: allMonthsData, 
+      totalIncome: parseFloat(totalIncome.toFixed(2)), 
+      percentChange 
+    };
   };
 
   const getGlobalExpense = () => {
-    const selectedReport = settings.owner?.report?.globalReport[settings.year];
+    const globalReport = settings.owner?.report?.globalReport;
+    if (!globalReport) return { expenseData: [], totalExpense: 0, percentChange: 0 };
 
-    if (!selectedReport) return { expenseData: [], totalExpense: 0, percentChange: 0 };
+    const isAllYears = settings.year === 'all-years';
+    const yearsToProcess = isAllYears ? (settings.owner.report?.years || []) : [settings.year];
 
-    // Ordiniamo i mesi
-    const sortedMonths = Object.entries(selectedReport.months).sort(
-      ([a], [b]) => Number(a) - Number(b)
-    );
+    if (!isAllYears) {
+      // Logica originale per un singolo anno
+      const selectedReport = globalReport[settings.year];
+      if (!selectedReport) return { expenseData: [], totalExpense: 0, percentChange: 0 };
 
-    const expenseData = sortedMonths.map(([month, date]) => ({
-      x: `${settings.year}-${month.padStart(2, '0')}`, // Formato YYYY-MM
-      y: parseFloat((date?.expense ?? 0).toFixed(2)),
-    }));
+      const sortedMonths = Object.entries(selectedReport.months).sort(
+        ([a], [b]) => Number(a) - Number(b)
+      );
 
-    const totalExpense = parseFloat((selectedReport?.expense ?? 0).toFixed(2));
+      // Applica filtro mese se attivo
+      const filteredMonths = sortedMonths.filter(([month]) => 
+        shouldIncludeMonth(settings.year, month)
+      );
 
-    // Calcolo variazione percentuale rispetto al mese precedente
+      const expenseData = filteredMonths.map(([month, date]) => ({
+        x: `${settings.year}-${month.padStart(2, '0')}`,
+        y: parseFloat((date?.expense ?? 0).toFixed(2)),
+      }));
+
+      // Ricalcola totalExpense solo per i mesi filtrati
+      const totalExpense = parseFloat(
+        filteredMonths.reduce((sum, [, date]) => sum + (date?.expense ?? 0), 0).toFixed(2)
+      );
+
+      let percentChange = 0;
+      if (filteredMonths.length > 1) {
+        const lastMonthExpense = parseFloat((filteredMonths[filteredMonths.length - 1][1]?.expense ?? 0).toFixed(2));
+        const prevMonthExpense = parseFloat((filteredMonths[filteredMonths.length - 2][1]?.expense ?? 0).toFixed(2));
+        if (prevMonthExpense !== 0) {
+          percentChange = parseFloat(((lastMonthExpense - prevMonthExpense) / prevMonthExpense * 100).toFixed(2));
+        }
+      }
+
+      return { expenseData, totalExpense, percentChange };
+    }
+
+    // Aggregazione multi-anno per 'all-years'
+    const allMonthsData = [];
+    let totalExpense = 0;
+
+    yearsToProcess.sort().forEach(year => {
+      const yearReport = globalReport[year];
+      if (!yearReport) return;
+
+      const sortedMonths = Object.entries(yearReport.months).sort(
+        ([a], [b]) => Number(a) - Number(b)
+      );
+
+      // Applica filtro mese se attivo
+      const filteredMonths = sortedMonths.filter(([month]) => 
+        shouldIncludeMonth(year, month)
+      );
+
+      filteredMonths.forEach(([month, date]) => {
+        const monthExpense = parseFloat(date?.expense ?? 0);
+        totalExpense += monthExpense;
+        allMonthsData.push({
+          x: `${year}-${month.padStart(2, '0')}`,
+          y: parseFloat(monthExpense.toFixed(2)),
+        });
+      });
+    });
+
+    // Calcolo percentuale di crescita tra primo e ultimo mese del periodo
     let percentChange = 0;
-    if (sortedMonths.length > 1) {
-      const lastMonthExpense = parseFloat((sortedMonths[sortedMonths.length - 1][1]?.expense ?? 0).toFixed(2)); // Spesa dell'ultimo mese
-      const prevMonthExpense = parseFloat((sortedMonths[sortedMonths.length - 2][1]?.expense ?? 0).toFixed(2)); // Spesa del mese precedente
-
-      if (prevMonthExpense !== 0) {
-        percentChange = parseFloat(((lastMonthExpense - prevMonthExpense) / prevMonthExpense * 100).toFixed(2));
+    if (allMonthsData.length > 1) {
+      const firstMonthExpense = allMonthsData[0].y;
+      const lastMonthExpense = allMonthsData[allMonthsData.length - 1].y;
+      if (firstMonthExpense !== 0) {
+        percentChange = parseFloat(((lastMonthExpense - firstMonthExpense) / firstMonthExpense * 100).toFixed(2));
       }
     }
 
-    return { expenseData, totalExpense, percentChange };
+    return { 
+      expenseData: allMonthsData, 
+      totalExpense: parseFloat(totalExpense.toFixed(2)), 
+      percentChange 
+    };
   };
 
   const getCategorySummary = () => {
     if (!data || !settings.owner || !settings.year) return [];
 
+    const isAllYears = settings.year === 'all-years';
+    const yearsToAggregate = isAllYears ? settings.owner.report?.years || [] : [settings.year];
+
+    // Helper function to aggregate category data across multiple years with month filtering
+    const aggregateCategoryData = (categoryReports, years) => {
+      const aggregated = {};
+      
+      years.forEach(year => {
+        const yearReport = categoryReports[year];
+        if (!yearReport) return;
+        
+        Object.entries(yearReport).forEach(([category, values]) => {
+          if (!aggregated[category]) {
+            aggregated[category] = {
+              name: values.name,
+              totalIncome: 0,
+              totalExpense: 0,
+            };
+          }
+          
+          // Se c'è un filtro attivo, aggrega solo i mesi filtrati
+          if (dateFilter && values.months) {
+            Object.entries(values.months).forEach(([month, monthData]) => {
+              if (shouldIncludeMonth(year, month)) {
+                aggregated[category].totalIncome += parseFloat(monthData.income) || 0;
+                aggregated[category].totalExpense += parseFloat(monthData.expense) || 0;
+              }
+            });
+          } else {
+            // Nessun filtro: usa i totali annuali
+            aggregated[category].totalIncome += parseFloat(values.totalIncome) || 0;
+            aggregated[category].totalExpense += parseFloat(values.totalExpense) || 0;
+          }
+        });
+      });
+      
+      return aggregated;
+    };
+
     // Special handling for 'all-accounts' case
     if (settings.owner.id === 'all-accounts') {
-      // Use the categoryReport directly from settings.owner
-      const allAccountsReport = settings.owner.report?.categoryReport[settings.year];
-      if (!allAccountsReport) {
-        console.log(`Nessun dato disponibile per l'anno ${settings.year} per tutti i conti`);
+      const categoryReports = settings.owner.report?.categoryReport;
+      if (!categoryReports) {
+        console.log('Nessun dato disponibile per tutti i conti');
         return [];
       }
 
-      return Object.entries(allAccountsReport).map(([category, values]) => {
-        const totalExpense = parseFloat(values.totalExpense) || 0;
+      const aggregatedData = isAllYears 
+        ? aggregateCategoryData(categoryReports, yearsToAggregate)
+        : categoryReports[settings.year];
 
-        // Round values to two decimal places for greater precision
+      if (!aggregatedData) {
+        console.log(`Nessun dato disponibile per ${isAllYears ? 'tutti gli anni' : `l'anno ${settings.year}`} per tutti i conti`);
+        return [];
+      }
+
+      return Object.entries(aggregatedData).map(([category, values]) => {
         const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
-        const roundedExpense = parseFloat(totalExpense.toFixed(2));
+        const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
         const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
 
         return {
@@ -551,19 +1053,24 @@ export default function MasterAnalyticsView() {
       return [];
     }
 
-    // Prende il report dal dataset caricato
-    const ownerReport = selectedOwner.report?.categoryReport[settings.year];
-    if (!ownerReport) {
-      console.log(`Nessun dato disponibile per l'anno ${settings.year} per il conto corrente ${selectedOwner.name}`);
+    const categoryReports = selectedOwner.report?.categoryReport;
+    if (!categoryReports) {
+      console.log('Nessun categoryReport disponibile');
       return [];
     }
 
-    return Object.entries(ownerReport).map(([category, values]) => {
-      const totalExpense = parseFloat(values.totalExpense) || 0;
+    const aggregatedData = isAllYears 
+      ? aggregateCategoryData(categoryReports, yearsToAggregate)
+      : categoryReports[settings.year];
 
-      // Arrotonda i valori a due decimali per maggiore precisione
+    if (!aggregatedData) {
+      console.log(`Nessun dato disponibile per ${isAllYears ? 'tutti gli anni' : `l'anno ${settings.year}`} per il conto ${selectedOwner.name}`);
+      return [];
+    }
+
+    return Object.entries(aggregatedData).map(([category, values]) => {
       const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
-      const roundedExpense = parseFloat(totalExpense.toFixed(2));
+      const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
       const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
       
       return {
@@ -578,6 +1085,39 @@ export default function MasterAnalyticsView() {
   };
 
   // Prepare data for EcommerceYearlySales component
+  // Helper function to get the current period label
+  const getPeriodLabel = useCallback(() => {
+    if (!settings.owner || !settings.year) return '';
+
+    const ownerName = settings.owner.id === 'all-accounts' ? 'Tutti i conti' : settings.owner.name;
+    
+    // Se c'è un filtro per mese attivo
+    if (dateFilter) {
+      const monthNames = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+      const { startMonth: startMonthNum, endMonth: endMonthNum, startYear, endYear } = dateFilter;
+      const startMonth = monthNames[startMonthNum - 1];
+      const endMonth = monthNames[endMonthNum - 1];
+      
+      if (startYear === endYear && startMonth === endMonth) {
+        // Singolo mese
+        return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear} • ${ownerName}`;
+      }
+      if (startYear === endYear) {
+        // Range nello stesso anno
+        return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)}-${endMonth} ${startYear} • ${ownerName}`;
+      }
+      // Range tra anni diversi
+      return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear} - ${endMonth} ${endYear} • ${ownerName}`;
+    }
+    
+    // Nessun filtro mese: mostra anno
+    if (settings.year === 'all-years') {
+      return `Tutto il periodo • ${ownerName}`;
+    }
+    
+    return `Anno ${settings.year} • ${ownerName}`;
+  }, [settings.owner, settings.year, dateFilter]);
+
   const getYearlySalesData = () => {
     // Check if we have data and settings
     const globalReport = settings.owner?.report?.globalReport;
@@ -738,89 +1278,176 @@ export default function MasterAnalyticsView() {
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
-      <Stack
-        divider={<Divider flexItem sx={{ borderStyle: 'dashed' }} />}
-        spacing={3}
-        sx={{ mb: 5 }}
-      >
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
-          <Stack direction="column" spacing={3}>
-            <Typography variant="h4" component="div">
-              {user?.firstname || user?.firstName || ''} {user?.lastname || user?.lastName || ''}
-            </Typography>
+      <Typography variant="h4" sx={{ mb: 3, mt: 2 }}>
+        {user?.firstname || user?.firstName || ''} {user?.lastname || user?.lastName || ''}
+      </Typography>
 
-            {data && settings.owner && settings.owner.report && settings.owner.report.years && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="body1" component="div">
-                  Riepilogo spese per categoria dell&#39;anno
+      <Stack
+        spacing={3}
+        sx={{
+          mb: 5,
+          p: 3,
+          bgcolor: (theme) => theme.palette.mode === 'light' ? 'grey.50' : 'grey.900',
+          borderRadius: 2,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 1px 2px 0 rgba(0,0,0,0.05)' : 'none',
+        }}
+      >
+        {data && settings.owner && settings.owner.report && settings.owner.report.years && (
+          <>
+            {/* Quick Filters */}
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 1 }}>
+                ⚡ Filtri rapidi:
+              </Typography>
+              {QUICK_FILTERS.map((filter) => {
+                // Determina se questo filtro è attivo basandosi sullo stato activeFilter
+                const isActive = activeFilter === filter.id;
+                
+                return (
+                  <Chip
+                    key={filter.id}
+                    label={filter.label}
+                    size="small"
+                    onClick={() => handleQuickFilter(filter.id)}
+                    color={isActive ? 'primary' : 'default'}
+                    variant={isActive ? 'filled' : 'outlined'}
+                    sx={{
+                      cursor: 'pointer',
+                      fontWeight: isActive ? 600 : 400,
+                      boxShadow: isActive ? '0 2px 8px rgba(25, 118, 210, 0.25)' : 'none',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        bgcolor: isActive ? 'primary.dark' : 'action.hover',
+                        transform: 'translateY(-1px)',
+                        boxShadow: isActive ? '0 4px 12px rgba(25, 118, 210, 0.35)' : '0 2px 4px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  />
+                );
+              })}
+              
+              {/* Transaction Statistics */}
+              {transactionStats.total > 0 && (
+                <Chip
+                  label={`📊 ${transactionStats.total.toLocaleString('it-IT')} transazioni totali`}
+                  size="small"
+                  color="info"
+                  variant="outlined"
+                  sx={{ ml: 'auto' }}
+                />
+              )}
+            </Stack>
+
+            {/* Period Label */}
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{
+                py: 1.5,
+                px: 2,
+                bgcolor: 'background.paper',
+                borderRadius: 1.5,
+                border: (theme) => `1px solid ${theme.palette.primary.main}`,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'primary.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                📍 Visualizzazione: <span style={{ fontWeight: 700 }}>{getPeriodLabel()}</span>
+              </Typography>
+            </Stack>
+
+            <Divider />
+
+            {/* Main Filters */}
+            <Stack direction="row" spacing={2} alignItems="flex-end">
+              <Stack spacing={0.5} sx={{ minWidth: 120 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Anno
                 </Typography>
                 <Select
                   id="current-year"
-                  label="Anno"
                   onChange={handleYearChange}
                   value={settings.year || ''}
-                  variant="standard"
+                  size="small"
                   sx={{
-                    width: 65,
+                    bgcolor: 'background.paper',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'divider',
+                    },
                   }}
                 >
+                  {settings.owner && settings.owner.report.years.length > 1 && (
+                    <MenuItem key="all-years" value="all-years">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          📅 Tutto il periodo
+                        </Typography>
+                      </Stack>
+                    </MenuItem>
+                  )}
                   {settings.owner && settings.owner.report.years.map((option) => (
                     <MenuItem key={option} value={option}>
                       {option}
                     </MenuItem>
                   ))}
                 </Select>
-                <Typography variant="body1" component="div">
-                  relativo al conto
+              </Stack>
+
+              <Divider orientation="vertical" flexItem />
+
+              <Stack spacing={0.5} sx={{ flex: 1, minWidth: 300 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Conto corrente
                 </Typography>
                 <Select
                   id="current-owner"
-                  label="Conto corrente"
                   onChange={handleOwnerChange}
                   value={settings.owner?.id || ''}
-                  variant="standard"
+                  size="small"
                   sx={{
-                    width: '700',
+                    bgcolor: 'background.paper',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'divider',
+                    },
                   }}
                 >
                   <MenuItem key="all-accounts" value="all-accounts">
-                    Tutti i conti
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        📊 Tutti i conti
+                      </Typography>
+                    </Stack>
                   </MenuItem>
                   {sortedData.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
-                      {option.name} | {option.cc}{' '}
-                      {option.isCreditCard && '(Carta di Credito)'}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2">
+                          {option.isCreditCard ? '💳' : '🏦'}
+                        </Typography>
+                        <Typography variant="body2">
+                          {option.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ({option.cc})
+                        </Typography>
+                      </Stack>
                     </MenuItem>
                   ))}
                 </Select>
-
-                <Typography
-                  variant="button"
-                  component="button"
-                  onClick={fetchData}
-                  sx={{
-                    marginLeft: 2,
-                    color: 'primary.main',
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                    backgroundColor: isLoading ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    transition: 'background-color 0.3s',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.08)'
-                    }
-                  }}
-                >
-                  {isLoading ? 'Aggiornamento...' : 'Aggiorna dati'}
-                </Typography>
               </Stack>
-            )}
-          </Stack>
-        </Stack>
+            </Stack>
+          </>
+        )}
       </Stack>
       {data && settings.owner && settings.owner.report ? (
         <Grid container spacing={3}>

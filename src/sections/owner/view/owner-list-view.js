@@ -43,7 +43,7 @@ const TABLE_HEAD = [
   { id: 'name', label: 'Nome Titolare Conto' },
   { id: 'cc', label: 'Numero Conto Corrente' },
   { id: 'iban', label: 'IBAN' },
-  { id: 'initialBalance', label: 'Saldo Iniziale' },
+  { id: 'initialBalance', label: 'Saldo Iniziale', align: 'right' },
   { id: 'balanceDate', label: 'Data Saldo' },
   { id: 'isCreditCard', label: 'Carta di Credito' },
   { id: '', width: 88 },

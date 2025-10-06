@@ -111,7 +111,7 @@ export default function ProductTableRow({
           {!!available && available} {inventoryType}
         </TableCell>
 
-        <TableCell>{fCurrency(price)}</TableCell>
+        <TableCell align="right">{fCurrency(price)}</TableCell>
 
         <TableCell>
           <Label variant="soft" color={(publish === 'published' && 'info') || 'default'}>

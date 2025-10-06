@@ -130,7 +130,7 @@ export default function ScadenziarioTableRow({
           </Box>
         </TableCell>
 
-        <TableCell>
+        <TableCell align="right">
           <Typography 
             variant="subtitle2" 
             sx={{ 

@@ -103,6 +103,11 @@ function MasterTransactionRow({ row, onViewRow }) {
 
       <TableCell align="right">{formatCurrencyWithZero(row.expense)}</TableCell>
 
+      {/* Colonna averageCost - mostrata solo se presente nei dati */}
+      {row.averageCost !== undefined && (
+        <TableCell align="right">{formatCurrencyWithZero(row.averageCost)}</TableCell>
+      )}
+
       <TableCell align="right">{formatCurrencyWithZero(row.totalExpense)}</TableCell>
 
       <TableCell align="right">

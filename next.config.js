@@ -19,4 +19,17 @@ module.exports = {
     });
     return config;
   },
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+    return [
+      {
+        source: '/api/:path*/',
+        destination: `${backendUrl}/v1/:path*`,
+      },
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/v1/:path*`,
+      },
+    ];
+  },
 };

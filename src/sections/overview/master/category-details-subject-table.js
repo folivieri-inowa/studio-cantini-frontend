@@ -204,7 +204,7 @@ function CategoryDetailsSubjectRow({ row, categoryId, onViewRow, onViewDetails, 
                       <TableCell align="right">Uscite</TableCell>
                       <TableCell align="right">Entrate</TableCell>
                       <TableCell align="right">Delta</TableCell>
-                      <TableCell>{' '}</TableCell>
+                      <TableCell />
                     </TableRow>
                   </TableHead>
                   <TableBody>

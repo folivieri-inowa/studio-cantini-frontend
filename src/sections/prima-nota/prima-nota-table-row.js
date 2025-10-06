@@ -130,7 +130,7 @@ export default function PrimaNotaTableRow({
           </Label>
         </TableCell>
 
-        <TableCell>{fCurrencyEur(amount)}</TableCell>
+        <TableCell align="right">{fCurrencyEur(amount)}</TableCell>
 
         {showStatus && (
           <TableCell>

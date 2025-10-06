@@ -54,7 +54,7 @@ function MasterAverageExpenseCategoryRow({ row }) {
 
         <TableCell sx={{ width: '50%' }}>{row.category}</TableCell>
 
-        <TableCell>
+        <TableCell align="right">
           <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
             <span>{fCurrencyEur(row.averageCost)}</span>
           </Tooltip>

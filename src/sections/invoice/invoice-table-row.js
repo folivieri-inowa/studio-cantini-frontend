@@ -96,7 +96,7 @@ export default function InvoiceTableRow({
           />
         </TableCell>
 
-        <TableCell>{fCurrency(totalAmount)}</TableCell>
+        <TableCell align="right">{fCurrency(totalAmount)}</TableCell>
 
         <TableCell align="center">{sent}</TableCell>
 

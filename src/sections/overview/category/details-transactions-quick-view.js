@@ -45,7 +45,8 @@ const TABLE_HEAD = [
   { id: 'date', label: 'Data' },
   { id: 'description', label: 'Descrizione' },
   { id: 'owner', label: 'Intestatario conto', width: 180 },
-  { id: 'amount', label: 'Importo' },
+  { id: 'amount', label: 'Importo', align: 'right' },
+  { id: '', label: '' },
 ];
 
 export default function DetailsTransactionsQuickView({ data, open, onClose }) {

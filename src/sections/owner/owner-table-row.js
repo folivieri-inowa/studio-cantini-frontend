@@ -35,7 +35,7 @@ export default function OwnerTableRow({ row, selected, onDeleteRow, handleUpdate
 
         <TableCell>{iban}</TableCell>
         
-        <TableCell>{initialBalance ? `€ ${initialBalance.toLocaleString()}` : '-'}</TableCell>
+        <TableCell align="right">{initialBalance ? `€ ${initialBalance.toLocaleString()}` : '-'}</TableCell>
         
         <TableCell>{balanceDate ? new Date(balanceDate).toLocaleDateString() : '-'}</TableCell>
         

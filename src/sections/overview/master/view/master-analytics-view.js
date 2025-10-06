@@ -2,7 +2,10 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
+import { it } from 'date-fns/locale';
+
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
@@ -12,6 +15,9 @@ import Select from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 
 import { paths } from '../../../../routes/paths';
 import GroupAggregation from '../group-aggregation';
@@ -106,6 +112,8 @@ export default function MasterAnalyticsView() {
   const [transactionStats, setTransactionStats] = useState({ total: 0, filtered: 0 });
   const [activeFilter, setActiveFilter] = useState(null); // Traccia quale filtro rapido è attivo
   const [dateFilter, setDateFilter] = useState(null); // { startYear, startMonth, endYear, endMonth }
+  const [customStartDate, setCustomStartDate] = useState(null); // Date per filtro personalizzato
+  const [customEndDate, setCustomEndDate] = useState(null); // Date per filtro personalizzato
   const settings = useSettingsContext();
   const { user } = useAuthContext();
   
@@ -475,6 +483,10 @@ export default function MasterAnalyticsView() {
     // Imposta questo filtro come attivo
     setActiveFilter(filterId);
     
+    // Reset filtro date personalizzato quando si usa un filtro rapido
+    setCustomStartDate(null);
+    setCustomEndDate(null);
+    
     // Se non ci sono dati, mostra errore
     if (!data || data.length === 0) {
       setSnackbar({
@@ -645,6 +657,76 @@ export default function MasterAnalyticsView() {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
 
+  // Handler per applicare il filtro date personalizzato
+  const handleApplyCustomDateFilter = useCallback(() => {
+    if (!customStartDate || !customEndDate) {
+      setSnackbar({
+        open: true,
+        message: 'Seleziona sia la data di inizio che quella di fine',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    if (customStartDate > customEndDate) {
+      setSnackbar({
+        open: true,
+        message: 'La data di inizio deve essere precedente alla data di fine',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Estrai anno e mese dalle date
+    const startYear = customStartDate.getFullYear().toString();
+    const startMonth = customStartDate.getMonth() + 1;
+    const endYear = customEndDate.getFullYear().toString();
+    const endMonth = customEndDate.getMonth() + 1;
+
+    console.log('🗓️ Applicazione filtro custom:', {
+      startDate: customStartDate.toLocaleDateString('it-IT'),
+      endDate: customEndDate.toLocaleDateString('it-IT'),
+      startYear,
+      startMonth,
+      endYear,
+      endMonth,
+      dateFilter: { startYear, startMonth, endYear, endMonth }
+    });
+
+    // Imposta il filtro date
+    setDateFilter({ startYear, startMonth, endYear, endMonth });
+    
+    // Deseleziona i filtri rapidi
+    setActiveFilter(null);
+
+    // Se le date sono in anni diversi, usa 'all-years'
+    if (startYear !== endYear) {
+      handleYearChange({ target: { value: 'all-years' } }, true);
+    } else {
+      handleYearChange({ target: { value: startYear } }, true);
+    }
+
+    setSnackbar({
+      open: true,
+      message: `Filtro applicato: ${customStartDate.toLocaleDateString('it-IT')} - ${customEndDate.toLocaleDateString('it-IT')}`,
+      severity: 'success'
+    });
+  }, [customStartDate, customEndDate, handleYearChange, setSnackbar, setDateFilter, setActiveFilter]);
+
+  // Handler per resettare il filtro date personalizzato
+  const handleClearCustomDateFilter = useCallback(() => {
+    setCustomStartDate(null);
+    setCustomEndDate(null);
+    setDateFilter(null);
+    setActiveFilter(null);
+    
+    setSnackbar({
+      open: true,
+      message: 'Filtro date rimosso',
+      severity: 'info'
+    });
+  }, [setSnackbar, setDateFilter, setActiveFilter]);
+
   // Helper function per filtrare i mesi in base al dateFilter
   const shouldIncludeMonth = useCallback((year, month) => {
     if (!dateFilter) return true;
@@ -659,7 +741,22 @@ export default function MasterAnalyticsView() {
     const start = startYearNum * 100 + dateFilter.startMonth;
     const end = endYearNum * 100 + dateFilter.endMonth;
     
-    return current >= start && current <= end;
+    const included = current >= start && current <= end;
+    
+    // Debug: mostra solo i primi check per evitare spam
+    if (Math.random() < 0.05) { // Log solo 5% dei check
+      console.log('🔍 shouldIncludeMonth check:', { 
+        year, 
+        month, 
+        current, 
+        start, 
+        end, 
+        included,
+        dateFilter 
+      });
+    }
+    
+    return included;
   }, [dateFilter]);
 
   const getCurrentBalance = () => {
@@ -1021,7 +1118,8 @@ export default function MasterAnalyticsView() {
         return [];
       }
 
-      const aggregatedData = isAllYears 
+      // Se c'è un filtro attivo o isAllYears, usa sempre aggregateCategoryData
+      const aggregatedData = (isAllYears || dateFilter)
         ? aggregateCategoryData(categoryReports, yearsToAggregate)
         : categoryReports[settings.year];
 
@@ -1059,7 +1157,8 @@ export default function MasterAnalyticsView() {
       return [];
     }
 
-    const aggregatedData = isAllYears 
+    // Se c'è un filtro attivo o isAllYears, usa sempre aggregateCategoryData
+    const aggregatedData = (isAllYears || dateFilter)
       ? aggregateCategoryData(categoryReports, yearsToAggregate)
       : categoryReports[settings.year];
 
@@ -1091,7 +1190,13 @@ export default function MasterAnalyticsView() {
 
     const ownerName = settings.owner.id === 'all-accounts' ? 'Tutti i conti' : settings.owner.name;
     
-    // Se c'è un filtro per mese attivo
+    // Se c'è un filtro custom attivo, mostra le date complete
+    if (customStartDate && customEndDate) {
+      const formatDate = (date) => date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+      return `${formatDate(customStartDate)} - ${formatDate(customEndDate)} • ${ownerName}`;
+    }
+    
+    // Se c'è un filtro per mese attivo (da filtri rapidi)
     if (dateFilter) {
       const monthNames = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
       const { startMonth: startMonthNum, endMonth: endMonthNum, startYear, endYear } = dateFilter;
@@ -1116,7 +1221,7 @@ export default function MasterAnalyticsView() {
     }
     
     return `Anno ${settings.year} • ${ownerName}`;
-  }, [settings.owner, settings.year, dateFilter]);
+  }, [settings.owner, settings.year, dateFilter, customStartDate, customEndDate]);
 
   const getYearlySalesData = () => {
     // Check if we have data and settings
@@ -1139,11 +1244,18 @@ export default function MasterAnalyticsView() {
       'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
     ];
     
-    // Funzione per estrarre i dati mensili di un determinato anno
+    // Funzione per estrarre i dati mensili di un determinato anno (con filtro se attivo)
     const extractMonthlyData = (year) => {
       const months = globalReport[year]?.months || {};
       return Array.from({ length: 12 }, (_, i) => {
         const monthKey = (i + 1).toString().padStart(2, '0');
+        const monthNum = i + 1;
+        
+        // Se c'è un filtro attivo e questo mese non è incluso, ritorna 0
+        if (!shouldIncludeMonth(year, monthNum.toString())) {
+          return { income: 0, expense: 0 };
+        }
+        
         return {
           income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
           expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
@@ -1240,11 +1352,18 @@ export default function MasterAnalyticsView() {
       return [];
     }
 
-    // Funzione per estrarre i dati mensili per un determinato anno
+    // Funzione per estrarre i dati mensili per un determinato anno (con filtro se attivo)
     const extractMonthlyData = (year) => {
       const months = globalReport[year]?.months || {};
       return Array.from({ length: 12 }, (_, i) => {
         const monthKey = (i + 1).toString().padStart(2, '0'); // Formatta 01, 02, ..., 12
+        const monthNum = i + 1;
+        
+        // Se c'è un filtro attivo e questo mese non è incluso, ritorna 0
+        if (!shouldIncludeMonth(year, monthNum.toString())) {
+          return { income: 0, expense: 0 };
+        }
+        
         // Arrotondiamo a 2 decimali per maggiore precisione
         return {
           income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
@@ -1445,6 +1564,64 @@ export default function MasterAnalyticsView() {
                   ))}
                 </Select>
               </Stack>
+            </Stack>
+
+            <Divider />
+
+            {/* Custom Date Filter */}
+            <Stack spacing={2}>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                🗓️ Filtro date personalizzato
+              </Typography>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+                <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                  <DatePicker
+                    label="Data inizio"
+                    value={customStartDate}
+                    onChange={(newValue) => setCustomStartDate(newValue)}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        sx: { minWidth: 180 }
+                      }
+                    }}
+                  />
+                  <DatePicker
+                    label="Data fine"
+                    value={customEndDate}
+                    onChange={(newValue) => setCustomEndDate(newValue)}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        sx: { minWidth: 180 }
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    size="medium"
+                    onClick={handleApplyCustomDateFilter}
+                    disabled={!customStartDate || !customEndDate}
+                    sx={{ minWidth: 120 }}
+                  >
+                    Applica
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="medium"
+                    onClick={handleClearCustomDateFilter}
+                    disabled={!customStartDate && !customEndDate}
+                    sx={{ minWidth: 120 }}
+                  >
+                    Cancella
+                  </Button>
+                  {(customStartDate || customEndDate) && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      💡 I filtri date personalizzati hanno priorità sui filtri rapidi
+                    </Typography>
+                  )}
+                </Stack>
+              </LocalizationProvider>
             </Stack>
           </>
         )}

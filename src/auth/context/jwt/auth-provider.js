@@ -3,6 +3,7 @@
 import PropTypes from 'prop-types';
 import { useMemo, useEffect, useReducer, useCallback } from 'react';
 
+// eslint-disable-next-line import/no-unresolved
 import axios, { endpoints } from 'src/utils/axios';
 
 import { AuthContext } from './auth-context';

@@ -38,6 +38,7 @@ const STORAGE_KEY = 'master-filter-preferences';
 
 const saveFilterPreferences = (owner, year) => {
   try {
+    console.log('💾 Saving filter preferences:', { owner, year });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ owner, year, timestamp: Date.now() }));
   } catch (error) {
     console.error('Error saving filter preferences:', error);
@@ -47,7 +48,9 @@ const saveFilterPreferences = (owner, year) => {
 const loadFilterPreferences = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
+    const preferences = saved ? JSON.parse(saved) : null;
+    console.log('📂 Loading filter preferences:', preferences);
+    return preferences;
   } catch (error) {
     console.error('Error loading filter preferences:', error);
     return null;
@@ -114,17 +117,30 @@ export default function MasterAnalyticsView() {
   const [dateFilter, setDateFilter] = useState(null); // { startYear, startMonth, endYear, endMonth }
   const [customStartDate, setCustomStartDate] = useState(null); // Date per filtro personalizzato
   const [customEndDate, setCustomEndDate] = useState(null); // Date per filtro personalizzato
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
   const settings = useSettingsContext();
   const { user } = useAuthContext();
   
-  // Load saved preferences on mount
+  // Sync activeFilter with settings.year when year is restored to 'all-years'
   useEffect(() => {
-    const preferences = loadFilterPreferences();
-    if (preferences && preferences.owner && preferences.year) {
-      console.log('Loading saved filter preferences:', preferences);
-      // Preferences will be applied after data is loaded
+    // Skip if no data loaded yet
+    if (!data || data.length === 0 || !settings.year) return;
+    
+    // Only set activeFilter on initial load
+    if (isInitialLoad) {
+      console.log('🔄 Initial load - checking year:', settings.year);
+      
+      if (settings.year === 'all-years') {
+        // Use setTimeout to ensure state is updated after React finishes rendering
+        setTimeout(() => {
+          setActiveFilter('all-time');
+          console.log('✅ Set activeFilter to "all-time" on initial load');
+        }, 0);
+      }
+      
+      setIsInitialLoad(false);
     }
-  }, []);
+  }, [settings.year, data, isInitialLoad]);
   
   // Ordina alfabeticamente i conti correnti e filtra l'eventuale 'all-accounts' dal backend
   const sortedData = useMemo(() => 
@@ -212,17 +228,10 @@ export default function MasterAnalyticsView() {
         const savedOwner = fetchedData.find(o => o.id === preferences.owner);
         
         if (savedOwner && savedOwner.report && savedOwner.report.years && savedOwner.report.years.length > 0) {
-          // Non ripristinare 'all-years' - usa invece l'anno più recente
-          let yearToRestore = preferences.year;
+          const yearToRestore = preferences.year;
           
-          if (preferences.year === 'all-years') {
-            // Trova l'anno più recente (ordina in modo decrescente e prendi il primo)
-            const sortedYears = [...savedOwner.report.years].sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-            yearToRestore = sortedYears[0];
-            console.log('Converting all-years to most recent year:', yearToRestore);
-          }
-          
-          if (yearToRestore && savedOwner.report.years.includes(yearToRestore)) {
+          // Restore year as-is (including 'all-years')
+          if (yearToRestore === 'all-years' || savedOwner.report.years.includes(yearToRestore)) {
             settings.onChangeOwner(savedOwner);
             settings.onChangeYear(yearToRestore);
             console.log('Restored filter preferences:', { owner: preferences.owner, year: yearToRestore });
@@ -1337,8 +1346,8 @@ export default function MasterAnalyticsView() {
     const currentYear = settings.year; // Anno selezionato
     const previousYear = (parseInt(settings.year, 10) - 1).toString(); // Anno precedente
 
-    // Verifica se ci sono dati per l'anno corrente
-    if (!globalReport[currentYear]) {
+    // Verifica se ci sono dati per l'anno corrente (skip per 'all-years')
+    if (currentYear !== 'all-years' && !globalReport[currentYear]) {
       console.log(`Nessun dato disponibile per l'anno ${currentYear}`);
       // Se non ci sono dati per l'anno corrente, mostriamo un messaggio all'utente
       // se lo Snackbar non è già aperto
@@ -1676,10 +1685,8 @@ export default function MasterAnalyticsView() {
                   categoriesLoading={categoriesLoading}
                   categoriesError={categoriesError}
                   db={settings.db}
-                  availableYears={settings.owner?.report?.years || []}
-                  selectedYear={settings.year}
-                  onYearChange={settings.onChangeYear}
                   settings={settings}
+                  dateFilter={dateFilter}
                 />
               </Grid>
               

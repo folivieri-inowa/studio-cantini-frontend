@@ -1,7 +1,7 @@
 'use client';
 
 import PropTypes from 'prop-types';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -9,16 +9,12 @@ import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Select from '@mui/material/Select';
 import Checkbox from '@mui/material/Checkbox';
 import Collapse from '@mui/material/Collapse';
-import MenuItem from '@mui/material/MenuItem';
 import CardHeader from '@mui/material/CardHeader';
 import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
-import FormControl from '@mui/material/FormControl';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
@@ -34,21 +30,13 @@ export default function GroupAggregation({
   categoriesLoading = false, 
   categoriesError = null, 
   db = "",
-  availableYears = [],
-  selectedYear = null,
-  onYearChange = null,
   settings = null,
+  dateFilter = null,
   ...other 
 }) {
   const [selection, setSelection] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
-  const [localSelectedYear, setLocalSelectedYear] = useState(selectedYear);
   const [isCollapsed, setIsCollapsed] = useState(true); // Collassato di default
-  
-  // Sincronizza lo stato locale con le props
-  useEffect(() => {
-    setLocalSelectedYear(selectedYear);
-  }, [selectedYear]);
 
   const modalOpen = useBoolean();
   const { 
@@ -243,15 +231,6 @@ export default function GroupAggregation({
     });
   }, []);
 
-  // Gestione cambio anno
-  const handleYearChange = useCallback((event) => {
-    const newYear = event.target.value;
-    setLocalSelectedYear(newYear);
-    if (onYearChange) {
-      onYearChange(newYear);
-    }
-  }, [onYearChange]);
-
   const handleCategoryExpand = useCallback((categoryId) => {
     setExpandedCategories(prev => ({
       ...prev,
@@ -268,13 +247,14 @@ export default function GroupAggregation({
       groupName: `Aggregazione ${selection.length} categorie`
     };
 
-    // Passa owner e year al calcolo aggregazione
+    // Passa owner, year e dateFilter al calcolo aggregazione
     const ownerId = settings?.owner?.id || 'all-accounts';
-    const year = settings?.year || localSelectedYear;
+    // Se year è 'all-years', passa null invece di NaN
+    const year = settings?.year && settings.year !== 'all-years' ? settings.year : null;
     
-    await calculateAggregation(groupData, ownerId, year);
+    await calculateAggregation(groupData, ownerId, year, dateFilter);
     modalOpen.onTrue();
-  }, [selection, calculateAggregation, modalOpen, settings, localSelectedYear]);
+  }, [selection, calculateAggregation, modalOpen, settings, dateFilter]);
 
   // Reset selezione
   const handleReset = useCallback(() => {
@@ -322,25 +302,6 @@ export default function GroupAggregation({
                     variant="outlined"
                   />
                 </Stack>
-                
-                {/* Dropdown filtro per anno */}
-                {availableYears.length > 1 && (
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <InputLabel>Anno</InputLabel>
-                    <Select
-                      value={localSelectedYear || ''}
-                      label="Anno"
-                  onChange={handleYearChange}
-                >
-                  <MenuItem value="">Tutti gli anni</MenuItem>
-                  {availableYears.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
           </Stack>
           
           <Box>
@@ -580,8 +541,6 @@ GroupAggregation.propTypes = {
   categoriesLoading: PropTypes.bool,
   categoriesError: PropTypes.object,
   db: PropTypes.string,
-  availableYears: PropTypes.array,
-  selectedYear: PropTypes.number,
-  onYearChange: PropTypes.func,
   settings: PropTypes.object,
+  dateFilter: PropTypes.object,
 };

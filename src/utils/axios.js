@@ -70,8 +70,8 @@ export const endpoints = {
       }
     },
     // Nuovi endpoint per il raggruppamento
-    categoriesSubjects: '/api/reports/categories-subjects',
-    groupAggregation: '/api/reports/group-aggregation',
+    categoriesSubjects: '/api/report/categories-subjects',
+    groupAggregation: '/api/report/group-aggregation',
   },
   // ----------------------------------------------------------------------
   chat: '/api/chat',

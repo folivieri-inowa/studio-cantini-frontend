@@ -18,7 +18,7 @@ export function useGroupAggregation(db) {
   const [calculationError, setCalculationError] = useState(null);
 
   // Funzione per calcolare l'aggregazione
-  const calculateAggregation = useCallback(async (groupData, ownerId, year) => {
+  const calculateAggregation = useCallback(async (groupData, ownerId, year, dateFilter = null) => {
     if (!db || !groupData?.selection?.length) {
       return;
     }
@@ -52,7 +52,8 @@ export function useGroupAggregation(db) {
         selectedSubjects,
         selectedDetails,
         ownerId: ownerId === 'all-accounts' ? null : ownerId,
-        year: year ? parseInt(year, 10) : null
+        year: year ? parseInt(year, 10) : null,
+        dateFilter
       });
 
       const requestBody = {
@@ -62,7 +63,12 @@ export function useGroupAggregation(db) {
         selectedSubjects,
         selectedDetails,
         ownerId: ownerId === 'all-accounts' ? null : ownerId,
-        year: year ? parseInt(year, 10) : null
+        year: year ? parseInt(year, 10) : null,
+        // Aggiungi filtro date se presente
+        startYear: dateFilter?.startYear ? parseInt(dateFilter.startYear, 10) : null,
+        startMonth: dateFilter?.startMonth || null,
+        endYear: dateFilter?.endYear ? parseInt(dateFilter.endYear, 10) : null,
+        endMonth: dateFilter?.endMonth || null
       };
 
       console.log('Debug - Request body completo:', JSON.stringify(requestBody, null, 2));

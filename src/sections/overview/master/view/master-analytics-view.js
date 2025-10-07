@@ -146,6 +146,136 @@ export default function MasterAnalyticsView() {
       .sort((a, b) => a.name.localeCompare(b.name)) : []
   , [data]);
   
+  // Crea l'oggetto "all-accounts" una sola volta quando i dati cambiano
+  const allAccountsOwner = useMemo(() => {
+    if (!data || data.length === 0) return null;
+    
+    const allAccounts = {
+      id: 'all-accounts',
+      name: 'Tutti i conti',
+      cc: '',
+      iban: '',
+      initialBalance: 0,
+      balanceDate: null,
+      report: {
+        years: [],
+        globalReport: {},
+        categoryReport: {},
+      },
+    };
+
+    // Filtriamo gli owner escludendo le carte di credito
+    const nonCreditCardOwners = data.filter(owner => owner.id !== 'all-accounts' && !owner.isCreditCard);
+
+    // Collect all available years
+    const allYears = new Set();
+    nonCreditCardOwners.forEach(owner => {
+      owner.report?.years?.forEach(year => allYears.add(year));
+    });
+    allAccounts.report.years = Array.from(allYears).sort((a, b) => b - a);
+
+    // For each year, combine the reports
+    allAccounts.report.years.forEach(year => {
+      allAccounts.report.globalReport[year] = { income: 0, expense: 0, months: {} };
+
+      // Initialize months
+      for (let month = 1; month <= 12; month += 1) {
+        const monthKey = month.toString().padStart(2, '0');
+        allAccounts.report.globalReport[year].months[monthKey] = { income: 0, expense: 0 };
+      }
+
+      // Combine data from owners
+      nonCreditCardOwners.forEach(owner => {
+        const ownerReport = owner.report?.globalReport?.[year];
+        if (ownerReport) {
+          allAccounts.report.globalReport[year].income += parseFloat(ownerReport.income || 0);
+          allAccounts.report.globalReport[year].expense += parseFloat(ownerReport.expense || 0);
+
+          Object.entries(ownerReport.months || {}).forEach(([month, monthData]) => {
+            if (!allAccounts.report.globalReport[year].months[month]) {
+              allAccounts.report.globalReport[year].months[month] = { income: 0, expense: 0 };
+            }
+            allAccounts.report.globalReport[year].months[month].income += parseFloat(monthData.income || 0);
+            allAccounts.report.globalReport[year].months[month].expense += parseFloat(monthData.expense || 0);
+          });
+        }
+      });
+
+      // Round values
+      allAccounts.report.globalReport[year].income = parseFloat(allAccounts.report.globalReport[year].income.toFixed(2));
+      allAccounts.report.globalReport[year].expense = parseFloat(allAccounts.report.globalReport[year].expense.toFixed(2));
+
+      Object.keys(allAccounts.report.globalReport[year].months).forEach(month => {
+        allAccounts.report.globalReport[year].months[month].income = parseFloat(allAccounts.report.globalReport[year].months[month].income.toFixed(2));
+        allAccounts.report.globalReport[year].months[month].expense = parseFloat(allAccounts.report.globalReport[year].months[month].expense.toFixed(2));
+      });
+
+      // Combine category reports
+      allAccounts.report.categoryReport[year] = {};
+
+      // Get all unique categories
+      const allCategories = new Set();
+      nonCreditCardOwners.forEach(owner => {
+        const categoryReport = owner.report?.categoryReport?.[year];
+        if (categoryReport) {
+          Object.keys(categoryReport).forEach(categoryId => allCategories.add(categoryId));
+        }
+      });
+
+      // Combine category data
+      allCategories.forEach(categoryId => {
+        allAccounts.report.categoryReport[year][categoryId] = {
+          id: categoryId,
+          name: '',
+          totalIncome: 0,
+          totalExpense: 0,
+          months: {},
+        };
+
+        // Initialize months
+        for (let month = 1; month <= 12; month += 1) {
+          const monthKey = month.toString().padStart(2, '0');
+          allAccounts.report.categoryReport[year][categoryId].months[monthKey] = { income: 0, expense: 0 };
+        }
+
+        // Combine data from owners
+        nonCreditCardOwners.forEach(owner => {
+          const categoryReport = owner.report?.categoryReport?.[year];
+          if (categoryReport && categoryReport[categoryId]) {
+            // Set category name if not already set
+            if (!allAccounts.report.categoryReport[year][categoryId].name) {
+              allAccounts.report.categoryReport[year][categoryId].name = categoryReport[categoryId].name;
+            }
+
+            // Add to yearly totals
+            allAccounts.report.categoryReport[year][categoryId].totalIncome += parseFloat(categoryReport[categoryId].totalIncome || 0);
+            allAccounts.report.categoryReport[year][categoryId].totalExpense += parseFloat(categoryReport[categoryId].totalExpense || 0);
+
+            // Add to monthly totals
+            Object.entries(categoryReport[categoryId].months || {}).forEach(([month, monthData]) => {
+              if (!allAccounts.report.categoryReport[year][categoryId].months[month]) {
+                allAccounts.report.categoryReport[year][categoryId].months[month] = { income: 0, expense: 0 };
+              }
+              allAccounts.report.categoryReport[year][categoryId].months[month].income += parseFloat(monthData.income || 0);
+              allAccounts.report.categoryReport[year][categoryId].months[month].expense += parseFloat(monthData.expense || 0);
+            });
+          }
+        });
+
+        // Round values
+        allAccounts.report.categoryReport[year][categoryId].totalIncome = parseFloat(allAccounts.report.categoryReport[year][categoryId].totalIncome.toFixed(2));
+        allAccounts.report.categoryReport[year][categoryId].totalExpense = parseFloat(allAccounts.report.categoryReport[year][categoryId].totalExpense.toFixed(2));
+
+        Object.keys(allAccounts.report.categoryReport[year][categoryId].months).forEach(month => {
+          allAccounts.report.categoryReport[year][categoryId].months[month].income = parseFloat(allAccounts.report.categoryReport[year][categoryId].months[month].income.toFixed(2));
+          allAccounts.report.categoryReport[year][categoryId].months[month].expense = parseFloat(allAccounts.report.categoryReport[year][categoryId].months[month].expense.toFixed(2));
+        });
+      });
+    });
+
+    return allAccounts;
+  }, [data]);
+  
   // Hook per ottenere le categorie per l'aggregazione
   const {
     categories,
@@ -293,130 +423,13 @@ export default function MasterAnalyticsView() {
     }
 
     if (selectedValue === 'all-accounts') {
-      // Create a special owner object that represents all accounts combined
-      const allAccountsOwner = {
-        id: 'all-accounts',
-        name: 'Tutti i conti',
-        cc: '',
-        iban: '',
-        initialBalance: 0,
-        balanceDate: null,
-        // Per "Tutti i conti", filtriamo escludendo le carte di credito
-        report: {
-          years: [], // Will be populated below
-          globalReport: {},
-          categoryReport: {},
-        },
-      };
-
-      // Combine data from all owners, escludendo quelli con isCreditCard=true
-      if (data && data.length > 0) {
-        // Filtriamo gli owner escludendo le carte di credito
-        const nonCreditCardOwners = data.filter(owner => !owner.isCreditCard);
-
-        // Collect all available years from filtered owners
-        const allYears = new Set();
-        nonCreditCardOwners.forEach(owner => {
-          owner.report.years.forEach(year => allYears.add(year));
-        });
-        allAccountsOwner.report.years = Array.from(allYears).sort((a, b) => b - a);
-
-        // For each year, combine the global reports from filtered owners
-        allAccountsOwner.report.years.forEach(year => {
-          allAccountsOwner.report.globalReport[year] = { income: 0, expense: 0, months: {} };
-
-          // Initialize months
-          for (let month = 1; month <= 12; month += 1) {
-            const monthKey = month.toString().padStart(2, '0');
-            allAccountsOwner.report.globalReport[year].months[monthKey] = { income: 0, expense: 0 };
-          }
-
-          // Combine data from filtered owners for this year
-          nonCreditCardOwners.forEach(owner => {
-            const ownerReport = owner.report.globalReport[year];
-            if (ownerReport) {
-              // Add to yearly totals
-              allAccountsOwner.report.globalReport[year].income += parseFloat(ownerReport.income || 0);
-              allAccountsOwner.report.globalReport[year].expense += parseFloat(ownerReport.expense || 0);
-
-              // Add to monthly totals
-              Object.entries(ownerReport.months).forEach(([month, monthData]) => {
-                allAccountsOwner.report.globalReport[year].months[month].income += parseFloat(monthData.income || 0);
-                allAccountsOwner.report.globalReport[year].months[month].expense += parseFloat(monthData.expense || 0);
-              });
-            }
-          });
-
-          // Round values for precision
-          allAccountsOwner.report.globalReport[year].income = parseFloat(allAccountsOwner.report.globalReport[year].income.toFixed(2));
-          allAccountsOwner.report.globalReport[year].expense = parseFloat(allAccountsOwner.report.globalReport[year].expense.toFixed(2));
-
-          Object.keys(allAccountsOwner.report.globalReport[year].months).forEach(month => {
-            allAccountsOwner.report.globalReport[year].months[month].income = parseFloat(allAccountsOwner.report.globalReport[year].months[month].income.toFixed(2));
-            allAccountsOwner.report.globalReport[year].months[month].expense = parseFloat(allAccountsOwner.report.globalReport[year].months[month].expense.toFixed(2));
-          });
-
-          // Combine category reports
-          allAccountsOwner.report.categoryReport[year] = {};
-
-          // Get all unique categories from filtered owners
-          const allCategories = new Set();
-          nonCreditCardOwners.forEach(owner => {
-            const categoryReport = owner.report.categoryReport[year];
-            if (categoryReport) {
-              Object.keys(categoryReport).forEach(categoryId => allCategories.add(categoryId));
-            }
-          });
-
-          // Combine category data
-          allCategories.forEach(categoryId => {
-            allAccountsOwner.report.categoryReport[year][categoryId] = {
-              id: categoryId,
-              name: '', // Will be set from the first owner that has this category
-              totalIncome: 0,
-              totalExpense: 0,
-              months: {},
-            };
-
-            // Initialize months
-            for (let month = 1; month <= 12; month += 1) {
-              const monthKey = month.toString().padStart(2, '0');
-              allAccountsOwner.report.categoryReport[year][categoryId].months[monthKey] = { income: 0, expense: 0 };
-            }
-
-            // Combine data from filtered owners for this category
-            nonCreditCardOwners.forEach(owner => {
-              const categoryReport = owner.report.categoryReport[year];
-              if (categoryReport && categoryReport[categoryId]) {
-                // Set category name if not already set
-                if (!allAccountsOwner.report.categoryReport[year][categoryId].name) {
-                  allAccountsOwner.report.categoryReport[year][categoryId].name = categoryReport[categoryId].name;
-                }
-
-                // Add to yearly totals
-                allAccountsOwner.report.categoryReport[year][categoryId].totalIncome += parseFloat(categoryReport[categoryId].totalIncome || 0);
-                allAccountsOwner.report.categoryReport[year][categoryId].totalExpense += parseFloat(categoryReport[categoryId].totalExpense || 0);
-
-                // Add to monthly totals
-                Object.entries(categoryReport[categoryId].months).forEach(([month, monthData]) => {
-                  allAccountsOwner.report.categoryReport[year][categoryId].months[month].income += parseFloat(monthData.income || 0);
-                  allAccountsOwner.report.categoryReport[year][categoryId].months[month].expense += parseFloat(monthData.expense || 0);
-                });
-              }
-            });
-
-            // Round values for precision
-            allAccountsOwner.report.categoryReport[year][categoryId].totalIncome = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].totalIncome.toFixed(2));
-            allAccountsOwner.report.categoryReport[year][categoryId].totalExpense = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].totalExpense.toFixed(2));
-
-            Object.keys(allAccountsOwner.report.categoryReport[year][categoryId].months).forEach(month => {
-              allAccountsOwner.report.categoryReport[year][categoryId].months[month].income = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].months[month].income.toFixed(2));
-              allAccountsOwner.report.categoryReport[year][categoryId].months[month].expense = parseFloat(allAccountsOwner.report.categoryReport[year][categoryId].months[month].expense.toFixed(2));
-            });
-          });
-        });
+      // Usa l'oggetto all-accounts già memoizzato
+      if (!allAccountsOwner) {
+        console.error('allAccountsOwner non disponibile');
+        return;
       }
-
+      
+      // Usa l'oggetto memoizzato invece di ricrearlo
       settings.onChangeOwner(allAccountsOwner);
     } else {
       // Handle normal owner selection - qui NON filtriamo in base a isCreditCard
@@ -451,7 +464,7 @@ export default function MasterAnalyticsView() {
       // Save preferences
       saveFilterPreferences(selectedOwner.id, settings.year);
     }
-  }, [data, settings, setActiveFilter]);
+  }, [data, settings, setActiveFilter, allAccountsOwner, saveFilterPreferences, setSnackbar]);
 
   const handleQuickFilter = useCallback((filterId) => {
     const filter = QUICK_FILTERS.find(f => f.id === filterId);
@@ -727,13 +740,17 @@ export default function MasterAnalyticsView() {
 
     // Calcoliamo il saldo come: saldo iniziale + entrate - uscite
     // per tutti gli anni disponibili fino all'anno selezionato
-    const currentYear = parseInt(settings.year, 10);
-
+    
     // Ottieni tutti gli anni disponibili e ordinali
     if (!owner.report?.globalReport) {
       return { balance: 0, lastUpdate: new Date(), percentChange: 0, description: 'Nessun dato disponibile' };
     }
     const availableYears = Object.keys(owner.report.globalReport).map(y => parseInt(y, 10)).sort();
+    
+    // Per 'all-years' usiamo l'ultimo anno disponibile, altrimenti l'anno selezionato
+    const currentYear = settings.year === 'all-years' 
+      ? availableYears[availableYears.length - 1] 
+      : parseInt(settings.year, 10);
 
     let totalIncome = 0;
     let totalExpense = 0;
@@ -1066,20 +1083,22 @@ export default function MasterAnalyticsView() {
         return [];
       }
 
-      return Object.entries(aggregatedData).map(([category, values]) => {
-        const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
-        const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
-        const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
+      return Object.entries(aggregatedData)
+        .map(([category, values]) => {
+          const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
+          const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
+          const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
 
-        return {
-          id: category.toLowerCase().replace(/\s+/g, '-'),
-          category: values.name,
-          income: roundedIncome,
-          expense: roundedExpense,
-          difference: roundedDifference,
-          totalExpense: roundedExpense,
-        };
-      });
+          return {
+            id: category.toLowerCase().replace(/\s+/g, '-'),
+            category: values.name,
+            income: roundedIncome,
+            expense: roundedExpense,
+            difference: roundedDifference,
+            totalExpense: roundedExpense,
+          };
+        })
+        .sort((a, b) => a.category.localeCompare(b.category, 'it')); // Ordinamento alfabetico
     }
 
     // Regular case: find the owner in the data array
@@ -1105,20 +1124,22 @@ export default function MasterAnalyticsView() {
       return [];
     }
 
-    return Object.entries(aggregatedData).map(([category, values]) => {
-      const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
-      const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
-      const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-      
-      return {
-        id: category.toLowerCase().replace(/\s+/g, '-'),
-        category: values.name,
-        income: roundedIncome,
-        expense: roundedExpense,
-        difference: roundedDifference,
-        totalExpense: roundedExpense,
-      };
-    });
+    return Object.entries(aggregatedData)
+      .map(([category, values]) => {
+        const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
+        const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
+        const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
+        
+        return {
+          id: category.toLowerCase().replace(/\s+/g, '-'),
+          category: values.name,
+          income: roundedIncome,
+          expense: roundedExpense,
+          difference: roundedDifference,
+          totalExpense: roundedExpense,
+        };
+      })
+      .sort((a, b) => a.category.localeCompare(b.category, 'it')); // Ordinamento alfabetico
   };
 
   // Prepare data for EcommerceYearlySales component

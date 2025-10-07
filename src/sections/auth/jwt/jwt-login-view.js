@@ -81,7 +81,7 @@ export default function JwtLoginView() {
 
   const LoginSchema = Yup.object().shape({
     db: Yup.string().required('Database è un campo obbligatorio'),
-    email: Yup.string().required('Email è un campo obbligatorio').email('Email deve essere un indirizzo email valido'),
+    email: Yup.string().required('Email/Username è un campo obbligatorio'),
     password: Yup.string().required('Password è un campo obbligatorio'),
   });
 
@@ -141,7 +141,7 @@ export default function JwtLoginView() {
         ))}
       </RHFSelect>
 
-      <RHFTextField name="email" label="Email address" />
+      <RHFTextField name="email" label="Username o Email" />
 
       <RHFTextField
         name="password"

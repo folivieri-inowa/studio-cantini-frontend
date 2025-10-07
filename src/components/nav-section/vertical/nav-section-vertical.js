@@ -41,18 +41,24 @@ function Group({ subheader, items, roles, slotProps }) {
     setOpen((prev) => !prev);
   }, []);
 
-  const renderContent = items.map((list) => (
-    <NavList key={list.title} data={list} depth={1} slotProps={slotProps} />
-  ));
-
   const isRoleAuthorized = () => {
     if (!roles) return true;
     return roles.includes(`${slotProps.currentRole}`)
   }
 
+  // Se il gruppo ha restrizioni di ruolo, filtra gli items
+  // Se l'utente non è autorizzato per il gruppo, non mostra nulla
+  if (!isRoleAuthorized()) {
+    return null;
+  }
+
+  const renderContent = items.map((list) => (
+    <NavList key={list.title} data={list} depth={1} slotProps={slotProps} />
+  ));
+
   return (
     <Stack sx={{ px: 2 }}>
-      {subheader && isRoleAuthorized() ? (
+      {subheader ? (
         <>
           <ListSubheader
             disableGutters

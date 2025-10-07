@@ -69,11 +69,13 @@ export function useNavData() {
             title: t('File Manager'),
             path: paths.dashboard.fileManager,
             icon: ICONS.folder,
+            roles: ['admin', 'manager'],
           },
           {
             title: t('Scadenziario'),
             path: paths.dashboard.scadenziario.root,
             icon: ICONS.calendar,
+            roles: ['admin', 'manager'],
           },
           /* {
             title: t('ecommerce'),

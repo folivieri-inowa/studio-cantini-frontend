@@ -42,8 +42,12 @@ function Group({ subheader, items, roles, slotProps }) {
   }, []);
 
   const isRoleAuthorized = () => {
+    // Se il gruppo non ha restrizioni di ruolo, mostralo sempre (es. Master)
     if (!roles) return true;
-    return roles.includes(`${slotProps.currentRole}`)
+    // Se il ruolo non è ancora caricato, nascondi i gruppi con restrizioni
+    if (!slotProps.currentRole) return false;
+    // Controlla se il ruolo corrente è nella lista dei ruoli autorizzati
+    return roles.includes(slotProps.currentRole);
   }
 
   // Se il gruppo ha restrizioni di ruolo, filtra gli items

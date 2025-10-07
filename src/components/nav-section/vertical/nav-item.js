@@ -29,7 +29,7 @@ const NavItem = forwardRef(
       active,
       hasChild,
       externalLink,
-      currentRole = 'admin',
+      currentRole,
       ...other
     },
     ref
@@ -93,8 +93,11 @@ const NavItem = forwardRef(
     );
 
     // Hidden item by role
-    if (roles && !roles.includes(`${currentRole}`)) {
-      return null;
+    if (roles) {
+      // Se il ruolo non è ancora caricato, nascondi gli items con restrizioni
+      if (!currentRole) return null;
+      // Controlla se il ruolo corrente è autorizzato
+      if (!roles.includes(currentRole)) return null;
     }
 
     if (hasChild) {

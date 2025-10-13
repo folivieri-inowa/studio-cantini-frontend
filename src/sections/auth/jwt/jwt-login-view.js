@@ -5,14 +5,19 @@ import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 
+import LoadingButton from '@mui/lab/LoadingButton';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
+import Radio from '@mui/material/Radio';
 import Stack from '@mui/material/Stack';
-import MenuItem from '@mui/material/MenuItem';
+import Skeleton from '@mui/material/Skeleton';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import { alpha, useTheme } from '@mui/material/styles';
 
 import { useRouter, useSearchParams } from 'src/routes/hooks';
 
@@ -22,7 +27,7 @@ import { useAuthContext } from 'src/auth/hooks';
 import { PATH_AFTER_LOGIN } from 'src/config-global';
 
 import Iconify from 'src/components/iconify';
-import FormProvider, { RHFSelect, RHFTextField } from 'src/components/hook-form';
+import FormProvider, { RHFTextField } from 'src/components/hook-form';
 
 import { useSettingsContext } from '../../../components/settings';
 
@@ -31,6 +36,7 @@ import { useSettingsContext } from '../../../components/settings';
 export default function JwtLoginView() {
   const { login } = useAuthContext();
   const settings = useSettingsContext();
+  const theme = useTheme();
 
   const [databases, setDatabases] = useState([]);
   const [loadingDatabases, setLoadingDatabases] = useState(true);
@@ -120,26 +126,90 @@ export default function JwtLoginView() {
     </Stack>
   );
 
+  const renderDatabaseSelection = (
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
+        Seleziona il database
+      </Typography>
+      
+      {loadingDatabases ? (
+        <Grid container spacing={2}>
+          {[1, 2].map((item) => (
+            <Grid item xs={6} key={item}>
+              <Skeleton 
+                variant="rectangular" 
+                height={64} 
+                sx={{ borderRadius: 2 }} 
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Grid container spacing={2}>
+          {databases.map((db) => {
+            const isSelected = methods.watch('db') === db.value;
+            
+            return (
+              <Grid item xs={6} key={db.value}>
+                <Card
+                  onClick={() => {
+                    settings.onChangeDb(db.value);
+                    setValue('db', db.value);
+                  }}
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    border: 2,
+                    borderColor: isSelected ? 'primary.main' : 'transparent',
+                    bgcolor: isSelected 
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : 'background.paper',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: isSelected ? 'primary.main' : 'primary.light',
+                      bgcolor: isSelected 
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : alpha(theme.palette.primary.main, 0.04),
+                      transform: 'translateY(-2px)',
+                      boxShadow: 3,
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Radio
+                      checked={isSelected}
+                      sx={{ p: 0 }}
+                      color="primary"
+                    />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1 }}>
+                      {db.label}
+                    </Typography>
+                    {isSelected && (
+                      <Iconify 
+                        icon="eva:checkmark-circle-2-fill" 
+                        sx={{ 
+                          color: 'primary.main',
+                          width: 24,
+                          height: 24,
+                        }}
+                      />
+                    )}
+                  </Box>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
+    </Box>
+  );
+
   const renderForm = (
     <Stack spacing={2.5}>
       {!!errorMsg && <Alert severity="error">{errorMsg}</Alert>}
 
-      <RHFSelect
-        name="db"
-        label="Database"
-        disabled={loadingDatabases}
-        options={databases}
-        onChange={(event)=>{
-          settings.onChangeDb(event.target.value)
-          setValue('db', event.target.value)
-        }}
-      >
-        {databases.map((value, index)=>(
-          <MenuItem key={index} value={value.value}>
-            {value.label}
-          </MenuItem>
-        ))}
-      </RHFSelect>
+      {renderDatabaseSelection}
 
       <RHFTextField name="email" label="Username o Email" />
 

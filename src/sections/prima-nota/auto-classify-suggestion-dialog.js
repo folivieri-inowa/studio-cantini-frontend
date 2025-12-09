@@ -17,6 +17,7 @@ import DialogContent from '@mui/material/DialogContent';
 import LinearProgress from '@mui/material/LinearProgress';
 import LoadingButton from '@mui/lab/LoadingButton';
 
+import { useSnackbar } from 'notistack';
 import Iconify from 'src/components/iconify';
 import { useSettingsContext } from 'src/components/settings';
 
@@ -37,6 +38,7 @@ export default function AutoClassifySuggestionDialog({
   const settings = useSettingsContext();
   const { db } = settings;
   const { categories } = useGetCategories(db);
+  const { enqueueSnackbar } = useSnackbar();
 
   const [loading, setLoading] = useState(false);
   const [subjectsList, setSubjectsList] = useState([]);
@@ -44,6 +46,17 @@ export default function AutoClassifySuggestionDialog({
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
+
+  // Stati per i dialog di creazione
+  const [openNewCategoryDialog, setOpenNewCategoryDialog] = useState(false);
+  const [openNewSubjectDialog, setOpenNewSubjectDialog] = useState(false);
+  const [openNewDetailDialog, setOpenNewDetailDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [newDetailName, setNewDetailName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [creatingSubject, setCreatingSubject] = useState(false);
+  const [creatingDetail, setCreatingDetail] = useState(false);
 
   // Carica i soggetti quando cambia la categoria
   const fetchSubjects = useCallback(async (categoryId) => {
@@ -127,6 +140,166 @@ export default function AutoClassifySuggestionDialog({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Funzioni per aprire i dialog di creazione
+  const handleOpenNewCategoryDialog = () => {
+    setNewCategoryName('');
+    setOpenNewCategoryDialog(true);
+  };
+
+  const handleOpenNewSubjectDialog = () => {
+    if (!selectedCategory) {
+      enqueueSnackbar('Seleziona prima una categoria', { variant: 'warning' });
+      return;
+    }
+    setNewSubjectName('');
+    setOpenNewSubjectDialog(true);
+  };
+
+  const handleOpenNewDetailDialog = () => {
+    if (!selectedSubject) {
+      enqueueSnackbar('Seleziona prima un soggetto', { variant: 'warning' });
+      return;
+    }
+    setNewDetailName('');
+    setOpenNewDetailDialog(true);
+  };
+
+  // Funzioni per creare nuovi elementi
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      enqueueSnackbar('Inserisci un nome per la categoria', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setCreatingCategory(true);
+      const response = await axios.post('/api/category/create', { db, name: newCategoryName.trim() });
+      
+      if (response.status === 200) {
+        // Ricarica le categorie
+        const categoryResponse = await axios.get(endpoints.category.list, { params: { db } });
+        if (categoryResponse.status === 200) {
+          const newCategories = categoryResponse.data.data;
+          const newCategory = newCategories.find(cat => cat.name === newCategoryName.trim());
+          
+          if (newCategory) {
+            setSelectedCategory(newCategory.id);
+            setSelectedSubject(null);
+            setSelectedDetail(null);
+            setSubjectsList([]);
+            setDetailsList([]);
+            enqueueSnackbar(`Categoria "${newCategoryName}" creata con successo`, { 
+              variant: 'success',
+              autoHideDuration: 2000
+            });
+          }
+        }
+        setOpenNewCategoryDialog(false);
+      }
+    } catch (error) {
+      console.error('Errore durante la creazione della categoria:', error);
+      enqueueSnackbar('Errore durante la creazione della categoria', { variant: 'error' });
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const handleCreateSubject = async () => {
+    if (!newSubjectName.trim()) {
+      enqueueSnackbar('Inserisci un nome per il soggetto', { variant: 'error' });
+      return;
+    }
+
+    if (!selectedCategory) {
+      enqueueSnackbar('Seleziona prima una categoria', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setCreatingSubject(true);
+      const response = await axios.post('/api/subject/create', {
+        db,
+        name: newSubjectName.trim(),
+        categoryId: selectedCategory
+      });
+      
+      if (response.status === 200) {
+        // Ricarica i soggetti
+        const subjectResponse = await axios.post(endpoints.subject.list, { db, categoryId: selectedCategory });
+        if (subjectResponse.status === 200) {
+          const subjects = subjectResponse.data.data.sort((a, b) => a.name.localeCompare(b.name));
+          setSubjectsList(subjects);
+          
+          const newSubject = subjects.find(subj => subj.name === newSubjectName.trim());
+          if (newSubject) {
+            setSelectedSubject(newSubject.id);
+            setSelectedDetail(null);
+            setDetailsList([]);
+            
+            // Carica i dettagli per il nuovo soggetto
+            await fetchDetails(newSubject.id);
+            
+            enqueueSnackbar(`Soggetto "${newSubjectName}" creato con successo`, { 
+              variant: 'success',
+              autoHideDuration: 2000
+            });
+          }
+        }
+        setOpenNewSubjectDialog(false);
+      }
+    } catch (error) {
+      console.error('Errore durante la creazione del soggetto:', error);
+      enqueueSnackbar('Errore durante la creazione del soggetto', { variant: 'error' });
+    } finally {
+      setCreatingSubject(false);
+    }
+  };
+
+  const handleCreateDetail = async () => {
+    if (!newDetailName.trim()) {
+      enqueueSnackbar('Inserisci un nome per il dettaglio', { variant: 'error' });
+      return;
+    }
+
+    if (!selectedSubject) {
+      enqueueSnackbar('Seleziona prima un soggetto', { variant: 'error' });
+      return;
+    }
+
+    try {
+      setCreatingDetail(true);
+      const response = await axios.post('/api/detail/create', {
+        db,
+        name: newDetailName.trim(),
+        subjectId: selectedSubject
+      });
+      
+      if (response.status === 200) {
+        // Ricarica i dettagli
+        const detailResponse = await axios.post(endpoints.detail.list, { db, subjectId: selectedSubject });
+        if (detailResponse.status === 200) {
+          const details = detailResponse.data.data.sort((a, b) => a.name.localeCompare(b.name));
+          setDetailsList(details);
+          
+          const newDetail = details.find(detail => detail.name === newDetailName.trim());
+          if (newDetail) {
+            setSelectedDetail(newDetail.id);
+            enqueueSnackbar(`Dettaglio "${newDetailName}" creato con successo`, { 
+              variant: 'success',
+              autoHideDuration: 2000
+            });
+          }
+        }
+        setOpenNewDetailDialog(false);
+      }
+    } catch (error) {
+      console.error('Errore durante la creazione del dettaglio:', error);
+      enqueueSnackbar('Errore durante la creazione del dettaglio', { variant: 'error' });
+    } finally {
+      setCreatingDetail(false);
     }
   };
 
@@ -242,6 +415,33 @@ export default function AutoClassifySuggestionDialog({
               {...params}
               label="Categoria *"
               placeholder="Seleziona una categoria"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {params.InputProps.endAdornment}
+                    <Button 
+                      color="primary"
+                      variant="outlined"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOpenNewCategoryDialog();
+                      }}
+                      size="small"
+                      title="Crea nuova categoria"
+                      sx={{ 
+                        minWidth: 'unset', 
+                        ml: 1, 
+                        px: 0.5,
+                        py: 0.5,
+                        borderRadius: '50%'
+                      }}
+                    >
+                      <Iconify icon="eva:plus-fill" width={20} height={20} />
+                    </Button>
+                  </>
+                ),
+              }}
             />
           )}
           sx={{ mb: 2 }}
@@ -282,6 +482,36 @@ export default function AutoClassifySuggestionDialog({
               {...params}
               label="Soggetto *"
               placeholder="Seleziona un soggetto"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {params.InputProps.endAdornment}
+                    {selectedCategory && (
+                      <Button 
+                        color="primary"
+                        variant="outlined"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOpenNewSubjectDialog();
+                        }}
+                        disabled={!selectedCategory}
+                        size="small"
+                        title="Crea nuovo soggetto"
+                        sx={{ 
+                          minWidth: 'unset', 
+                          ml: 1, 
+                          px: 0.5,
+                          py: 0.5,
+                          borderRadius: '50%'
+                        }}
+                      >
+                        <Iconify icon="eva:plus-fill" width={20} height={20} />
+                      </Button>
+                    )}
+                  </>
+                ),
+              }}
             />
           )}
           sx={{ mb: 2 }}
@@ -313,6 +543,36 @@ export default function AutoClassifySuggestionDialog({
               {...params}
               label="Dettaglio (opzionale)"
               placeholder="Seleziona un dettaglio"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {params.InputProps.endAdornment}
+                    {selectedSubject && (
+                      <Button 
+                        color="primary"
+                        variant="outlined"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOpenNewDetailDialog();
+                        }}
+                        disabled={!selectedSubject}
+                        size="small"
+                        title="Crea nuovo dettaglio"
+                        sx={{ 
+                          minWidth: 'unset', 
+                          ml: 1, 
+                          px: 0.5,
+                          py: 0.5,
+                          borderRadius: '50%'
+                        }}
+                      >
+                        <Iconify icon="eva:plus-fill" width={20} height={20} />
+                      </Button>
+                    )}
+                  </>
+                ),
+              }}
             />
           )}
         />
@@ -340,6 +600,132 @@ export default function AutoClassifySuggestionDialog({
           Accetta classificazione
         </LoadingButton>
       </DialogActions>
+
+      {/* Dialog per creazione nuova categoria */}
+      <Dialog 
+        open={openNewCategoryDialog} 
+        onClose={() => setOpenNewCategoryDialog(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nuova Categoria</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Categoria"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !creatingCategory) {
+                e.preventDefault();
+                handleCreateCategory();
+              }
+            }}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenNewCategoryDialog(false)} color="inherit">
+            Annulla
+          </Button>
+          <LoadingButton
+            onClick={handleCreateCategory}
+            loading={creatingCategory}
+            variant="contained"
+            color="primary"
+          >
+            Crea Categoria
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog per creazione nuovo soggetto */}
+      <Dialog 
+        open={openNewSubjectDialog} 
+        onClose={() => setOpenNewSubjectDialog(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nuovo Soggetto</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Soggetto"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newSubjectName}
+            onChange={(e) => setNewSubjectName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !creatingSubject) {
+                e.preventDefault();
+                handleCreateSubject();
+              }
+            }}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenNewSubjectDialog(false)} color="inherit">
+            Annulla
+          </Button>
+          <LoadingButton
+            onClick={handleCreateSubject}
+            loading={creatingSubject}
+            variant="contained"
+            color="primary"
+          >
+            Crea Soggetto
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog per creazione nuovo dettaglio */}
+      <Dialog 
+        open={openNewDetailDialog} 
+        onClose={() => setOpenNewDetailDialog(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nuovo Dettaglio</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Dettaglio"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newDetailName}
+            onChange={(e) => setNewDetailName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !creatingDetail) {
+                e.preventDefault();
+                handleCreateDetail();
+              }
+            }}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenNewDetailDialog(false)} color="inherit">
+            Annulla
+          </Button>
+          <LoadingButton
+            onClick={handleCreateDetail}
+            loading={creatingDetail}
+            variant="contained"
+            color="primary"
+          >
+            Crea Dettaglio
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

@@ -92,7 +92,7 @@ export default function AutoClassifyButton({ transaction, onUpdate }) {
         },
         body: JSON.stringify({
           id: transaction.id,
-          owner: transaction.owner,
+          owner: transaction.ownerid,
           date: transaction.date,
           amount: transaction.amount,
           description: transaction.description,

@@ -22,6 +22,7 @@ import { useGetOwners } from '../../api/owner';
 import { fCurrencyEur } from '../../utils/format-number';
 import PrimaNotaSplitForm from './prima-nota-split-form';
 import PrimaNotaQuickEditForm from './prima-nota-quick-edit-form';
+import AutoClassifyButton from './auto-classify-button';
 
 // ----------------------------------------------------------------------
 
@@ -35,7 +36,8 @@ export default function PrimaNotaTableRow({
   onToggleStatsExclusion,
   selectColumns = true,
   editable = true,
-  showStatus = true
+  showStatus = true,
+  isBetaUser = false,
 }) {
   const {
     date,
@@ -161,6 +163,11 @@ export default function PrimaNotaTableRow({
                 </IconButton>
               </Tooltip>
               
+              {/* Bottone Auto-Classify (solo per beta tester) */}
+              {isBetaUser && (
+                <AutoClassifyButton transaction={row} onUpdate={onUpdate} />
+              )}
+              
               <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
                 <IconButton
                   size="small"
@@ -264,4 +271,5 @@ PrimaNotaTableRow.propTypes = {
   showStatus: PropTypes.bool,
   onImportData: PropTypes.func,
   onToggleStatsExclusion: PropTypes.func,
+  isBetaUser: PropTypes.bool,
 };

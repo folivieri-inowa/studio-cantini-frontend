@@ -32,6 +32,7 @@ import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { useBetaFeatures } from 'src/hooks/use-beta-features';
 
 import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
@@ -59,6 +60,7 @@ import { useSnackbar } from '../../../components/snackbar';
 import ImportHistoryDialog from '../import-history-dialog';
 import PrimaNotaTotalModal from '../prima-nota-total-modal';
 import PrimaNotaTableToolbar from '../prima-nota-table-toolbar';
+import AutoClassifyMultiButton from '../auto-classify-multi-button';
 import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
@@ -101,6 +103,9 @@ export default function PrimaNotaListView() {
   const table = useTable();
 
   const settings = useSettingsContext();
+  
+  // Hook per controllare se l'utente ha accesso alle funzionalità beta
+  const { isBetaUser } = useBetaFeatures();
 
   const [tableData, setTableData] = useState([]);
   const [dataToImport, setDataToImport] = useState(null);
@@ -343,6 +348,16 @@ export default function PrimaNotaListView() {
                       <Iconify icon="solar:pen-bold" />
                     </IconButton>
                   </Tooltip>
+                  
+                  {/* Bottone Auto-Classify multiplo (solo per beta tester) */}
+                  {isBetaUser && (
+                    <AutoClassifyMultiButton
+                      selectedIds={table.selected}
+                      transactions={dataFiltered}
+                      onUpdate={refetch}
+                    />
+                  )}
+                  
                   <Tooltip title="Elimina">
                     <IconButton color="primary" onClick={confirm.onTrue}>
                       <Iconify icon="solar:trash-bin-minimalistic-bold" />
@@ -399,6 +414,7 @@ export default function PrimaNotaListView() {
                             onImportData={() => handleImportRow(row)}
                             onToggleStatsExclusion={handleToggleStatsExclusion}
                             onUpdate={refetch}
+                            isBetaUser={isBetaUser}
                           />
                         ))}
 

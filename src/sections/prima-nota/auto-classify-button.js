@@ -76,6 +76,15 @@ export default function AutoClassifyButton({ transaction, onUpdate }) {
   const handleAcceptSuggestion = async (classification) => {
     // Aggiorna la transazione con la classificazione accettata
     try {
+      console.log('🔵 Saving classification:', {
+        id: transaction.id,
+        category: classification.category_id,
+        subject: classification.subject_id,
+        details: classification.detail_id || '',
+        status: 'completed',
+        db: settings.db,
+      });
+
       const response = await fetch('/api/prima-nota/edit', {
         method: 'POST',
         headers: {
@@ -83,26 +92,38 @@ export default function AutoClassifyButton({ transaction, onUpdate }) {
         },
         body: JSON.stringify({
           id: transaction.id,
-          categoryId: classification.category_id,
-          subjectId: classification.subject_id,
-          detailId: classification.detail_id,
+          owner: transaction.owner,
+          date: transaction.date,
+          amount: transaction.amount,
+          description: transaction.description,
+          paymentType: transaction.paymentType || '',
+          note: transaction.note || '',
+          category: classification.category_id,
+          subject: classification.subject_id,
+          details: classification.detail_id || '',
           status: 'completed',
           db: settings.db,
+          documents: transaction.documents || [],
+          excludedFromStats: transaction.excludedFromStats || false,
         }),
       });
 
+      const result = await response.json();
+      console.log('🟢 Save response:', result);
+
       if (!response.ok) {
-        throw new Error('Errore nel salvataggio');
+        throw new Error(result.error || 'Errore nel salvataggio');
       }
 
       // Ricarica i dati
       if (onUpdate) {
+        console.log('🔄 Calling onUpdate...');
         onUpdate();
       }
 
       handleDialogClose();
     } catch (err) {
-      console.error('Save classification error:', err);
+      console.error('❌ Save classification error:', err);
       setError(err.message);
     }
   };

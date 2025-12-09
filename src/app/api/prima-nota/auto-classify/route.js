@@ -51,10 +51,10 @@ export async function POST(request) {
 
     console.log('n8n response:', JSON.stringify(result, null, 2));
 
-    // Il workflow n8n restituisce: { transactions: [{ id, classifications: [...] }] }
-    // Estraiamo la prima classificazione dalla prima transazione
+    // Il workflow n8n restituisce: { transactions: [{ suggested: {...}, similar_transactions: [...] }] }
+    // Estraiamo il suggerimento dalla prima transazione
     const resultTransaction = result.transactions?.[0];
-    const classification = resultTransaction?.classifications?.[0];
+    const classification = resultTransaction?.suggested;
 
     if (!classification) {
       return NextResponse.json(
@@ -63,11 +63,11 @@ export async function POST(request) {
       );
     }
 
-    // Mappiamo similarity a confidence per compatibilità
+    // La risposta include già confidence, mappiamo il metodo basato sulla confidenza
     const normalizedClassification = {
       ...classification,
-      confidence: classification.similarity || 0,
-      method: classification.similarity >= 85 ? 'rag_direct' : 'llm_analysis',
+      confidence: (classification.confidence || 0) * 100, // Convertiamo da 0-1 a 0-100
+      method: classification.confidence >= 0.85 ? 'rag_direct' : 'llm_analysis',
     };
 
     return NextResponse.json(
@@ -131,17 +131,17 @@ export async function PUT(request) {
 
     const result = await response.json();
 
-    // Il workflow n8n restituisce: { transactions: [{ id, classifications: [...] }] }
-    // Estraiamo le classificazioni da ogni transazione
+    // Il workflow n8n restituisce: { transactions: [{ suggested: {...}, similar_transactions: [...] }] }
+    // Estraiamo i suggerimenti da ogni transazione
     const classifications = result.transactions?.map((transaction) => {
-      const classification = transaction?.classifications?.[0];
+      const classification = transaction?.suggested;
       if (!classification) return null;
 
       return {
         ...classification,
-        id: transaction.id,
-        confidence: classification.similarity || 0,
-        method: classification.similarity >= 85 ? 'rag_direct' : 'llm_analysis',
+        id: transaction.original?.id || transaction.id,
+        confidence: (classification.confidence || 0) * 100, // Convertiamo da 0-1 a 0-100
+        method: classification.confidence >= 0.85 ? 'rag_direct' : 'llm_analysis',
       };
     }).filter(Boolean) || [];
 

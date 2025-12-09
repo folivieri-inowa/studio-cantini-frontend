@@ -8,12 +8,10 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import InputLabel from '@mui/material/InputLabel';
-import FormControl from '@mui/material/FormControl';
 import DialogTitle from '@mui/material/DialogTitle';
+import Autocomplete from '@mui/material/Autocomplete';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -23,7 +21,6 @@ import Iconify from 'src/components/iconify';
 import { useSettingsContext } from 'src/components/settings';
 
 import axios, { endpoints } from '../../utils/axios';
-import { useGetSubjects } from '../../api/subject';
 import { useGetCategories } from '../../api/category';
 import { fCurrencyEur } from '../../utils/format-number';
 
@@ -40,19 +37,31 @@ export default function AutoClassifySuggestionDialog({
   const settings = useSettingsContext();
   const { db } = settings;
   const { categories } = useGetCategories(db);
-  const { subjects } = useGetSubjects(db);
 
   const [loading, setLoading] = useState(false);
+  const [subjectsList, setSubjectsList] = useState([]);
   const [detailsList, setDetailsList] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
 
-  // Filtra soggetti per categoria selezionata
-  const filteredSubjects = useMemo(() => {
-    if (!selectedCategory || !subjects) return [];
-    return subjects.filter((s) => s.categoryid === selectedCategory);
-  }, [selectedCategory, subjects]);
+  // Carica i soggetti quando cambia la categoria
+  const fetchSubjects = useCallback(async (categoryId) => {
+    if (!categoryId) {
+      setSubjectsList([]);
+      return;
+    }
+    try {
+      const response = await axios.post(endpoints.subject.list, { db, categoryId });
+      const { data: subjectsData } = response.data;
+      if (subjectsData) {
+        setSubjectsList(subjectsData.sort((a, b) => a.name.localeCompare(b.name)));
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      setSubjectsList([]);
+    }
+  }, [db]);
 
   // Carica i dettagli quando cambia il soggetto
   const fetchDetails = useCallback(async (subjectId) => {
@@ -72,41 +81,41 @@ export default function AutoClassifySuggestionDialog({
     }
   }, [db]);
 
-  // Quando cambia il suggerimento, aggiorna le selezioni
+  // Quando cambia il suggerimento, aggiorna le selezioni E carica soggetti/dettagli
   useEffect(() => {
     if (suggestion && open) {
+      console.log('Setting initial selection from suggestion:', suggestion);
       setSelectedCategory(suggestion.category_id || null);
       setSelectedSubject(suggestion.subject_id || null);
       setSelectedDetail(suggestion.detail_id || null);
       
-      // Carica i dettagli per il soggetto suggerito
-      if (suggestion.subject_id) {
-        fetchDetails(suggestion.subject_id);
+      // Carica i soggetti per la categoria suggerita
+      if (suggestion.category_id) {
+        fetchSubjects(suggestion.category_id).then(() => {
+          // Carica i dettagli per il soggetto suggerito dopo aver caricato i soggetti
+          if (suggestion.subject_id) {
+            fetchDetails(suggestion.subject_id);
+          }
+        });
+      } else {
+        setSubjectsList([]);
+        setDetailsList([]);
       }
     }
-  }, [suggestion, open, fetchDetails]);
+  }, [suggestion, open, fetchSubjects, fetchDetails]);
 
-  // Reset quando la categoria cambia
+  // Reset quando la categoria cambia manualmente (solo se diversa dal suggerimento)
   useEffect(() => {
     if (selectedCategory && suggestion) {
-      // Se la categoria è diversa dal suggerimento, resetta soggetto e dettaglio
+      // Se la categoria è diversa dal suggerimento, ricarica soggetti e resetta soggetto/dettaglio
       if (selectedCategory !== suggestion.category_id) {
         setSelectedSubject(null);
         setSelectedDetail(null);
         setDetailsList([]);
+        fetchSubjects(selectedCategory);
       }
     }
-  }, [selectedCategory, suggestion]);
-
-  // Carica dettagli quando il soggetto cambia
-  useEffect(() => {
-    if (selectedSubject && suggestion) {
-      if (selectedSubject !== suggestion.subject_id) {
-        setSelectedDetail(null);
-        fetchDetails(selectedSubject);
-      }
-    }
-  }, [selectedSubject, suggestion, fetchDetails]);
+  }, [selectedCategory, suggestion, fetchSubjects]);
 
   const handleAccept = async () => {
     setLoading(true);
@@ -125,6 +134,7 @@ export default function AutoClassifySuggestionDialog({
     setSelectedCategory(null);
     setSelectedSubject(null);
     setSelectedDetail(null);
+    setSubjectsList([]);
     setDetailsList([]);
     onClose();
   };
@@ -204,64 +214,108 @@ export default function AutoClassifySuggestionDialog({
         )}
 
         {/* Selezione categoria */}
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Categoria</InputLabel>
-          <Select
-            value={selectedCategory || ''}
-            label="Categoria"
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            {categories?.map((cat) => (
-              <MenuItem key={cat.id} value={cat.id}>
-                {cat.name}
-                {suggestion?.category_id === cat.id && (
-                  <Chip size="small" label="Suggerito" color="primary" sx={{ ml: 1 }} />
+        <Autocomplete
+          fullWidth
+          options={categories || []}
+          value={categories?.find((c) => c.id === selectedCategory) || null}
+          onChange={(event, newValue) => {
+            setSelectedCategory(newValue?.id || null);
+            if (newValue?.id !== suggestion?.category_id) {
+              setSelectedSubject(null);
+              setSelectedDetail(null);
+            }
+          }}
+          getOptionLabel={(option) => option.name || ''}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ width: '100%' }}>
+                <span>{option.name}</span>
+                {suggestion?.category_id === option.id && (
+                  <Chip size="small" label="Suggerito" color="primary" variant="soft" />
                 )}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              </Stack>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Categoria *"
+              placeholder="Seleziona una categoria"
+            />
+          )}
+          sx={{ mb: 2 }}
+        />
 
         {/* Selezione soggetto */}
-        <FormControl fullWidth sx={{ mb: 2 }} disabled={!selectedCategory}>
-          <InputLabel>Soggetto</InputLabel>
-          <Select
-            value={selectedSubject || ''}
-            label="Soggetto"
-            onChange={(e) => setSelectedSubject(e.target.value)}
-          >
-            {filteredSubjects?.map((subj) => (
-              <MenuItem key={subj.id} value={subj.id}>
-                {subj.name}
-                {suggestion?.subject_id === subj.id && (
-                  <Chip size="small" label="Suggerito" color="primary" sx={{ ml: 1 }} />
+        <Autocomplete
+          fullWidth
+          options={subjectsList || []}
+          value={subjectsList?.find((s) => s.id === selectedSubject) || null}
+          onChange={(event, newValue) => {
+            const newSubjectId = newValue?.id || null;
+            setSelectedSubject(newSubjectId);
+            setSelectedDetail(null);
+            
+            // Carica i dettagli per il nuovo soggetto
+            if (newSubjectId) {
+              fetchDetails(newSubjectId);
+            } else {
+              setDetailsList([]);
+            }
+          }}
+          getOptionLabel={(option) => option.name || ''}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          disabled={!selectedCategory || subjectsList.length === 0}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ width: '100%' }}>
+                <span>{option.name}</span>
+                {suggestion?.subject_id === option.id && (
+                  <Chip size="small" label="Suggerito" color="primary" variant="soft" />
                 )}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              </Stack>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Soggetto *"
+              placeholder="Seleziona un soggetto"
+            />
+          )}
+          sx={{ mb: 2 }}
+        />
 
         {/* Selezione dettaglio */}
-        <FormControl fullWidth disabled={!selectedSubject}>
-          <InputLabel>Dettaglio (opzionale)</InputLabel>
-          <Select
-            value={selectedDetail || ''}
-            label="Dettaglio (opzionale)"
-            onChange={(e) => setSelectedDetail(e.target.value)}
-          >
-            <MenuItem value="">
-              <em>Nessun dettaglio</em>
-            </MenuItem>
-            {detailsList?.map((det) => (
-              <MenuItem key={det.id} value={det.id}>
-                {det.name}
-                {suggestion?.detail_id === det.id && (
-                  <Chip size="small" label="Suggerito" color="primary" sx={{ ml: 1 }} />
+        <Autocomplete
+          fullWidth
+          options={detailsList || []}
+          value={detailsList?.find((d) => d.id === selectedDetail) || null}
+          onChange={(event, newValue) => {
+            setSelectedDetail(newValue?.id || null);
+          }}
+          getOptionLabel={(option) => option.name || ''}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          disabled={!selectedSubject}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ width: '100%' }}>
+                <span>{option.name}</span>
+                {suggestion?.detail_id === option.id && (
+                  <Chip size="small" label="Suggerito" color="primary" variant="soft" />
                 )}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              </Stack>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Dettaglio (opzionale)"
+              placeholder="Seleziona un dettaglio"
+            />
+          )}
+        />
 
         {/* Nota sul metodo */}
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>

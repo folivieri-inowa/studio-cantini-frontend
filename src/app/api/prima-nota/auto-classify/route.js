@@ -63,11 +63,12 @@ export async function POST(request) {
       );
     }
 
-    // La risposta include già confidence, mappiamo il metodo basato sulla confidenza
+    // La risposta include già confidence in percentuale (0-100)
     const normalizedClassification = {
       ...classification,
-      confidence: (classification.confidence || 0) * 100, // Convertiamo da 0-1 a 0-100
-      method: classification.confidence >= 0.85 ? 'rag_direct' : 'llm_analysis',
+      // Se confidence è già > 1, è già in percentuale, altrimenti converti
+      confidence: classification.confidence > 1 ? classification.confidence : (classification.confidence || 0) * 100,
+      method: classification.method || (classification.confidence >= 85 ? 'rag_direct' : 'llm_analysis'),
     };
 
     return NextResponse.json(
@@ -140,8 +141,9 @@ export async function PUT(request) {
       return {
         ...classification,
         id: transaction.original?.id || transaction.id,
-        confidence: (classification.confidence || 0) * 100, // Convertiamo da 0-1 a 0-100
-        method: classification.confidence >= 0.85 ? 'rag_direct' : 'llm_analysis',
+        // Se confidence è già > 1, è già in percentuale, altrimenti converti
+        confidence: classification.confidence > 1 ? classification.confidence : (classification.confidence || 0) * 100,
+        method: classification.method || (classification.confidence >= 85 ? 'rag_direct' : 'llm_analysis'),
       };
     }).filter(Boolean) || [];
 

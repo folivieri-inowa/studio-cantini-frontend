@@ -84,7 +84,7 @@ export default function AutoClassifySuggestionDialog({
     }
     try {
       const response = await axios.post(endpoints.detail.list, { db, subjectId });
-      const { details } = response.data;
+      const { data: details } = response.data;
       if (details) {
         setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
       }
@@ -96,25 +96,31 @@ export default function AutoClassifySuggestionDialog({
 
   // Quando cambia il suggerimento, aggiorna le selezioni E carica soggetti/dettagli
   useEffect(() => {
-    if (suggestion && open) {
-      console.log('Setting initial selection from suggestion:', suggestion);
-      setSelectedCategory(suggestion.category_id || null);
-      setSelectedSubject(suggestion.subject_id || null);
-      setSelectedDetail(suggestion.detail_id || null);
-      
-      // Carica i soggetti per la categoria suggerita
-      if (suggestion.category_id) {
-        fetchSubjects(suggestion.category_id).then(() => {
+    const loadSuggestion = async () => {
+      if (suggestion && open) {
+        console.log('Setting initial selection from suggestion:', suggestion);
+        setSelectedCategory(suggestion.category_id || null);
+        
+        // Carica i soggetti per la categoria suggerita
+        if (suggestion.category_id) {
+          await fetchSubjects(suggestion.category_id);
+          setSelectedSubject(suggestion.subject_id || null);
+          
           // Carica i dettagli per il soggetto suggerito dopo aver caricato i soggetti
           if (suggestion.subject_id) {
-            fetchDetails(suggestion.subject_id);
+            await fetchDetails(suggestion.subject_id);
+            setSelectedDetail(suggestion.detail_id || null);
           }
-        });
-      } else {
-        setSubjectsList([]);
-        setDetailsList([]);
+        } else {
+          setSubjectsList([]);
+          setDetailsList([]);
+          setSelectedSubject(null);
+          setSelectedDetail(null);
+        }
       }
-    }
+    };
+    
+    loadSuggestion();
   }, [suggestion, open, fetchSubjects, fetchDetails]);
 
   // Reset quando la categoria cambia manualmente (solo se diversa dal suggerimento)
@@ -317,7 +323,17 @@ export default function AutoClassifySuggestionDialog({
   const method = suggestion?.method || 'unknown';
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          maxHeight: '90vh',
+        }
+      }}
+    >
       <DialogTitle sx={{ pb: 2 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Iconify icon="solar:magic-stick-3-bold" color="secondary.main" width={24} />
@@ -389,6 +405,7 @@ export default function AutoClassifySuggestionDialog({
         {/* Selezione categoria */}
         <Autocomplete
           fullWidth
+          disablePortal={false}
           options={categories || []}
           value={categories?.find((c) => c.id === selectedCategory) || null}
           onChange={(event, newValue) => {
@@ -450,6 +467,7 @@ export default function AutoClassifySuggestionDialog({
         {/* Selezione soggetto */}
         <Autocomplete
           fullWidth
+          disablePortal={false}
           options={subjectsList || []}
           value={subjectsList?.find((s) => s.id === selectedSubject) || null}
           onChange={(event, newValue) => {
@@ -520,6 +538,7 @@ export default function AutoClassifySuggestionDialog({
         {/* Selezione dettaglio */}
         <Autocomplete
           fullWidth
+          disablePortal={false}
           options={detailsList || []}
           value={detailsList?.find((d) => d.id === selectedDetail) || null}
           onChange={(event, newValue) => {

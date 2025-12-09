@@ -80,7 +80,7 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
     }
     try {
       const response = await axios.post(endpoints.detail.list, { db, subjectId });
-      const { details } = response.data;
+      const { data: details } = response.data;
       if (details) {
         setDetailsList(details.sort((a, b) => a.name.localeCompare(b.name)));
       }
@@ -92,17 +92,24 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
 
   // Inizializzazione
   useEffect(() => {
-    setSelectedCategory(result.classification?.category_id || null);
-    setSelectedSubject(result.classification?.subject_id || null);
-    setSelectedDetail(result.classification?.detail_id || null);
+    const loadClassification = async () => {
+      setSelectedCategory(result.classification?.category_id || null);
 
-    if (result.classification?.category_id) {
-      fetchSubjects(result.classification.category_id).then(() => {
+      if (result.classification?.category_id) {
+        await fetchSubjects(result.classification.category_id);
+        setSelectedSubject(result.classification?.subject_id || null);
+        
         if (result.classification?.subject_id) {
-          fetchDetails(result.classification.subject_id);
+          await fetchDetails(result.classification.subject_id);
+          setSelectedDetail(result.classification?.detail_id || null);
         }
-      });
-    }
+      } else {
+        setSelectedSubject(null);
+        setSelectedDetail(null);
+      }
+    };
+    
+    loadClassification();
   }, [result, fetchSubjects, fetchDetails]);
 
   // Gestione cambio categoria
@@ -764,11 +771,13 @@ export default function AutoClassifyMultiButton({
       // Applica solo le classificazioni riuscite e non escluse
       const successfulResults = results.filter((r) => r.success && !excludedIds.has(r.id));
 
-      // Uso Promise.all con map invece di for-of
+      // Salva tutte le transazioni e i feedback in parallelo
       await Promise.all(
-        successfulResults.map((result) => {
+        successfulResults.map(async (result) => {
           const t = result.originalTransaction;
-          return fetch('/api/prima-nota/edit', {
+          
+          // Salva la transazione
+          await fetch('/api/prima-nota/edit', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -790,6 +799,33 @@ export default function AutoClassifyMultiButton({
               excludedFromStats: t.excludedFromStats || false,
             }),
           });
+
+          // Salva il feedback per learning (non bloccare se fallisce)
+          try {
+            await fetch('/api/prima-nota/classification-feedback', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                db: settings.db,
+                transactionId: t.id,
+                originalDescription: t.description,
+                amount: t.amount,
+                transactionDate: t.date,
+                suggestedCategoryId: result.classification.category_id,
+                suggestedSubjectId: result.classification.subject_id,
+                suggestedDetailId: result.classification.detail_id,
+                suggestionConfidence: result.classification.confidence,
+                suggestionMethod: result.classification.method,
+                correctedCategoryId: result.classification.category_id,
+                correctedSubjectId: result.classification.subject_id,
+                correctedDetailId: result.classification.detail_id,
+              }),
+            });
+          } catch (feedbackError) {
+            console.warn('⚠️ Could not save learning feedback for transaction:', t.id, feedbackError);
+          }
         })
       );
 

@@ -115,6 +115,35 @@ export default function AutoClassifyButton({ transaction, onUpdate }) {
         throw new Error(result.error || 'Errore nel salvataggio');
       }
 
+      // Salva il feedback se c'è stata una modifica rispetto al suggerimento originale
+      try {
+        await fetch('/api/prima-nota/classification-feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            db: settings.db,
+            transactionId: transaction.id,
+            originalDescription: transaction.description,
+            amount: transaction.amount,
+            transactionDate: transaction.date,
+            suggestedCategoryId: suggestion?.category_id,
+            suggestedSubjectId: suggestion?.subject_id,
+            suggestedDetailId: suggestion?.detail_id,
+            suggestionConfidence: suggestion?.confidence,
+            suggestionMethod: suggestion?.method,
+            correctedCategoryId: classification.category_id,
+            correctedSubjectId: classification.subject_id,
+            correctedDetailId: classification.detail_id,
+          }),
+        });
+        console.log('📊 Learning feedback saved');
+      } catch (feedbackError) {
+        // Non bloccare l'operazione se il feedback non viene salvato
+        console.warn('⚠️ Could not save learning feedback:', feedbackError);
+      }
+
       // Ricarica i dati
       if (onUpdate) {
         console.log('🔄 Calling onUpdate...');

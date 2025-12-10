@@ -164,13 +164,9 @@ export default function PrimaNotaTableRow({
                 </IconButton>
               </Tooltip>
               
-              {/* Bottone Auto-Classify (solo per beta tester) */}
-              {isBetaUser && (
-                <>
-                  <AutoClassifyButton transaction={row} onUpdate={onUpdate} />
-                  <SearchSimilarButton transaction={row} />
-                </>
-              )}
+              {/* Bottoni AI disponibili per tutti gli utenti */}
+              <AutoClassifyButton transaction={row} onUpdate={onUpdate} />
+              <SearchSimilarButton transaction={row} />
               
               <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
                 <IconButton

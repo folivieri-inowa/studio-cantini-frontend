@@ -151,12 +151,13 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
     updateParent(selectedCategory, selectedSubject, newDetailId);
   };
 
-  const updateParent = (catId, subId, detId) => {
+  const updateParent = async (catId, subId, detId) => {
     // Trova i nomi per visualizzazione
     const catName = categories.find(c => c.id === catId)?.name || '';
     const subName = subjectsList.find(s => s.id === subId)?.name || '';
+    const detName = detailsList.find(d => d.id === detId)?.name || null;
     
-    onSave({
+    const updatedResult = {
       ...result,
       classification: {
         ...result.classification,
@@ -165,8 +166,45 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
         subject_id: subId,
         subject_name: subName,
         detail_id: detId,
+        detail_name: detName,
       }
-    });
+    };
+    
+    onSave(updatedResult);
+    
+    // Salva il feedback per learning (solo se c'è stata una modifica rispetto al suggerimento originale)
+    const hasChanged = 
+      result.classification?.category_id !== catId ||
+      result.classification?.subject_id !== subId ||
+      result.classification?.detail_id !== detId;
+    
+    if (hasChanged && result.originalTransaction) {
+      try {
+        await fetch('/api/prima-nota/classification-feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            db,
+            transactionId: result.originalTransaction.id,
+            originalDescription: result.originalTransaction.description,
+            amount: result.originalTransaction.amount,
+            transactionDate: result.originalTransaction.date,
+            suggestedCategoryId: result.classification?.category_id,
+            suggestedSubjectId: result.classification?.subject_id,
+            suggestedDetailId: result.classification?.detail_id,
+            suggestionConfidence: result.classification?.confidence,
+            suggestionMethod: result.classification?.method,
+            correctedCategoryId: catId,
+            correctedSubjectId: subId,
+            correctedDetailId: detId,
+          }),
+        });
+      } catch (feedbackError) {
+        console.warn('⚠️ Could not save correction feedback:', feedbackError);
+      }
+    }
   };
 
   // Funzioni per aprire i dialog di creazione

@@ -56,10 +56,17 @@ export async function POST(request) {
     const resultTransaction = result.transactions?.[0];
     const classification = resultTransaction?.suggested;
 
-    if (!classification) {
+    // Se suggested è null, significa che RAG non ha trovato match >= 85%
+    // Restituiamo comunque success=true ma con needs_review=true per aprire il dialog
+    if (!classification || classification === null) {
       return NextResponse.json(
-        { error: 'No classification found in response', details: result },
-        { status: 502 }
+        {
+          success: true,
+          classification: null,
+          needs_review: true,
+          reason: resultTransaction?.reason || 'Nessuna transazione simile trovata. Richiede classificazione manuale.',
+        },
+        { status: 200 }
       );
     }
 

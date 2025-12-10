@@ -50,12 +50,28 @@ export default function AutoClassifyButton({ transaction, onUpdate }) {
         throw new Error(result.error || 'Errore nella classificazione');
       }
 
-      if (!result.classification) {
-        console.error('Response without classification:', result);
-        throw new Error('Nessuna classificazione ricevuta dal server');
+      console.log('Classification received:', result);
+
+      // Se needs_review è true, apri il dialog per classificazione manuale
+      if (result.needs_review || !result.classification) {
+        console.log('📋 No automatic classification available, opening manual dialog');
+        // Imposta suggestion null per aprire il dialog in modalità "manuale"
+        setSuggestion({
+          category_id: null,
+          category_name: null,
+          subject_id: null,
+          subject_name: null,
+          detail_id: null,
+          detail_name: null,
+          confidence: 0,
+          method: 'manual',
+          reasoning: result.reason || 'Nessuna transazione simile trovata. Classificazione manuale richiesta.',
+        });
+        setDialogOpen(true);
+        return;
       }
 
-      console.log('Classification received:', result.classification);
+      console.log('✅ Classification received:', result.classification);
 
       // Salva il suggerimento e apri il dialog
       setSuggestion(result.classification);

@@ -951,10 +951,22 @@ export default function AutoClassifyMultiButton({
 
           {/* Risultati Split View */}
           {results.length > 0 && results.length === selectedTransactions.length && (
-            <Grid container sx={{ flex: 1, overflow: 'hidden' }}>
+            <Grid container sx={{ flex: 1, height: '100%' }}>
               {/* Colonna Sinistra: Lista */}
-              <Grid item xs={12} md={4} sx={{ borderRight: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Grid 
+                item 
+                xs={12} 
+                md={4} 
+                sx={{ 
+                  borderRight: '1px solid', 
+                  borderColor: 'divider', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  height: '100%',
+                  maxHeight: '100%'
+                }}
+              >
+                <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                     <Chip 
                       label={`${successCount} OK`}
@@ -980,7 +992,7 @@ export default function AutoClassifyMultiButton({
                     )}
                   </Stack>
                 </Box>
-                <Box sx={{ overflow: 'auto', flex: 1 }}>
+                <Box sx={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
                   {results.map((result) => {
                     const isExcluded = excludedIds.has(result.id);
                     return (

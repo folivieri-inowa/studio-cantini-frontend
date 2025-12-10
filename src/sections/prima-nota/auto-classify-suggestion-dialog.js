@@ -5,6 +5,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -369,8 +370,17 @@ export default function AutoClassifySuggestionDialog({
           </Typography>
         </Box>
 
+        {/* Alert quando non ci sono suggerimenti automatici */}
+        {suggestion && suggestion.method === 'manual' && (
+          <Alert severity="info" sx={{ mb: 3 }} icon={<Iconify icon="solar:info-circle-bold" width={24} />}>
+            <Typography variant="body2">
+              {suggestion.reasoning || 'Nessuna transazione simile trovata nel database. Classifica manualmente questa transazione per migliorare il sistema di apprendimento automatico.'}
+            </Typography>
+          </Alert>
+        )}
+
         {/* Confidenza */}
-        {suggestion && (
+        {suggestion && suggestion.confidence > 0 && (
           <Box sx={{ mb: 3 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
               <Typography variant="subtitle2" color="text.secondary">

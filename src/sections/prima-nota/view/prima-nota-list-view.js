@@ -329,11 +329,18 @@ export default function PrimaNotaListView() {
             <TableSelectedAction
               dense={table.dense}
               numSelected={table.selected.length}
-              rowCount={dataFiltered.length}
+              rowCount={dataFiltered.slice(
+                table.page * table.rowsPerPage,
+                table.page * table.rowsPerPage + table.rowsPerPage
+              ).length}
               onSelectAllRows={(checked) => {
+                const currentPageData = dataFiltered.slice(
+                  table.page * table.rowsPerPage,
+                  table.page * table.rowsPerPage + table.rowsPerPage
+                );
                 table.onSelectAllRows(
                   checked,
-                  dataFiltered.map((row) => row.id)
+                  currentPageData.map((row) => row.id)
                 );
               }}
               action={
@@ -381,13 +388,20 @@ export default function PrimaNotaListView() {
                   order={table.order}
                   orderBy={table.orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={dataFiltered.length}
+                  rowCount={dataFiltered.slice(
+                    table.page * table.rowsPerPage,
+                    table.page * table.rowsPerPage + table.rowsPerPage
+                  ).length}
                   numSelected={table.selected.length}
                   onSort={table.onSort}
                   onSelectAllRows={(checked) => {
+                    const currentPageData = dataFiltered.slice(
+                      table.page * table.rowsPerPage,
+                      table.page * table.rowsPerPage + table.rowsPerPage
+                    );
                     table.onSelectAllRows(
                       checked,
-                      dataFiltered.map((row) => row.id)
+                      currentPageData.map((row) => row.id)
                     );
                   }}
                 />

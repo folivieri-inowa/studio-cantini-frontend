@@ -173,13 +173,8 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
     
     onSave(updatedResult);
     
-    // Salva il feedback per learning (solo se c'è stata una modifica rispetto al suggerimento originale)
-    const hasChanged = 
-      result.classification?.category_id !== catId ||
-      result.classification?.subject_id !== subId ||
-      result.classification?.detail_id !== detId;
-    
-    if (hasChanged && result.originalTransaction) {
+    // Salva il feedback per learning (sempre, sia per correzioni che conferme)
+    if (result.originalTransaction) {
       try {
         await fetch('/api/prima-nota/classification-feedback', {
           method: 'POST',
@@ -1046,6 +1041,7 @@ export default function AutoClassifyMultiButton({
                               <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
                                 <Typography variant="caption" color="primary.main" noWrap sx={{ fontWeight: 'bold' }}>
                                   {result.classification.category_name} &gt; {result.classification.subject_name}
+                                  {result.classification.detail_name && ` > ${result.classification.detail_name}`}
                                 </Typography>
                                 <Chip size="small" label="Suggerito" color="secondary" variant="soft" sx={{ height: 16, fontSize: '0.65rem' }} />
                               </Stack>

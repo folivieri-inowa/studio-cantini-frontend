@@ -31,6 +31,7 @@ import { useSettingsContext } from 'src/components/settings';
 import axios, { endpoints } from 'src/utils/axios';
 import { useGetCategories } from 'src/api/category';
 import { fCurrencyEur } from 'src/utils/format-number';
+import SearchSimilarButton from './search-similar-button';
 
 // ----------------------------------------------------------------------
 
@@ -998,10 +999,7 @@ export default function AutoClassifyMultiButton({
                     return (
                     <Box
                       key={result.id}
-                      onClick={() => setSelectedResultId(result.id)}
                       sx={{
-                        p: 2,
-                        cursor: 'pointer',
                         borderBottom: '1px solid',
                         borderColor: 'divider',
                         bgcolor: selectedResultId === result.id ? 'action.selected' : 'transparent',
@@ -1011,43 +1009,59 @@ export default function AutoClassifyMultiButton({
                       }}
                     >
                       <Stack direction="row" spacing={1} alignItems="flex-start">
-                        {isExcluded && (
-                          <Iconify
-                            icon="solar:close-circle-bold"
-                            color="warning.main"
-                            width={20}
-                            sx={{ mt: 0.5, flexShrink: 0 }}
-                          />
-                        )}
-                        {!isExcluded && (
-                          <Iconify
-                            icon={result.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
-                            color={result.success ? 'success.main' : 'error.main'}
-                            width={20}
-                            sx={{ mt: 0.5, flexShrink: 0 }}
-                          />
-                        )}
-                        <Box sx={{ minWidth: 0, flex: 1 }}>
-                          <Typography variant="subtitle2" noWrap>
-                            {result.description}
-                          </Typography>
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {fCurrencyEur(result.amount)}
-                          </Typography>
-                          {result.success && !isExcluded && (
-                            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-                              <Typography variant="caption" color="primary.main" noWrap sx={{ fontWeight: 'bold' }}>
-                                {result.classification.category_name} &gt; {result.classification.subject_name}
-                              </Typography>
-                              <Chip size="small" label="Suggerito" color="secondary" variant="soft" sx={{ height: 16, fontSize: '0.65rem' }} />
-                            </Stack>
-                          )}
+                        <Box 
+                          onClick={() => setSelectedResultId(result.id)}
+                          sx={{ 
+                            p: 2, 
+                            cursor: 'pointer',
+                            flex: 1,
+                            display: 'flex',
+                            gap: 1
+                          }}
+                        >
                           {isExcluded && (
-                            <Typography variant="caption" color="warning.main" noWrap sx={{ fontStyle: 'italic' }}>
-                              Esclusa dal salvataggio
-                            </Typography>
+                            <Iconify
+                              icon="solar:close-circle-bold"
+                              color="warning.main"
+                              width={20}
+                              sx={{ mt: 0.5, flexShrink: 0 }}
+                            />
                           )}
+                          {!isExcluded && (
+                            <Iconify
+                              icon={result.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
+                              color={result.success ? 'success.main' : 'error.main'}
+                              width={20}
+                              sx={{ mt: 0.5, flexShrink: 0 }}
+                            />
+                          )}
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {result.description}
+                            </Typography>
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              {fCurrencyEur(result.amount)}
+                            </Typography>
+                            {result.success && !isExcluded && (
+                              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+                                <Typography variant="caption" color="primary.main" noWrap sx={{ fontWeight: 'bold' }}>
+                                  {result.classification.category_name} &gt; {result.classification.subject_name}
+                                </Typography>
+                                <Chip size="small" label="Suggerito" color="secondary" variant="soft" sx={{ height: 16, fontSize: '0.65rem' }} />
+                              </Stack>
+                            )}
+                            {isExcluded && (
+                              <Typography variant="caption" color="warning.main" noWrap sx={{ fontStyle: 'italic' }}>
+                                Esclusa dal salvataggio
+                              </Typography>
+                            )}
+                          </Box>
                         </Box>
+                        {result.originalTransaction && (
+                          <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+                            <SearchSimilarButton transaction={result.originalTransaction} />
+                          </Box>
+                        )}
                       </Stack>
                     </Box>
                   );

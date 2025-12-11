@@ -643,16 +643,18 @@ export default function MasterAnalyticsView() {
 
   // Handler per applicare il filtro date personalizzato
   const handleApplyCustomDateFilter = useCallback(() => {
-    if (!customStartDate || !customEndDate) {
+    // Verifica che almeno la data di fine sia presente
+    if (!customEndDate) {
       setSnackbar({
         open: true,
-        message: 'Seleziona sia la data di inizio che quella di fine',
+        message: 'Seleziona almeno la data di fine',
         severity: 'warning'
       });
       return;
     }
 
-    if (customStartDate > customEndDate) {
+    // Se entrambe le date sono presenti, verifica che la data di inizio sia precedente alla data di fine
+    if (customStartDate && customStartDate > customEndDate) {
       setSnackbar({
         open: true,
         message: 'La data di inizio deve essere precedente alla data di fine',
@@ -661,13 +663,76 @@ export default function MasterAnalyticsView() {
       return;
     }
 
+    // Caso 1: Solo data di fine (senza data di inizio)
+    if (!customStartDate && customEndDate) {
+      const endYear = customEndDate.getFullYear().toString();
+      const endMonth = customEndDate.getMonth() + 1;
+      
+      // Se è selezionato "Tutto il periodo" (all-years), filtriamo dall'inizio di tutti i dati
+      if (settings.year === 'all-years') {
+        // Trova l'anno più vecchio disponibile
+        const availableYears = settings.owner?.report?.years || [];
+        if (availableYears.length === 0) {
+          setSnackbar({
+            open: true,
+            message: 'Nessun dato disponibile',
+            severity: 'error'
+          });
+          return;
+        }
+        
+        const oldestYear = Math.min(...availableYears.map(y => parseInt(y, 10))).toString();
+        
+        // Imposta il filtro dalla data più vecchia (gennaio) fino alla data di fine
+        setDateFilter({ 
+          startYear: oldestYear, 
+          startMonth: 1, 
+          endYear, 
+          endMonth 
+        });
+        
+        // Mantieni all-years come anno selezionato
+        handleYearChange({ target: { value: 'all-years' } }, true);
+        
+        setSnackbar({
+          open: true,
+          message: `Filtro applicato: tutti i dati fino al ${customEndDate.toLocaleDateString('it-IT')}`,
+          severity: 'success'
+        });
+      } else {
+        // Anno specifico selezionato: filtriamo da gennaio di quell'anno
+        const selectedYear = settings.year;
+        
+        setDateFilter({ 
+          startYear: selectedYear, 
+          startMonth: 1, 
+          endYear, 
+          endMonth 
+        });
+        
+        // Se la data di fine è in un anno diverso, passiamo a all-years
+        if (selectedYear !== endYear) {
+          handleYearChange({ target: { value: 'all-years' } }, true);
+        }
+        
+        setSnackbar({
+          open: true,
+          message: `Filtro applicato: da gennaio ${selectedYear} al ${customEndDate.toLocaleDateString('it-IT')}`,
+          severity: 'success'
+        });
+      }
+      
+      // Deseleziona i filtri rapidi
+      setActiveFilter(null);
+      return;
+    }
+
+    // Caso 2: Entrambe le date sono presenti
     // Estrai anno e mese dalle date
     const startYear = customStartDate.getFullYear().toString();
     const startMonth = customStartDate.getMonth() + 1;
     const endYear = customEndDate.getFullYear().toString();
     const endMonth = customEndDate.getMonth() + 1;
-
-    // Applicazione filtro custom
 
     // Imposta il filtro date
     setDateFilter({ startYear, startMonth, endYear, endMonth });
@@ -675,19 +740,15 @@ export default function MasterAnalyticsView() {
     // Deseleziona i filtri rapidi
     setActiveFilter(null);
 
-    // Se le date sono in anni diversi, usa 'all-years'
-    if (startYear !== endYear) {
-      handleYearChange({ target: { value: 'all-years' } }, true);
-    } else {
-      handleYearChange({ target: { value: startYear } }, true);
-    }
+    // Quando entrambe le date sono presenti, ignora il filtro anno e usa sempre 'all-years'
+    handleYearChange({ target: { value: 'all-years' } }, true);
 
     setSnackbar({
       open: true,
       message: `Filtro applicato: ${customStartDate.toLocaleDateString('it-IT')} - ${customEndDate.toLocaleDateString('it-IT')}`,
       severity: 'success'
     });
-  }, [customStartDate, customEndDate, handleYearChange, setSnackbar, setDateFilter, setActiveFilter]);
+  }, [customStartDate, customEndDate, settings.year, settings.owner, handleYearChange, setSnackbar, setDateFilter, setActiveFilter]);
 
   // Handler per resettare il filtro date personalizzato
   const handleClearCustomDateFilter = useCallback(() => {
@@ -1562,24 +1623,26 @@ export default function MasterAnalyticsView() {
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
                 <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                   <DatePicker
-                    label="Data inizio"
+                    label="Data inizio (opzionale)"
                     value={customStartDate}
                     onChange={(newValue) => setCustomStartDate(newValue)}
                     slotProps={{
                       textField: {
                         size: 'small',
-                        sx: { minWidth: 180 }
+                        sx: { minWidth: 180 },
+                        placeholder: 'Dall\'inizio'
                       }
                     }}
                   />
                   <DatePicker
-                    label="Data fine"
+                    label="Data fine *"
                     value={customEndDate}
                     onChange={(newValue) => setCustomEndDate(newValue)}
                     slotProps={{
                       textField: {
                         size: 'small',
-                        sx: { minWidth: 180 }
+                        sx: { minWidth: 180 },
+                        required: true
                       }
                     }}
                   />
@@ -1587,7 +1650,7 @@ export default function MasterAnalyticsView() {
                     variant="contained"
                     size="medium"
                     onClick={handleApplyCustomDateFilter}
-                    disabled={!customStartDate || !customEndDate}
+                    disabled={!customEndDate}
                     sx={{ minWidth: 120 }}
                   >
                     Applica
@@ -1601,9 +1664,12 @@ export default function MasterAnalyticsView() {
                   >
                     Cancella
                   </Button>
-                  {(customStartDate || customEndDate) && (
+                  {customEndDate && (
                     <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      💡 I filtri date personalizzati hanno priorità sui filtri rapidi
+                      {customStartDate 
+                        ? '💡 Visualizza dati nel periodo specificato (ignora filtro anno)'
+                        : `💡 Visualizza tutti i dati ${settings.year === 'all-years' ? 'dall\'inizio' : 'da gennaio ' + settings.year} fino alla data di fine`
+                      }
                     </Typography>
                   )}
                 </Stack>

@@ -26,11 +26,13 @@ COPY --from=deps /app/node_modules ./node_modules
 ARG NEXT_PUBLIC_HOST_API
 ARG NEXT_PUBLIC_HOST_BACKEND
 ARG NEXT_PUBLIC_DEBUG_MODE
+ARG BACKEND_API_INTERNAL
 
 # Set environment variables from build arguments
 ENV NEXT_PUBLIC_HOST_API=$NEXT_PUBLIC_HOST_API
 ENV NEXT_PUBLIC_HOST_BACKEND=$NEXT_PUBLIC_HOST_BACKEND
 ENV NEXT_PUBLIC_DEBUG_MODE=$NEXT_PUBLIC_DEBUG_MODE
+ENV BACKEND_API_INTERNAL=$BACKEND_API_INTERNAL
 
 COPY . .
 
@@ -53,6 +55,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED=1
+
+# Variabile per comunicazione interna K8s (API routes -> backend)
+ARG BACKEND_API_INTERNAL
+ENV BACKEND_API_INTERNAL=$BACKEND_API_INTERNAL
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

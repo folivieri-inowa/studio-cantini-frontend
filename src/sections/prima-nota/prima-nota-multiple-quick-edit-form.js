@@ -1,5 +1,5 @@
-import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -15,14 +15,13 @@ import Autocomplete from '@mui/material/Autocomplete';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 
-import { useSnackbar } from 'src/components/snackbar';
-
 import axios, { endpoints } from '../../utils/axios';
+import { useSnackbar } from '../../components/snackbar';
 import { useSettingsContext } from '../../components/settings';
 
 // ----------------------------------------------------------------------
 
-const STATUS_VALUES = [{name:'In Revisione', value:'pending'}, {name:'Completata', value:'completed'}, {name:'Da Controllare', value:'toCheck'}];
+const STATUS_VALUES = [{ name: 'In Revisione', value: 'pending' }, { name: 'Completata', value: 'completed' }, { name: 'Da Controllare', value: 'toCheck' }];
 const PAYMENT_METHODS = ['Bonifico', 'Carte di Credito', 'Cbill', 'F24', 'PayPal', 'Addebito Diretto SEPA', 'POS', 'Altro'];
 
 export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onClose, onUpdate }) {
@@ -96,8 +95,8 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
       const response = await axios.post('/api/prima-nota/edit-multi', data);
 
       if (response.data.data.status === 200) {
-        const message = forceCompleted ? 
-          'Transazioni aggiornate e completate con successo' : 
+        const message = forceCompleted ?
+          'Transazioni aggiornate e completate con successo' :
           'Transazioni aggiornate con successo';
         enqueueSnackbar(message, { variant: 'success' });
         onUpdate();
@@ -160,24 +159,24 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
       <DialogTitle>Modifica multipla</DialogTitle>
       <DialogContent>
         <Stack direction="column" spacing={2} sx={{ width: '100%', mb: { xs: 3, md: 0 } }}>
-        <FormControl sx={{ mt: 2 }}>
-          <InputLabel>Stato</InputLabel>
-          <Select
-            name="status"
-            label="Stato"
-            InputLabelProps={{ shrink: true }}
-            onChange={handleStatusChange}
-            sx={{ maxWidth: '100%' }}
-            defaultValue={status}
-            value={status}
-            variant='outlined'
-          >
-            {STATUS_VALUES.map((statusValue, index) => (
-              <MenuItem key={`status-${index}`} value={statusValue.value}>
-                {statusValue.name}
-              </MenuItem>
-            ))}
-          </Select>
+          <FormControl sx={{ mt: 2 }}>
+            <InputLabel>Stato</InputLabel>
+            <Select
+              name="status"
+              label="Stato"
+              InputLabelProps={{ shrink: true }}
+              onChange={handleStatusChange}
+              sx={{ maxWidth: '100%' }}
+              defaultValue={status}
+              value={status}
+              variant='outlined'
+            >
+              {STATUS_VALUES.map((statusValue, index) => (
+                <MenuItem key={`status-${index}`} value={statusValue.value}>
+                  {statusValue.name}
+                </MenuItem>
+              ))}
+            </Select>
           </FormControl>
 
           <Autocomplete
@@ -289,10 +288,10 @@ export default function PrimaNotaMultipleQuickEditForm({ transactions, open, onC
           Annulla
         </Button>
 
-        <LoadingButton 
-          type="button" 
-          variant="contained" 
-          loading={isLoading} 
+        <LoadingButton
+          type="button"
+          variant="contained"
+          loading={isLoading}
           onClick={() => onSubmit(false)}
         >
           Aggiorna
@@ -307,4 +306,5 @@ PrimaNotaMultipleQuickEditForm.propTypes = {
   onClose: PropTypes.func,
   open: PropTypes.bool,
   onUpdate: PropTypes.func,
+  db: PropTypes.object,
 };

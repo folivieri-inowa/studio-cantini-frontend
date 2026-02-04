@@ -16,8 +16,8 @@
     "re:build": "yarn rm:all && yarn install && yarn build",
     "re:build-npm": "npm run rm:all && npm install && npm run build",
     "push": "yarn push:backend && yarn push:frontend",
-    "push:backend": "cd \"/Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/backend\" && docker buildx build --platform linux/amd64 --push -t docker.inowa.it/inowa/studio-cantini/backend .",
-    "push:frontend": "cd \"/Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/studio-cantini\" && docker buildx build --platform linux/amd64 --push -t docker.inowa.it/inowa/studio-cantini/frontend . --build-arg NEXT_PUBLIC_HOST_API=https://studiocantini.inowa.it --build-arg NEXT_PUBLIC_HOST_BACKEND=https://backend.studiocantini.inowa.it --build-arg NEXT_PUBLIC_DEBUG_MODE=false",
+    "push:backend": "cd \"/Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/backend\" && docker buildx build --platform linux/amd64 --push -t docker.wavetech.it/wavetech/studio-cantini/backend .",
+    "push:frontend": "cd \"/Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/studio-cantini\" && docker buildx build --platform linux/amd64 --push -t docker.wavetech.it/wavetech/studio-cantini/frontend . --build-arg NEXT_PUBLIC_HOST_API=https://studiocantini.wavetech.it --build-arg NEXT_PUBLIC_HOST_BACKEND=https://backend.studiocantini.wavetech.it --build-arg BACKEND_API_INTERNAL=http://backend.studio-cantini.svc.cluster.local:9001 --build-arg NEXT_PUBLIC_DEBUG_MODE=false",
     "start:all": "cd \"/Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/studio-cantini\" && yarn dev & cd \"/Users/francescoolivieri/Desktop/Sviluppo inowa/studio_cantini/backend\" && yarn dev"
   },
   "dependencies": {
@@ -55,6 +55,8 @@
     "highlight.js": "^11.8.0",
     "i18next": "^23.5.1",
     "i18next-browser-languagedetector": "^7.1.0",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "lodash": "^4.17.21",
     "mapbox-gl": "^2.15.0",
     "mui-one-time-password-input": "^2.0.0",

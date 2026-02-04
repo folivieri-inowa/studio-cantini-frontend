@@ -50,7 +50,7 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
-import axios from '../../../utils/axios';
+import axios, { endpoints } from '../../../utils/axios';
 import { useGetOwners } from '../../../api/owner';
 import PrimaNotaTableRow from '../prima-nota-table-row';
 import { fTimestamp } from '../../../utils/format-time';
@@ -64,6 +64,7 @@ import AutoClassifyMultiButton from '../auto-classify-multi-button';
 import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
+import PrimaNotaPrintDialog from '../prima-nota-print-dialog';
 import FormProvider, { RHFUpload, RHFSelect, RHFTextField } from '../../../components/hook-form';
 
 // ----------------------------------------------------------------------
@@ -91,6 +92,8 @@ const defaultFilters = {
   startDate: null,
   endDate: null,
   categories: [],
+  subjects: [],
+  details: [],
   excludedFromStats: 'all', // 'all', 'included', 'excluded'
 };
 
@@ -103,7 +106,7 @@ export default function PrimaNotaListView() {
   const table = useTable();
 
   const settings = useSettingsContext();
-  
+
   // Hook per controllare se l'utente ha accesso alle funzionalità beta
   const { isBetaUser } = useBetaFeatures();
 
@@ -122,6 +125,11 @@ export default function PrimaNotaListView() {
   const confirm = useBoolean();
   const importHistory = useBoolean();
   const totalModal = useBoolean();
+  const printDialog = useBoolean();
+
+  // Stati per le opzioni di soggetti e dettagli (caricate dinamicamente)
+  const [subjectsOptions, setSubjectsOptions] = useState([]);
+  const [detailsOptions, setDetailsOptions] = useState([]);
 
   // table.order = 'desc';
   // table.orderBy = 'date';
@@ -133,10 +141,76 @@ export default function PrimaNotaListView() {
     }
   }, [owners.length, rowsPerPage, table, transactions]);
 
+  // Carica i soggetti quando viene selezionata una categoria
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      if (filters.categories.length === 1) {
+        try {
+          const response = await axios.post(endpoints.subject.list, {
+            db: settings.db,
+            categoryId: filters.categories[0]
+          });
+          if (response.status === 200) {
+            const subjects = response.data?.data || [];
+            if (Array.isArray(subjects)) {
+              setSubjectsOptions(subjects.sort((a, b) => a.name.localeCompare(b.name)));
+            } else {
+              setSubjectsOptions([]);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching subjects:', error);
+          setSubjectsOptions([]);
+        }
+      } else {
+        setSubjectsOptions([]);
+        // Reset subjects filter quando categoria non è selezionata o sono selezionate multiple categorie
+        if (filters.subjects.length > 0) {
+          setFilters(prev => ({ ...prev, subjects: [], details: [] }));
+        }
+      }
+    };
+    fetchSubjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.categories, settings.db]);
+
+  // Carica i dettagli quando viene selezionato un soggetto
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (filters.subjects.length === 1) {
+        try {
+          const response = await axios.post(endpoints.detail.list, {
+            db: settings.db,
+            subjectId: filters.subjects[0]
+          });
+          if (response.status === 200) {
+            const details = response.data?.data || [];
+            if (Array.isArray(details)) {
+              setDetailsOptions(details.sort((a, b) => a.name.localeCompare(b.name)));
+            } else {
+              setDetailsOptions([]);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching details:', error);
+          setDetailsOptions([]);
+        }
+      } else {
+        setDetailsOptions([]);
+        // Reset details filter quando soggetto non è selezionato o sono selezionati multiple soggetti
+        if (filters.details.length > 0) {
+          setFilters(prev => ({ ...prev, details: [] }));
+        }
+      }
+    };
+    fetchDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.subjects, settings.db]);
+
   // Ordina i conti correnti alfabeticamente per nome
-  const sortedOwners = useMemo(() => 
+  const sortedOwners = useMemo(() =>
     owners ? owners.slice().sort((a, b) => a.name.localeCompare(b.name)) : []
-  , [owners]);
+    , [owners]);
 
   const dateError =
     filters.startDate && filters.endDate
@@ -208,7 +282,7 @@ export default function PrimaNotaListView() {
       confirm.onFalse()
       refetch();
       enqueueSnackbar('Record eliminato correttamente!');
-    }else{
+    } else {
       enqueueSnackbar('Si è verificato un errore durante l\'eliminazione!', { variant: 'error' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -252,8 +326,8 @@ export default function PrimaNotaListView() {
         if (response.status === 200) {
           refetch();
           enqueueSnackbar(
-            !currentExcluded 
-              ? 'Record escluso dalle statistiche' 
+            !currentExcluded
+              ? 'Record escluso dalle statistiche'
               : 'Record incluso nelle statistiche'
           );
         }
@@ -306,6 +380,8 @@ export default function PrimaNotaListView() {
             publishOptions={PUBLISH_OPTIONS}
             ownersOptions={sortedOwners}
             categoriesOptions={categories}
+            subjectsOptions={subjectsOptions}
+            detailsOptions={detailsOptions}
             onImportOpen={importData.onTrue}
             onHistoryOpen={importHistory.onTrue}
           />
@@ -322,6 +398,8 @@ export default function PrimaNotaListView() {
               publishOptions={PUBLISH_OPTIONS}
               ownersOptions={sortedOwners}
               categoriesOptions={categories}
+              subjectsOptions={subjectsOptions}
+              detailsOptions={detailsOptions}
             />
           )}
 
@@ -350,12 +428,17 @@ export default function PrimaNotaListView() {
                       <Iconify icon="solar:calculator-bold" />
                     </IconButton>
                   </Tooltip>
+                  <Tooltip title="Stampa PDF">
+                    <IconButton color="primary" onClick={printDialog.onTrue}>
+                      <Iconify icon="solar:printer-bold" />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Modifica">
                     <IconButton color="primary" onClick={quickEdit.onTrue}>
                       <Iconify icon="solar:pen-bold" />
                     </IconButton>
                   </Tooltip>
-                  
+
                   {/* Bottone Auto-Classify multiplo (solo per beta tester) */}
                   {isBetaUser && (
                     <AutoClassifyMultiButton
@@ -364,7 +447,7 @@ export default function PrimaNotaListView() {
                       onUpdate={refetch}
                     />
                   )}
-                  
+
                   <Tooltip title="Elimina">
                     <IconButton color="primary" onClick={confirm.onTrue}>
                       <Iconify icon="solar:trash-bin-minimalistic-bold" />
@@ -409,28 +492,28 @@ export default function PrimaNotaListView() {
                 <TableBody>
                   {transactionsLoading
                     ? [...Array(table.rowsPerPage)].map((i, index) => (
-                        <TableSkeleton key={index} sx={{ height: denseHeight }} />
-                      ))
+                      <TableSkeleton key={index} sx={{ height: denseHeight }} />
+                    ))
                     : dataFiltered
-                        .slice(
-                          table.page * table.rowsPerPage,
-                          table.page * table.rowsPerPage + table.rowsPerPage
-                        )
-                        .map((row) => (
-                          <PrimaNotaTableRow
-                            key={row.id}
-                            row={row}
-                            selected={table.selected.includes(row.id)}
-                            onSelectRow={() => table.onSelectRow(row.id)}
-                            onDeleteRow={() => handleDeleteRow(row.id)}
-                            onEditRow={() => handleEditRow(row.id)}
-                            onViewRow={() => handleViewRow(row.id)}
-                            onImportData={() => handleImportRow(row)}
-                            onToggleStatsExclusion={handleToggleStatsExclusion}
-                            onUpdate={refetch}
-                            isBetaUser={isBetaUser}
-                          />
-                        ))}
+                      .slice(
+                        table.page * table.rowsPerPage,
+                        table.page * table.rowsPerPage + table.rowsPerPage
+                      )
+                      .map((row) => (
+                        <PrimaNotaTableRow
+                          key={row.id}
+                          row={row}
+                          selected={table.selected.includes(row.id)}
+                          onSelectRow={() => table.onSelectRow(row.id)}
+                          onDeleteRow={() => handleDeleteRow(row.id)}
+                          onEditRow={() => handleEditRow(row.id)}
+                          onViewRow={() => handleViewRow(row.id)}
+                          onImportData={() => handleImportRow(row)}
+                          onToggleStatsExclusion={handleToggleStatsExclusion}
+                          onUpdate={refetch}
+                          isBetaUser={isBetaUser}
+                        />
+                      ))}
 
                   <TableEmptyRows
                     height={denseHeight}
@@ -475,6 +558,7 @@ export default function PrimaNotaListView() {
         open={quickEdit.value}
         onClose={quickEdit.onFalse}
         transactions={table.selected}
+        db={settings.db}
         onUpdate={() => {
           table.onSelectAllRows(
             false,
@@ -504,6 +588,13 @@ export default function PrimaNotaListView() {
         onClose={totalModal.onFalse}
         transactions={dataFiltered.filter((row) => table.selected.includes(row.id))}
       />
+
+      <PrimaNotaPrintDialog
+        open={printDialog.value}
+        onClose={printDialog.onFalse}
+        transactions={dataFiltered.filter((row) => table.selected.includes(row.id))}
+        db={settings.db}
+      />
     </>
   );
 }
@@ -518,8 +609,8 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
-  const {owners} = useGetOwners(db);
-  const {categories} = useGetCategories(db);
+  const { owners } = useGetOwners(db);
+  const { categories } = useGetCategories(db);
   const loadingSend = useBoolean();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -608,7 +699,7 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
     // Attiva la validazione dei campi
     await trigger('category');
     await trigger('subject');
-    
+
     // Verifica che sia specificata almeno categoria e soggetto
     if (!data.category) {
       enqueueSnackbar('È necessario specificare una categoria', { variant: 'error' });
@@ -632,9 +723,9 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
       }
 
       // aggiungi commissioni, categoria e soggetto nei metadata
-      formData.append('metadata', JSON.stringify({ 
-        db, 
-        id: selectedRow.id, 
+      formData.append('metadata', JSON.stringify({
+        db,
+        id: selectedRow.id,
         commissions: data.commissions,
         categoryId: data.category,
         subject: data.subject
@@ -645,7 +736,7 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
         open.onFalse();
         onUpdate()
         enqueueSnackbar('File caricato con successo!');
-      }else{
+      } else {
         enqueueSnackbar('Si è verificato un errore');
       }
       loadingSend.onFalse();
@@ -738,7 +829,7 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
             </Stack>
 
             {/* Campo commissioni */}
-            
+
             <Stack spacing={2}>
               <RHFTextField
                 name="description"
@@ -767,7 +858,7 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
                 }}
               />
             </Stack>
-            
+
             <Stack direction={{ sm: 'column', md: 'row' }} spacing={2}>
               <RHFSelect
                 name="category"
@@ -783,7 +874,7 @@ const UploadDialog = ({ open, selectedRow, onUpdate, db }) => {
                   </option>
                 ))}
               </RHFSelect>
-              
+
               <RHFTextField
                 name="subject"
                 label="Soggetto *"
@@ -824,7 +915,7 @@ UploadDialog.propTypes = {
 // ----------------------------------------------------------------------
 
 function applyFilter({ inputData, comparator, filters, dateError }) {
-  const { name, description, status, startDate, endDate, owner, categories, excludedFromStats } = filters;
+  const { name, description, status, startDate, endDate, owner, categories, subjects, details, excludedFromStats } = filters;
 
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
@@ -852,18 +943,18 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
     inputData = inputData.filter(transaction => {
       const txDescription = transaction.description.toLowerCase();
       const txAmount = transaction.amount ? transaction.amount.toString() : '';
-      
+
       // Prepara diverse rappresentazioni dell'importo per supportare sia virgola che punto
       const txAmountWithComma = txAmount.replace('.', ','); // Converte 123.45 in 123,45
       const txAmountFormatted = new Intl.NumberFormat('it-IT', {
         style: 'currency',
         currency: 'EUR'
       }).format(transaction.amount).toLowerCase(); // Formato completo con €
-      
+
       // Check if all search terms are included in the description or amount (in any format)
-      return searchTerms.every(term => 
-        txDescription.includes(term) || 
-        txAmount.includes(term) || 
+      return searchTerms.every(term =>
+        txDescription.includes(term) ||
+        txAmount.includes(term) ||
         txAmountWithComma.includes(term) ||
         txAmountFormatted.includes(term)
       );
@@ -880,6 +971,14 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
 
   if (categories.length) {
     inputData = inputData.filter((transaction) => categories.includes(transaction.categoryid));
+  }
+
+  if (subjects.length) {
+    inputData = inputData.filter((transaction) => subjects.includes(transaction.subjectid));
+  }
+
+  if (details.length) {
+    inputData = inputData.filter((transaction) => details.includes(transaction.detailid));
   }
 
   // Filtro per inclusione/esclusione dalle statistiche

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import { BACKEND_API } from '../../../../config-global';
+import { BACKEND_API_INTERNAL } from '../../config-global';
 
 
 export async function GET() {
@@ -10,7 +10,7 @@ export async function GET() {
   const authorization = header.get('authorization')
 
   try {
-    const response = await axios.get(`${BACKEND_API}/v1/auth/me`, {
+    const response = await axios.get(`${BACKEND_API_INTERNAL}/v1/auth/me`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': authorization,

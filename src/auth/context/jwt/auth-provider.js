@@ -60,13 +60,18 @@ export function AuthProvider({ children }) {
   const initialize = useCallback(async () => {
     try {
       const accessToken = localStorage.getItem(STORAGE_KEY);
+      console.log('🔍 Initialize - accessToken from localStorage:', accessToken ? 'FOUND' : 'NOT FOUND');
 
       if (accessToken && isValidToken(accessToken)) {
+        console.log('✅ Token is valid, setting session...');
         setSession(accessToken);
 
+        console.log('📡 Fetching user from /auth/me...');
         const response = await axios.get(endpoints.auth.me);
+        console.log('📥 Response from /auth/me:', response.data);
 
         const { user } = response.data.data;
+        console.log('👤 User extracted:', user);
 
         dispatch({
           type: 'INITIAL',
@@ -77,7 +82,9 @@ export function AuthProvider({ children }) {
             },
           },
         });
+        console.log('✅ User dispatched to context');
       } else {
+        console.log('❌ No valid token found');
         dispatch({
           type: 'INITIAL',
           payload: {
@@ -86,7 +93,7 @@ export function AuthProvider({ children }) {
         });
       }
     } catch (error) {
-      console.error(error);
+      console.error('❌ Initialize error:', error);
       dispatch({
         type: 'INITIAL',
         payload: {
@@ -108,10 +115,16 @@ export function AuthProvider({ children }) {
       db
     };
 
+    console.log('🔐 Login attempt for:', email);
     const response = await axios.post(endpoints.auth.login, data);
+    console.log('📥 Login response:', response.data);
 
+    // Il backend wrappa in {data: {accessToken, user}}
     const { accessToken, user } = response.data.data;
+    console.log('🔑 AccessToken:', accessToken ? 'RECEIVED' : 'MISSING');
+    console.log('👤 User:', user);
 
+    console.log('💾 Saving session to localStorage...');
     setSession(accessToken);
 
     dispatch({
@@ -123,6 +136,7 @@ export function AuthProvider({ children }) {
         },
       },
     });
+    console.log('✅ User dispatched to context after login');
   }, []);
 
   // REGISTER

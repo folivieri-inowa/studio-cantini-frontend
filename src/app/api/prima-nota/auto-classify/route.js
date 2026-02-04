@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // URL del webhook n8n per la classificazione RAG
-const N8N_RAG_CLASSIFY_URL = 'https://n8n-archivio.inowa.it/webhook/rag-classify';
+const N8N_RAG_CLASSIFY_URL = 'https://n8n-archivio.wavetech.it/webhook/rag-classify';
 
 export async function POST(request) {
   try {
@@ -30,6 +30,9 @@ export async function POST(request) {
     };
 
     // Chiama il webhook n8n
+    console.log('🔵 Calling n8n webhook:', N8N_RAG_CLASSIFY_URL);
+    console.log('📤 Payload:', JSON.stringify(n8nPayload, null, 2));
+
     const response = await fetch(N8N_RAG_CLASSIFY_URL, {
       method: 'POST',
       headers: {
@@ -38,16 +41,43 @@ export async function POST(request) {
       body: JSON.stringify(n8nPayload),
     });
 
+    console.log('📥 Response status:', response.status);
+    console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('n8n webhook error:', errorText);
+      console.error(`❌ n8n webhook error (status ${response.status}):`, errorText);
       return NextResponse.json(
         { error: 'Classification service error', details: errorText },
         { status: 502 }
       );
     }
 
-    const result = await response.json();
+    // Verifica che la risposta contenga del contenuto prima di parsare
+    const responseText = await response.text();
+    console.log('📥 Response text length:', responseText?.length || 0);
+    console.log('📥 Response text preview:', responseText?.substring(0, 200));
+
+    if (!responseText || responseText.trim() === '') {
+      console.error('❌ n8n webhook returned empty response');
+      console.error('Response status was:', response.status);
+      console.error('Response headers were:', Object.fromEntries(response.headers.entries()));
+      return NextResponse.json(
+        { error: 'Classification service returned empty response', details: 'Il servizio di classificazione non ha restituito dati' },
+        { status: 502 }
+      );
+    }
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse n8n response:', responseText);
+      return NextResponse.json(
+        { error: 'Invalid response from classification service', details: parseError.message },
+        { status: 502 }
+      );
+    }
 
     console.log('n8n response:', JSON.stringify(result, null, 2));
 
@@ -120,6 +150,9 @@ export async function PUT(request) {
     };
 
     // Chiama il webhook n8n
+    console.log('🔵 Calling n8n webhook (multi):', N8N_RAG_CLASSIFY_URL);
+    console.log('📤 Payload (multi):', JSON.stringify(n8nPayload, null, 2));
+
     const response = await fetch(N8N_RAG_CLASSIFY_URL, {
       method: 'POST',
       headers: {
@@ -128,16 +161,43 @@ export async function PUT(request) {
       body: JSON.stringify(n8nPayload),
     });
 
+    console.log('📥 Response status (multi):', response.status);
+    console.log('📥 Response headers (multi):', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('n8n webhook error:', errorText);
+      console.error(`❌ n8n webhook error (multi, status ${response.status}):`, errorText);
       return NextResponse.json(
         { error: 'Classification service error', details: errorText },
         { status: 502 }
       );
     }
 
-    const result = await response.json();
+    // Verifica che la risposta contenga del contenuto prima di parsare
+    const responseText = await response.text();
+    console.log('📥 Response text length (multi):', responseText?.length || 0);
+    console.log('📥 Response text preview (multi):', responseText?.substring(0, 200));
+
+    if (!responseText || responseText.trim() === '') {
+      console.error('❌ n8n webhook returned empty response (multi)');
+      console.error('Response status was:', response.status);
+      console.error('Response headers were:', Object.fromEntries(response.headers.entries()));
+      return NextResponse.json(
+        { error: 'Classification service returned empty response', details: 'Il servizio di classificazione non ha restituito dati' },
+        { status: 502 }
+      );
+    }
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse n8n response (multi):', responseText);
+      return NextResponse.json(
+        { error: 'Invalid response from classification service', details: parseError.message },
+        { status: 502 }
+      );
+    }
 
     // Il workflow n8n restituisce: { transactions: [{ suggested: {...}, similar_transactions: [...] }] }
     // Estraiamo i suggerimenti da ogni transazione

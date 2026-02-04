@@ -24,6 +24,8 @@ export default function PrimaNotaTableToolbar({
   publishOptions,
   ownersOptions,
   categoriesOptions,
+  subjectsOptions = [],
+  detailsOptions = [],
   stateFilter = true,
   onImportOpen,
   onHistoryOpen,
@@ -75,6 +77,26 @@ export default function PrimaNotaTableToolbar({
     (event) => {
       onFilters(
         'categories',
+        typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value
+      );
+    },
+    [onFilters]
+  );
+
+  const handleFilterSubject = useCallback(
+    (event) => {
+      onFilters(
+        'subjects',
+        typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value
+      );
+    },
+    [onFilters]
+  );
+
+  const handleFilterDetail = useCallback(
+    (event) => {
+      onFilters(
+        'details',
         typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value
       );
     },
@@ -210,14 +232,14 @@ export default function PrimaNotaTableToolbar({
           )}
         </Stack>
 
-        {/* Seconda riga: Ricerca (sinistra) e Categoria (destra) */}
-        <Stack spacing={2} direction="row" alignItems="center" sx={{ mb: 0 }}>
+        {/* Seconda riga: Ricerca */}
+        <Stack spacing={2} direction="row" alignItems="center" sx={{ mb: 2 }}>
           <TextField
             value={filters.description}
             onChange={handleFilterDescription}
             placeholder="Ricerca in descrizione o importo"
             sx={{
-              width: { xs: 1, md: '60%' },
+              width: { xs: 1, md: '100%' },
             }}
             slotProps={{
               input: {
@@ -229,12 +251,15 @@ export default function PrimaNotaTableToolbar({
               },
             }}
           />
+        </Stack>
 
-          {stateFilter && (
+        {/* Terza riga: Categoria, Soggetto, Dettaglio */}
+        {stateFilter && (
+          <Stack spacing={2} direction="row" alignItems="center" sx={{ mb: 0 }}>
             <FormControl
               sx={{
-                flexShrink: 0,
-                width: { xs: 1, md: '40%' },
+                flex: { xs: 'unset', md: 1 },
+                width: { xs: 1, md: 'auto' },
               }}
             >
               <InputLabel>Categoria</InputLabel>
@@ -263,8 +288,76 @@ export default function PrimaNotaTableToolbar({
                 ))}
               </Select>
             </FormControl>
-          )}
-        </Stack>
+
+            <FormControl
+              sx={{
+                flex: { xs: 'unset', md: 1 },
+                width: { xs: 1, md: 'auto' },
+              }}
+              disabled={filters.categories.length !== 1 || subjectsOptions.length === 0}
+            >
+              <InputLabel>Soggetto</InputLabel>
+              <Select
+                multiple
+                value={filters.subjects}
+                onChange={handleFilterSubject}
+                input={<OutlinedInput label="subjects" />}
+                renderValue={(selected) =>
+                  selected
+                    .map((id) => subjectsOptions.find((option) => option.id === id)?.name)
+                    .join(', ')
+                }
+                sx={{ textTransform: 'capitalize' }}
+                variant="standard"
+              >
+                {subjectsOptions.map((option) => (
+                  <MenuItem key={option.id} value={option.id}>
+                    <Checkbox
+                      disableRipple
+                      size="small"
+                      checked={filters.subjects.includes(option.id)}
+                    />
+                    {option.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl
+              sx={{
+                flex: { xs: 'unset', md: 1 },
+                width: { xs: 1, md: 'auto' },
+              }}
+              disabled={filters.subjects.length !== 1 || detailsOptions.length === 0}
+            >
+              <InputLabel>Dettaglio</InputLabel>
+              <Select
+                multiple
+                value={filters.details}
+                onChange={handleFilterDetail}
+                input={<OutlinedInput label="details" />}
+                renderValue={(selected) =>
+                  selected
+                    .map((id) => detailsOptions.find((option) => option.id === id)?.name)
+                    .join(', ')
+                }
+                sx={{ textTransform: 'capitalize' }}
+                variant="standard"
+              >
+                {detailsOptions.map((option) => (
+                  <MenuItem key={option.id} value={option.id}>
+                    <Checkbox
+                      disableRipple
+                      size="small"
+                      checked={filters.details.includes(option.id)}
+                    />
+                    {option.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        )}
       </Box>
 
       <CustomPopover
@@ -311,6 +404,8 @@ PrimaNotaTableToolbar.propTypes = {
   stateFilter: PropTypes.bool,
   ownersOptions: PropTypes.array,
   categoriesOptions: PropTypes.array,
+  subjectsOptions: PropTypes.array,
+  detailsOptions: PropTypes.array,
   onImportOpen: PropTypes.func,
   onHistoryOpen: PropTypes.func,
 };

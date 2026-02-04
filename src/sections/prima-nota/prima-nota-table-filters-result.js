@@ -20,6 +20,8 @@ export default function PrimaNotaTableFiltersResult({
   publishOptions,
   ownersOptions,
   categoriesOptions,
+  subjectsOptions = [],
+  detailsOptions = [],
   ...other
 }) {
   const handleRemoveStatus = (inputValue) => {
@@ -42,7 +44,7 @@ export default function PrimaNotaTableFiltersResult({
             {filters.status.map((item) => (
               <Chip
                 key={item}
-                label={publishOptions?.find((i)=> i.value === item)?.label || item}
+                label={publishOptions?.find((i) => i.value === item)?.label || item}
                 size="small"
                 onDelete={() => handleRemoveStatus(item)}
               />
@@ -55,9 +57,9 @@ export default function PrimaNotaTableFiltersResult({
             {filters.owner.map((item) => (
               <Chip
                 key={item}
-                label={ownersOptions?.find((i)=> i.id === item)?.name || item}
+                label={ownersOptions?.find((i) => i.id === item)?.name || item}
                 size="small"
-                // onDelete={() => handleRemoveStatus(item)}
+              // onDelete={() => handleRemoveStatus(item)}
               />
             ))}
           </Block>
@@ -68,9 +70,33 @@ export default function PrimaNotaTableFiltersResult({
             {filters.categories.map((item) => (
               <Chip
                 key={item}
-                label={categoriesOptions?.find((i)=> i.id === item)?.name || item}
+                label={categoriesOptions?.find((i) => i.id === item)?.name || item}
                 size="small"
-                // onDelete={() => handleRemoveStatus(item)}
+              // onDelete={() => handleRemoveStatus(item)}
+              />
+            ))}
+          </Block>
+        )}
+
+        {!!(filters.subjects?.length) && (
+          <Block label="Soggetto:">
+            {filters.subjects.map((item) => (
+              <Chip
+                key={item}
+                label={subjectsOptions?.find((i) => i.id === item)?.name || item}
+                size="small"
+              />
+            ))}
+          </Block>
+        )}
+
+        {!!(filters.details?.length) && (
+          <Block label="Dettaglio:">
+            {filters.details.map((item) => (
+              <Chip
+                key={item}
+                label={detailsOptions?.find((i) => i.id === item)?.name || item}
+                size="small"
               />
             ))}
           </Block>
@@ -96,6 +122,8 @@ PrimaNotaTableFiltersResult.propTypes = {
   publishOptions: PropTypes.object,
   ownersOptions: PropTypes.object,
   categoriesOptions: PropTypes.object,
+  subjectsOptions: PropTypes.array,
+  detailsOptions: PropTypes.array,
 };
 
 // ----------------------------------------------------------------------

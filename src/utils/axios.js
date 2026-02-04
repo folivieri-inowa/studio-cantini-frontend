@@ -4,7 +4,8 @@ import { HOST_API } from '../config-global';
 
 // ----------------------------------------------------------------------
 
-const axiosInstance = axios.create({ baseURL: HOST_API });
+// Usa path relativi per evitare problemi CORS con domini multipli
+const axiosInstance = axios.create({ baseURL: '' });
 
 axiosInstance.interceptors.response.use(
   (res) => res,

@@ -86,12 +86,12 @@ export default function DetailsQuickView({ data, open, onClose }) {
         <Typography variant="h5" component="span" gutterBottom>
           Dettaglio spese {details.details?.title || 'N/A'}, per l&#39;anno {details.year || 'N/A'}
         </Typography>
-        <Typography variant="h6">
+        <Typography variant="h6" component="span" sx={{ display: 'block' }}>
           <Tooltip title="Media annuale: Totale uscite diviso per 12 mesi" placement="top" arrow>
             <span>Spesa media mensile: {fCurrencyEur(details.details?.averageCost || 0)}</span>
           </Tooltip>
         </Typography>
-        <Typography variant="h6">
+        <Typography variant="h6" component="span" sx={{ display: 'block' }}>
           Totale spesa: {fCurrencyEur(details.details?.totalExpense || 0)}
         </Typography>
       </DialogTitle>

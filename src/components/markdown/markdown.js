@@ -21,7 +21,8 @@ export default function Markdown({ sx, ...other }) {
   return (
     <StyledMarkdown sx={sx}>
       <ReactMarkdown
-        rehypePlugins={[rehypeRaw, rehypeHighlight, [remarkGfm, { singleTilde: false }]]}
+        remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={components}
         {...other}
       />

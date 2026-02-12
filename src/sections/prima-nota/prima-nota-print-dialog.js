@@ -39,7 +39,7 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
 
             // Importa jsPDF dinamicamente
             const jsPDFModule = await import('jspdf');
-            const jsPDF = jsPDFModule.default;
+            const jsPDF = jsPDFModule.default || jsPDFModule.jsPDF;
 
             // Crea un nuovo documento PDF
             const doc = new jsPDF();
@@ -135,13 +135,14 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
             yPosition = startY + rowHeight;
 
             // Raggruppa le transazioni per conto se richiesto
+            const safeTransactions = Array.isArray(transactions) ? transactions : [];
             const transactionsToProcess = options.groupByAccount
-                ? [...transactions].sort((a, b) => {
+                ? [...safeTransactions].sort((a, b) => {
                     const ownerA = a.ownername || '';
                     const ownerB = b.ownername || '';
                     return ownerA.localeCompare(ownerB);
                 })
-                : transactions;
+                : safeTransactions;
 
             // Disegna le righe
             doc.setFont('helvetica', 'normal');

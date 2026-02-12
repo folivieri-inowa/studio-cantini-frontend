@@ -23,7 +23,6 @@ import { CheckoutProvider } from 'src/sections/checkout/context';
 import { AuthProvider } from 'src/auth/context/jwt';
 // import { AuthProvider } from 'src/auth/context/auth0';
 // import { AuthProvider } from 'src/auth/context/amplify';
-// import { AuthProvider } from 'src/auth/context/firebase';
 
 // ----------------------------------------------------------------------
 

@@ -153,6 +153,27 @@ export function useNavData() {
           }, */
         ],
       },
+
+      // MACHINE LEARNING
+      // ----------------------------------------------------------------------
+      {
+        subheader: t('Machine Learning'),
+        roles: ['admin'],
+        items: [
+          {
+            title: t('Analytics'),
+            path: paths.dashboard.machineLearning.analytics,
+            icon: ICONS.analytics,
+            roles: ['admin'],
+          },
+          {
+            title: t('Regole AI'),
+            path: paths.dashboard.machineLearning.suggestedRules,
+            icon: ICONS.label,
+            roles: ['admin'],
+          },
+        ],
+      },
     ],
     [t]
   );

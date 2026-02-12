@@ -9,6 +9,9 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Switch from '@mui/material/Switch';
+import Slider from '@mui/material/Slider';
+import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -16,6 +19,10 @@ import Autocomplete from '@mui/material/Autocomplete';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import LinearProgress from '@mui/material/LinearProgress';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
 import LoadingButton from '@mui/lab/LoadingButton';
 
 import { useSnackbar } from 'notistack';
@@ -58,6 +65,16 @@ export default function AutoClassifySuggestionDialog({
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [creatingSubject, setCreatingSubject] = useState(false);
   const [creatingDetail, setCreatingDetail] = useState(false);
+
+  // Auto-Accept Settings (salva in localStorage)
+  const [autoAcceptEnabled, setAutoAcceptEnabled] = useState(() => {
+    const saved = localStorage.getItem('autoAcceptEnabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [autoAcceptThreshold, setAutoAcceptThreshold] = useState(() => {
+    const saved = localStorage.getItem('autoAcceptThreshold');
+    return saved ? parseInt(saved, 10) : 90;
+  });
 
   // Carica i soggetti quando cambia la categoria
   const fetchSubjects = useCallback(async (categoryId) => {
@@ -149,6 +166,39 @@ export default function AutoClassifySuggestionDialog({
       setLoading(false);
     }
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleKeyDown = (event) => {
+      // Enter → Accetta (se categoria e soggetto selezionati)
+      if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        if (selectedCategory && selectedSubject && !loading) {
+          event.preventDefault();
+          handleAccept();
+        }
+      }
+      
+      // Esc → Chiudi
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, selectedCategory, selectedSubject, loading, onClose]);
+
+  // Salva preferenze auto-accept in localStorage
+  useEffect(() => {
+    localStorage.setItem('autoAcceptEnabled', JSON.stringify(autoAcceptEnabled));
+  }, [autoAcceptEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('autoAcceptThreshold', autoAcceptThreshold.toString());
+  }, [autoAcceptThreshold]);
 
   // Funzioni per aprire i dialog di creazione
   const handleOpenNewCategoryDialog = () => {
@@ -320,8 +370,28 @@ export default function AutoClassifySuggestionDialog({
   };
 
   const confidencePercent = suggestion?.confidence || 0;
-  const isHighConfidence = confidencePercent >= 85;
+  const isHighConfidence = confidencePercent >= 90;
+  const isMediumConfidence = confidencePercent >= 70 && confidencePercent < 90;
   const method = suggestion?.method || 'unknown';
+  
+  // Helper per ottenere info del method
+  const getMethodInfo = (methodType) => {
+    switch (methodType) {
+      case 'rule':
+        return { label: 'Regola', color: 'success', icon: 'solar:shield-check-bold' };
+      case 'exact':
+        return { label: 'Match Esatto', color: 'info', icon: 'solar:check-circle-bold' };
+      case 'semantic':
+        return { label: 'Ricerca AI', color: 'primary', icon: 'solar:cpu-bold' };
+      case 'manual':
+        return { label: 'Manuale', color: 'warning', icon: 'solar:hand-stars-line-duotone' };
+      default:
+        return { label: 'Sconosciuto', color: 'default', icon: 'solar:question-circle-bold' };
+    }
+  };
+  
+  const methodInfo = getMethodInfo(method);
+  const suggestions = suggestion?.suggestions || [];
 
   return (
     <Dialog 
@@ -336,16 +406,20 @@ export default function AutoClassifySuggestionDialog({
       }}
     >
       <DialogTitle sx={{ pb: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Iconify icon="solar:magic-stick-3-bold" color="secondary.main" width={24} />
-          <span>Proposta di Classificazione AI</span>
-          <Chip 
-            label="BETA" 
-            size="small" 
-            color="secondary" 
-            variant="outlined"
-            sx={{ ml: 1 }}
-          />
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Iconify icon="solar:magic-stick-3-bold" color="secondary.main" width={24} />
+            <span>Classificazione Automatica AI</span>
+          </Stack>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Chip 
+              label="v2.0" 
+              size="small" 
+              color="success" 
+              variant="soft"
+              sx={{ fontWeight: 'bold' }}
+            />
+          </Stack>
         </Stack>
       </DialogTitle>
 
@@ -378,38 +452,148 @@ export default function AutoClassifySuggestionDialog({
             </Typography>
           </Alert>
         )}
-
-        {/* Confidenza */}
         {suggestion && suggestion.confidence > 0 && (
           <Box sx={{ mb: 3 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
               <Typography variant="subtitle2" color="text.secondary">
-                Confidenza
+                Metodo di Classificazione
               </Typography>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Chip
                   size="small"
-                  label={method === 'rag_direct' ? 'Match diretto' : 'Analisi AI'}
-                  color={method === 'rag_direct' ? 'success' : 'info'}
-                  icon={
-                    <Iconify
-                      icon={method === 'rag_direct' ? 'solar:check-circle-bold' : 'solar:cpu-bold'}
-                      width={16}
-                    />
-                  }
+                  label={methodInfo.label}
+                  color={methodInfo.color}
+                  icon={<Iconify icon={methodInfo.icon} width={16} />}
                 />
-                <Typography variant="body2" fontWeight="bold" color={isHighConfidence ? 'success.main' : 'warning.main'}>
-                  {confidencePercent.toFixed(1)}%
-                </Typography>
+                <Chip
+                  size="small"
+                  label={`${confidencePercent.toFixed(0)}%`}
+                  color={isHighConfidence ? 'success' : isMediumConfidence ? 'warning' : 'error'}
+                  sx={{ fontWeight: 'bold', minWidth: 65 }}
+                />
               </Stack>
             </Stack>
             <LinearProgress
               variant="determinate"
               value={confidencePercent}
-              color={isHighConfidence ? 'success' : 'warning'}
+              color={isHighConfidence ? 'success' : isMediumConfidence ? 'warning' : 'error'}
               sx={{ height: 8, borderRadius: 1 }}
             />
+            {suggestion.reasoning && (
+              <Typography 
+                variant="caption" 
+                color="text.secondary" 
+                sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}
+              >
+                {suggestion.reasoning}
+              </Typography>
+            )}
           </Box>
+        )}
+        
+        {/* Suggestions alternative (se presenti) */}
+        {suggestions && suggestions.length > 0 && (
+          <Accordion sx={{ mb: 3 }}>
+            <AccordionSummary
+              expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}
+              sx={{
+                bgcolor: 'action.hover',
+                '&:hover': { bgcolor: 'action.selected' },
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Iconify icon="solar:lightbulb-bold" width={22} color="info.main" />
+                <Typography variant="subtitle2">
+                  Suggerimenti Alternativi ({suggestions.length})
+                </Typography>
+                <Chip 
+                  label="Clicca per visualizzare" 
+                  size="small" 
+                  color="info" 
+                  variant="outlined"
+                />
+              </Stack>
+            </AccordionSummary>
+            
+            <AccordionDetails>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                Trovate {suggestions.length} transazioni simili. Clicca su un suggerimento per applicarlo.
+              </Typography>
+              
+              {/* Lista suggerimenti cliccabili */}
+              <Stack spacing={1}>
+              {suggestions.map((sug, index) => {
+                const sugConfidence = Math.round(sug.confidence || 0);
+                const isHighConf = sugConfidence >= 90;
+                const isMedConf = sugConfidence >= 70 && sugConfidence < 90;
+                
+                return (
+                  <Box
+                    key={index}
+                    onClick={() => {
+                      setSelectedCategory(sug.category_id);
+                      setSelectedSubject(sug.subject_id);
+                      setSelectedDetail(sug.detail_id || null);
+                      fetchSubjects(sug.category_id);
+                      if (sug.subject_id) {
+                        fetchDetails(sug.subject_id);
+                      }
+                      enqueueSnackbar(`Suggerimento ${index + 1} applicato`, { variant: 'success' });
+                    }}
+                    sx={{
+                      p: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'action.hover',
+                      },
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Iconify icon="solar:star-bold" width={18} color="warning.main" />
+                          <Typography variant="subtitle2">
+                            Suggerimento {index + 1}
+                          </Typography>
+                        </Stack>
+                        <Chip 
+                          label={`${sugConfidence}%`}
+                          size="small"
+                          color={isHighConf ? 'success' : isMedConf ? 'warning' : 'error'}
+                        />
+                      </Stack>
+                      
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Categoria:</strong> {sug.category_name || 'N/A'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Soggetto:</strong> {sug.subject_name || 'N/A'}
+                        </Typography>
+                        {sug.detail_name && (
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Dettaglio:</strong> {sug.detail_name}
+                          </Typography>
+                        )}
+                      </Stack>
+                      
+                      {sug.reasoning && (
+                        <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                          {sug.reasoning}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                );
+              })}
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
         )}
 
         {/* Selezione categoria */}
@@ -614,8 +798,79 @@ export default function AutoClassifySuggestionDialog({
         </Typography>
       </DialogContent>
 
+      {/* Auto-Accept Settings */}
+      <Box sx={{ px: 3, py: 2, bgcolor: 'background.neutral', borderTop: '1px solid', borderColor: 'divider' }}>
+        <Stack spacing={2}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Iconify icon="solar:settings-bold" width={20} color="text.secondary" />
+              <Typography variant="subtitle2" color="text.secondary">
+                Impostazioni Rapide
+              </Typography>
+            </Stack>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={autoAcceptEnabled}
+                  onChange={(e) => setAutoAcceptEnabled(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  Auto-accetta {autoAcceptEnabled && `≥${autoAcceptThreshold}%`}
+                </Typography>
+              }
+            />
+          </Stack>
+          
+          {autoAcceptEnabled && (
+            <Box sx={{ px: 2 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="caption" color="text.secondary" sx={{ minWidth: 120 }}>
+                  Confidence minima:
+                </Typography>
+                <Slider
+                  value={autoAcceptThreshold}
+                  onChange={(e, value) => setAutoAcceptThreshold(value)}
+                  min={70}
+                  max={100}
+                  step={5}
+                  marks={[
+                    { value: 70, label: '70%' },
+                    { value: 85, label: '85%' },
+                    { value: 100, label: '100%' }
+                  ]}
+                  valueLabelDisplay="auto"
+                  size="small"
+                />
+              </Stack>
+              <Alert severity="info" icon={<Iconify icon="solar:info-circle-bold" width={16} />} sx={{ mt: 1, py: 0.5 }}>
+                <Typography variant="caption">
+                  I suggerimenti con confidence ≥ {autoAcceptThreshold}% verranno salvati automaticamente senza mostrare questo dialog.
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+          
+          {/* Keyboard Shortcuts Info */}
+          <Box sx={{ pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+            <Stack direction="row" spacing={3} sx={{ opacity: 0.7 }}>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Chip label="Enter" size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                <Typography variant="caption" color="text.secondary">Accetta</Typography>
+              </Stack>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Chip label="Esc" size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                <Typography variant="caption" color="text.secondary">Chiudi</Typography>
+              </Stack>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
+
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant="outlined" color="inherit" onClick={handleClose}>
+        <Button variant="outlined" color="inherit" onClick={onClose}>
           Annulla
         </Button>
         <LoadingButton

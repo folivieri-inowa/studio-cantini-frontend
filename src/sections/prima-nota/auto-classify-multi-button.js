@@ -195,6 +195,11 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
             correctedCategoryId: catId,
             correctedSubjectId: subId,
             correctedDetailId: detId,
+            wasModified: (
+              result.classification?.category_id !== catId ||
+              result.classification?.subject_id !== subId ||
+              result.classification?.detail_id !== detId
+            ),
           }),
         });
       } catch (feedbackError) {
@@ -378,6 +383,86 @@ function EditForm({ result, categories, onSave, db, excluded, onToggleExclude })
           Importo: {result.amount} € | Data: {new Date(result.date).toLocaleDateString()}
         </Typography>
       </Box>
+
+      {/* Banner per needs_review */}
+      {result.success && result.needs_review && !result.classification && (
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'warning.lighter', borderRadius: 1, border: '1px solid', borderColor: 'warning.main' }}>
+          <Stack direction="row" spacing={1} alignItems="flex-start">
+            <Iconify icon="solar:danger-triangle-bold" color="warning.main" width={24} sx={{ mt: 0.5 }} />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2" color="warning.dark" gutterBottom>
+                Revisione Manuale Richiesta
+              </Typography>
+              <Typography variant="body2" color="warning.dark">
+                {result.reason || 'Nessuna classificazione automatica sufficientemente affidabile. Seleziona manualmente categoria e soggetto.'}
+              </Typography>
+              {result.suggestions && result.suggestions.length > 0 && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="caption" color="warning.dark" fontWeight="bold" display="block" sx={{ mb: 0.5 }}>
+                    {result.suggestions.length} {result.suggestions.length === 1 ? 'Suggerimento disponibile' : 'Suggerimenti disponibili'}:
+                  </Typography>
+                  <Stack spacing={0.5}>
+                    {result.suggestions.slice(0, 3).map((suggestion, idx) => (
+                      <Box 
+                        key={idx}
+                        sx={{ 
+                          p: 1, 
+                          bgcolor: 'background.paper', 
+                          borderRadius: 0.5,
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: 'action.hover' }
+                        }}
+                        onClick={() => {
+                          // Applica il suggestion
+                          const cat = categories.find(c => c.id === suggestion.category_id);
+                          if (cat) {
+                            handleCategoryChange(cat);
+                            // Dopo il fetch dei subjects, imposta subject
+                            setTimeout(() => {
+                              const subj = subjectsList.find(s => s.id === suggestion.subject_id);
+                              if (subj) handleSubjectChange(subj);
+                            }, 100);
+                          }
+                        }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography variant="caption" fontWeight="bold" sx={{ flex: 1 }}>
+                            {suggestion.category_name} › {suggestion.subject_name}
+                          </Typography>
+                          <Chip 
+                            size="small" 
+                            label={`${Math.round(suggestion.confidence || 0)}%`}
+                            color={suggestion.confidence >= 70 ? 'warning' : 'default'}
+                            variant="soft"
+                            sx={{ height: 16, fontSize: '0.6rem' }}
+                          />
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+            </Box>
+          </Stack>
+        </Box>
+      )}
+
+      {/* Banner per classificazione riuscita */}
+      {result.success && result.classification && !result.needs_review && (
+        <Box sx={{ mb: 3, p: 1.5, bgcolor: 'success.lighter', borderRadius: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Iconify icon="solar:check-circle-bold" color="success.main" width={20} />
+            <Typography variant="body2" color="success.dark">
+              Classificazione automatica: <strong>{result.classification.category_name} › {result.classification.subject_name}</strong>
+              {result.classification.method && ` • ${(() => {
+                const m = result.classification.method;
+                return m === 'rule' ? '🛡️ Regola' : m === 'exact' ? '✓ Match Esatto' : m === 'semantic' ? '🧠 AI' : '✋ Manuale';
+              })()}`}
+              {result.classification.confidence > 0 && ` • ${Math.round(result.classification.confidence)}%`}
+            </Typography>
+          </Stack>
+        </Box>
+      )}
 
       <Stack spacing={3}>
         <Autocomplete
@@ -674,6 +759,8 @@ export default function AutoClassifyMultiButton({
   const [error, setError] = useState(null);
   const [selectedResultId, setSelectedResultId] = useState(null);
   const [excludedIds, setExcludedIds] = useState(new Set());
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
 
   const settings = useSettingsContext();
   const { categories } = useGetCategories(settings.db);
@@ -713,8 +800,10 @@ export default function AutoClassifyMultiButton({
         const transaction = selectedTransactions[i];
         
         try {
+          console.log(`🎯 [Multi-Classify ${i+1}/${totalCount}] Classificazione:`, transaction.id);
+          
           // eslint-disable-next-line no-await-in-loop
-          const response = await fetch('/api/prima-nota/auto-classify', {
+          const response = await fetch('/api/prima-nota/classify-local', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -723,9 +812,10 @@ export default function AutoClassifyMultiButton({
               transaction: {
                 id: transaction.id,
                 description: transaction.description,
-                dare: transaction.amount > 0 ? transaction.amount : '',
-                avere: transaction.amount < 0 ? Math.abs(transaction.amount) : '',
-                data: transaction.date,
+                amount: transaction.amount,
+                date: transaction.date,
+                paymentType: transaction.paymentType || '',
+                ownerId: transaction.ownerid,
               },
               db: settings.db,
             }),
@@ -734,17 +824,46 @@ export default function AutoClassifyMultiButton({
           // eslint-disable-next-line no-await-in-loop
           const result = await response.json();
 
-          if (response.ok && result.classification) {
-            classificationResults.push({
-              id: transaction.id,
-              description: transaction.description,
-              amount: transaction.amount,
-              date: transaction.date,
-              success: true,
-              classification: result.classification,
-              originalTransaction: transaction,
-            });
+          console.log(`🎯 [Multi-Classify ${i+1}/${totalCount}] Response:`, {
+            success: result.success,
+            method: result.classification?.method,
+            confidence: result.classification?.confidence,
+            needs_review: result.needs_review,
+          });
+
+          if (response.ok && result.success) {
+            // Distinguiamo tra successo con classification e needs_review
+            if (result.classification) {
+              // ✅ Classificazione riuscita
+              classificationResults.push({
+                id: transaction.id,
+                description: transaction.description,
+                amount: transaction.amount,
+                date: transaction.date,
+                success: true,
+                classification: result.classification,
+                suggestions: result.suggestions || [],
+                needs_review: result.needs_review || false,
+                reason: result.reason,
+                originalTransaction: transaction,
+              });
+            } else {
+              // ⚠️ Richiede revisione manuale (NON è un errore!)
+              classificationResults.push({
+                id: transaction.id,
+                description: transaction.description,
+                amount: transaction.amount,
+                date: transaction.date,
+                success: true,
+                classification: null,
+                suggestions: result.suggestions || [],
+                needs_review: true,
+                reason: result.reason || 'Richiede revisione manuale',
+                originalTransaction: transaction,
+              });
+            }
           } else {
+            // ❌ Errore reale
             classificationResults.push({
               id: transaction.id,
               description: transaction.description,
@@ -752,6 +871,7 @@ export default function AutoClassifyMultiButton({
               date: transaction.date,
               success: false,
               error: result.error || 'Classificazione fallita',
+              needs_review: true,
               originalTransaction: transaction,
             });
           }
@@ -798,12 +918,26 @@ export default function AutoClassifyMultiButton({
     });
   };
 
+  // Escludi tutte le transazioni non classificate (needs_review o errori)
+  const handleExcludeUnclassified = () => {
+    const unclassifiedIds = results
+      .filter(r => !r.success || !r.classification)
+      .map(r => r.id);
+    
+    setExcludedIds(prev => {
+      const newSet = new Set(prev);
+      unclassifiedIds.forEach(id => newSet.add(id));
+      return newSet;
+    });
+  };
+
   const handleApplyAll = async () => {
     setLoading(true);
 
     try {
-      // Applica solo le classificazioni riuscite e non escluse
-      const successfulResults = results.filter((r) => r.success && !excludedIds.has(r.id));
+      // Applica solo le classificazioni riuscite CON classification valida e non escluse
+      // NON salva quelle con needs_review (devono essere riviste manualmente)
+      const successfulResults = results.filter((r) => r.success && r.classification && !excludedIds.has(r.id));
 
       // Salva tutte le transazioni e i feedback in parallelo
       await Promise.all(
@@ -855,6 +989,7 @@ export default function AutoClassifyMultiButton({
                 correctedCategoryId: result.classification.category_id,
                 correctedSubjectId: result.classification.subject_id,
                 correctedDetailId: result.classification.detail_id,
+                wasModified: false, // Multi-classify accetta sempre il suggerimento
               }),
             });
           } catch (feedbackError) {
@@ -863,27 +998,82 @@ export default function AutoClassifyMultiButton({
         })
       );
 
-      if (onUpdate) {
-        onUpdate();
+      // Indicizza tutte le transazioni in batch per apprendimento real-time
+      if (successfulResults.length > 0) {
+        try {
+          const transactionIds = successfulResults.map(r => r.originalTransaction.id);
+          
+          const batchIndexResponse = await fetch('/api/prima-nota/index-batch', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              db: settings.db,
+              transactionIds,
+            }),
+          });
+          
+          const batchResult = await batchIndexResponse.json();
+          if (batchResult.success) {
+            console.log(
+              `🧠 [Multi-Classify] Batch indicizzato ${batchResult.indexed_count}/${transactionIds.length} ` +
+              `transazioni in ${batchResult.latency_ms}ms (media: ${batchResult.avg_latency_per_transaction_ms}ms/txn)`
+            );
+          } else {
+            console.warn('⚠️ Batch indexing parzialmente fallito:', batchResult);
+          }
+        } catch (batchIndexError) {
+          console.warn('⚠️ Could not batch index transactions:', batchIndexError);
+        }
       }
 
-      handleClose();
+      // Mostra dialog di scelta: continuare o chiudere?
+      setSavedCount(successfulResults.length);
+      setConfirmDialogOpen(true);
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
+    // Non setLoading(false) qui, viene fatto dopo la scelta dell'utente
   };
 
-  const successCount = results.filter((r) => r.success).length;
+  // Dopo salvataggio: continua con le restanti
+  const handleContinueWithRemaining = () => {
+    // Rimuovi le transazioni salvate dalla lista
+    const savedIds = results
+      .filter(r => r.success && r.classification && !excludedIds.has(r.id))
+      .map(r => r.id);
+    
+    const remainingResults = results.filter(r => !savedIds.includes(r.id));
+    
+    setResults(remainingResults);
+    setExcludedIds(new Set()); // Reset esclusioni
+    setSelectedResultId(remainingResults.length > 0 ? remainingResults[0].id : null);
+    setConfirmDialogOpen(false);
+    setLoading(false);
+  };
+
+  // Dopo salvataggio: chiudi e torna alla lista
+  const handleCloseAfterSave = () => {
+    if (onUpdate) {
+      onUpdate();
+    }
+    setConfirmDialogOpen(false);
+    setLoading(false);
+    handleClose();
+  };
+
+  const successCount = results.filter((r) => r.success && r.classification).length;
+  const reviewCount = results.filter((r) => r.success && !r.classification && r.needs_review).length;
   const failCount = results.filter((r) => !r.success).length;
-  const includedCount = results.filter((r) => r.success && !excludedIds.has(r.id)).length;
+  const includedCount = results.filter((r) => r.success && r.classification && !excludedIds.has(r.id)).length;
   const excludedCount = excludedIds.size;
   const selectedResult = results.find(r => r.id === selectedResultId);
 
   return (
     <>
-      <Tooltip title="Auto-classifica selezionati con AI (Beta)">
+      <Tooltip title="Auto-classifica selezionati con AI (Sistema Locale v2.0)">
         <IconButton
           color="secondary"
           onClick={handleStartClassification}
@@ -963,28 +1153,56 @@ export default function AutoClassifyMultiButton({
                 }}
               >
                 <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                    <Chip 
-                      label={`${successCount} OK`}
-                      color="success"
-                      size="small"
-                      variant="soft"
-                    />
-                    {failCount > 0 && (
-                      <Chip 
-                        label={`${failCount} Errori`}
-                        color="error"
-                        size="small"
-                        variant="soft"
-                      />
-                    )}
-                    {excludedCount > 0 && (
-                      <Chip 
-                        label={`${excludedCount} Escluse`}
-                        color="warning"
-                        size="small"
-                        variant="soft"
-                      />
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" justifyContent="space-between">
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      {successCount > 0 && (
+                        <Chip 
+                          label={`${successCount} Classificate`}
+                          color="success"
+                          size="small"
+                          variant="soft"
+                          icon={<Iconify icon="solar:check-circle-bold" width={16} />}
+                        />
+                      )}
+                      {reviewCount > 0 && (
+                        <Chip 
+                          label={`${reviewCount} Da rivedere`}
+                          color="warning"
+                          size="small"
+                          variant="soft"
+                          icon={<Iconify icon="solar:danger-triangle-bold" width={16} />}
+                        />
+                      )}
+                      {failCount > 0 && (
+                        <Chip 
+                          label={`${failCount} Errori`}
+                          color="error"
+                          size="small"
+                          variant="soft"
+                          icon={<Iconify icon="solar:close-circle-bold" width={16} />}
+                        />
+                      )}
+                      {excludedCount > 0 && (
+                        <Chip 
+                          label={`${excludedCount} Escluse`}
+                          color="default"
+                          size="small"
+                          variant="outlined"
+                        />
+                      )}
+                    </Stack>
+                    {(reviewCount > 0 || failCount > 0) && (
+                      <Tooltip title="Escludi automaticamente tutte le transazioni non classificate">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="warning"
+                          onClick={handleExcludeUnclassified}
+                          startIcon={<Iconify icon="solar:close-circle-bold" width={16} />}
+                        >
+                          Escludi non classificate
+                        </Button>
+                      </Tooltip>
                     )}
                   </Stack>
                 </Box>
@@ -1024,8 +1242,20 @@ export default function AutoClassifyMultiButton({
                           )}
                           {!isExcluded && (
                             <Iconify
-                              icon={result.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
-                              color={result.success ? 'success.main' : 'error.main'}
+                              icon={
+                                result.success && result.classification
+                                  ? 'solar:check-circle-bold'
+                                  : result.success && result.needs_review
+                                  ? 'solar:danger-triangle-bold'
+                                  : 'solar:close-circle-bold'
+                              }
+                              color={
+                                result.success && result.classification
+                                  ? 'success.main'
+                                  : result.success && result.needs_review
+                                  ? 'warning.main'
+                                  : 'error.main'
+                              }
                               width={20}
                               sx={{ mt: 0.5, flexShrink: 0 }}
                             />
@@ -1037,14 +1267,58 @@ export default function AutoClassifyMultiButton({
                             <Typography variant="caption" display="block" color="text.secondary">
                               {fCurrencyEur(result.amount)}
                             </Typography>
-                            {result.success && !isExcluded && (
-                              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
+                            {result.success && result.classification && !isExcluded && (
+                              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
                                 <Typography variant="caption" color="primary.main" noWrap sx={{ fontWeight: 'bold' }}>
                                   {result.classification.category_name} &gt; {result.classification.subject_name}
                                   {result.classification.detail_name && ` > ${result.classification.detail_name}`}
                                 </Typography>
-                                <Chip size="small" label="Suggerito" color="secondary" variant="soft" sx={{ height: 16, fontSize: '0.65rem' }} />
+                                {result.classification.method && (
+                                  <Chip 
+                                    size="small" 
+                                    label={(() => {
+                                      const method = result.classification.method;
+                                      if (method === 'rule') return '🛡️ Regola';
+                                      if (method === 'exact') return '✓ Esatto';
+                                      if (method === 'semantic') return '🧠 AI';
+                                      return '✋ Manuale';
+                                    })()} 
+                                    color={(() => {
+                                      const method = result.classification.method;
+                                      if (method === 'rule') return 'success';
+                                      if (method === 'exact') return 'info';
+                                      if (method === 'semantic') return 'secondary';
+                                      return 'warning';
+                                    })()}
+                                    variant="soft" 
+                                    sx={{ height: 18, fontSize: '0.65rem' }} 
+                                  />
+                                )}
+                                {result.classification.confidence > 0 && (
+                                  <Chip 
+                                    size="small" 
+                                    label={`${Math.round(result.classification.confidence)}%`}
+                                    color={
+                                      result.classification.confidence >= 90 ? 'success' : 
+                                      result.classification.confidence >= 70 ? 'warning' : 
+                                      'error'
+                                    }
+                                    variant="soft" 
+                                    sx={{ height: 18, fontSize: '0.65rem' }} 
+                                  />
+                                )}
                               </Stack>
+                            )}
+                            {result.success && result.needs_review && !result.classification && !isExcluded && (
+                              <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, fontStyle: 'italic', display: 'block' }}>
+                                ⚠️ {result.reason || 'Richiede revisione manuale'}
+                                {result.suggestions && result.suggestions.length > 0 && ` (${result.suggestions.length} suggerimenti)`}
+                              </Typography>
+                            )}
+                            {!result.success && !isExcluded && (
+                              <Typography variant="caption" color="error.main" sx={{ mt: 0.5, display: 'block' }}>
+                                ❌ {result.error}
+                              </Typography>
                             )}
                             {isExcluded && (
                               <Typography variant="caption" color="warning.main" noWrap sx={{ fontStyle: 'italic' }}>
@@ -1119,6 +1393,69 @@ export default function AutoClassifyMultiButton({
             >
               Salva {includedCount} {includedCount === 1 ? 'transazione' : 'transazioni'}
             </LoadingButton>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog di conferma dopo salvataggio */}
+      <Dialog 
+        open={confirmDialogOpen} 
+        onClose={() => {}} // Non permettere chiusura con click fuori
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Iconify icon="solar:check-circle-bold" color="success.main" width={28} />
+            <span>Salvataggio Completato</span>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" gutterBottom>
+            <strong>{savedCount}</strong> {savedCount === 1 ? 'transazione è stata salvata' : 'transazioni sono state salvate'} con successo!
+          </Typography>
+          
+          {results.filter(r => !r.success || !r.classification || excludedIds.has(r.id)).length > 0 && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.lighter', borderRadius: 1 }}>
+              <Typography variant="body2" color="warning.dark">
+                <strong>
+                  {results.filter(r => !r.success || !r.classification || excludedIds.has(r.id)).length}
+                </strong> {results.filter(r => !r.success || !r.classification || excludedIds.has(r.id)).length === 1 ? 'transazione rimane' : 'transazioni rimangono'} da classificare.
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Vuoi continuare a classificarle manualmente o tornare alla lista principale?
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={handleCloseAfterSave}
+            startIcon={<Iconify icon="solar:logout-2-bold" />}
+          >
+            Torna alla lista
+          </Button>
+          {results.filter(r => !r.success || !r.classification || excludedIds.has(r.id)).length > 0 && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleContinueWithRemaining}
+              startIcon={<Iconify icon="solar:pen-bold" />}
+            >
+              Continua con le restanti
+            </Button>
+          )}
+          {results.filter(r => !r.success || !r.classification || excludedIds.has(r.id)).length === 0 && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleCloseAfterSave}
+              startIcon={<Iconify icon="solar:check-circle-bold" />}
+            >
+              Chiudi
+            </Button>
           )}
         </DialogActions>
       </Dialog>

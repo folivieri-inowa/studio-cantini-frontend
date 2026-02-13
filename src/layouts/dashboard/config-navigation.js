@@ -167,6 +167,12 @@ export function useNavData() {
             roles: ['admin'],
           },
           {
+            title: t('Gestione Regole'),
+            path: paths.dashboard.machineLearning.rulesManagement,
+            icon: ICONS.menuItem,
+            roles: ['admin'],
+          },
+          {
             title: t('Regole AI'),
             path: paths.dashboard.machineLearning.suggestedRules,
             icon: ICONS.label,

@@ -129,6 +129,7 @@ export const paths = {
     machineLearning: {
       suggestedRules: `${ROOTS.DASHBOARD}/machine-learning/suggested-rules`,
       analytics: `${ROOTS.DASHBOARD}/machine-learning/analytics`,
+      rulesManagement: `${ROOTS.DASHBOARD}/machine-learning/rules`,
     },
     user: {
       root: `${ROOTS.DASHBOARD}/user`,

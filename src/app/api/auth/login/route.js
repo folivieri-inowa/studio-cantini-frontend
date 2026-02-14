@@ -14,11 +14,17 @@ export async function POST(request) {
       },
       timeout: 10000, // Aumentiamo il timeout a 10 secondi
     });
-    // Il backend già wrappa in {data: {accessToken, user}}, non serve wrappare di nuovo
-    return NextResponse.json(response.data, { status: 200 });
+    return NextResponse.json(response.data, { status: response.status });
   } catch (error) {
-    console.error('Login error:', error.message);
-    return NextResponse.json({ error }, { status: 500 });
+    const status = error.response?.status || 500;
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      'Errore durante il login';
+
+    console.error('Login error:', message);
+    return NextResponse.json({ message, status }, { status });
   }
 }
 

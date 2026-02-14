@@ -72,6 +72,12 @@ export function useNavData() {
             roles: ['admin', 'manager'],
           },
           {
+            title: t('Archivio Digitale'),
+            path: paths.dashboard.archive.root,
+            icon: ICONS.folder,
+            roles: ['admin', 'manager'],
+          },
+          {
             title: t('Scadenziario'),
             path: paths.dashboard.scadenziario.root,
             icon: ICONS.calendar,

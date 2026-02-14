@@ -99,4 +99,14 @@ export const endpoints = {
     details: '/api/product/details',
     search: '/api/product/search',
   },
+  archive: {
+    documents: '/api/archive/documents',
+    document: (id) => `/api/archive/documents/${id}`,
+    upload: '/api/archive/upload',
+    search: '/api/archive/search',
+    stats: '/api/archive/stats',
+    delete: (id) => `/api/archive/documents/${id}`,
+    folders: '/api/archive/folders',
+    breadcrumb: '/api/archive/breadcrumb',
+  },
 };

@@ -126,6 +126,11 @@ export const paths = {
       details: (id) => `${ROOTS.DASHBOARD}/scadenziario/${id}`,
       edit: (id) => `${ROOTS.DASHBOARD}/scadenziario/${id}/edit`,
     },
+    archive: {
+      root: `${ROOTS.DASHBOARD}/archive`,
+      details: (id) => `${ROOTS.DASHBOARD}/archive/${id}`,
+      search: `${ROOTS.DASHBOARD}/archive/search`,
+    },
     machineLearning: {
       suggestedRules: `${ROOTS.DASHBOARD}/machine-learning/suggested-rules`,
       analytics: `${ROOTS.DASHBOARD}/machine-learning/analytics`,

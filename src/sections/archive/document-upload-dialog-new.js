@@ -140,11 +140,17 @@ export default function DocumentUploadDialog({ open, onClose, db, currentPath = 
             formData.append('parentFolder', folderInfo.parentFolder);
           }
 
-          await axios.post(endpoints.archive.upload, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
+          // Usa fetch diretto al backend per evitare problemi con il proxy Next.js
+          const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+          const token = localStorage.getItem('accessToken');
+          const response = await fetch(`${backendUrl}/v1/archive/upload`, {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           });
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status}`);
+          }
 
           successCount++;
         } catch (err) {

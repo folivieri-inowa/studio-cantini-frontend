@@ -32,4 +32,11 @@ module.exports = {
       },
     ];
   },
+  // Aumenta il limite di payload per l'upload
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+    responseLimit: '100mb',
+  },
 };

@@ -20,7 +20,7 @@ module.exports = {
     return config;
   },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9002';
     return [
       {
         source: '/api/:path*/',
@@ -31,12 +31,5 @@ module.exports = {
         destination: `${backendUrl}/v1/:path*`,
       },
     ];
-  },
-  // Aumenta il limite di payload per l'upload
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
-    responseLimit: '100mb',
   },
 };

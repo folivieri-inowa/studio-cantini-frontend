@@ -130,6 +130,7 @@ export const paths = {
       root: `${ROOTS.DASHBOARD}/archive`,
       details: (id) => `${ROOTS.DASHBOARD}/archive/${id}`,
       search: `${ROOTS.DASHBOARD}/archive/search`,
+      chat: `${ROOTS.DASHBOARD}/archive/chat`,
     },
     machineLearning: {
       suggestedRules: `${ROOTS.DASHBOARD}/machine-learning/suggested-rules`,

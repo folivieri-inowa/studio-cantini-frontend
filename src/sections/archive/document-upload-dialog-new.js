@@ -80,29 +80,16 @@ export default function DocumentUploadDialog({ open, onClose, db, currentPath = 
   }, [files]);
 
   const extractFolderInfo = (filePath) => {
-    // Rimuovi il path relativo che inizia con "./" o contiene solo "."
-    let cleanPath = filePath.replace(/^\.\//, '').replace(/^\.+$/, '');
+    // Estrai solo il nome file dal path (ignora eventuali sottocartelle nel nome)
+    const cleanPath = filePath.replace(/^\.\//, '').replace(/^\.+$/, '');
     const parts = cleanPath.split('/').filter(Boolean);
-    
-    if (parts.length === 1) {
-      // File nella root
-      return {
-        folderPath: currentPath || '',
-        folderPathArray: currentPath ? currentPath.split('/').filter(Boolean) : [],
-        parentFolder: currentPath ? currentPath.split('/').filter(Boolean).pop() : null,
-        cleanFilename: parts[0],
-      };
-    }
-    
-    // File in sottocartelle
-    const folders = parts.slice(0, -1);
-    const filename = parts[parts.length - 1];
-    const fullPath = currentPath ? `${currentPath}/${folders.join('/')}` : folders.join('/');
-    
+    const filename = parts[parts.length - 1] || cleanPath;
+
+    // Se siamo in una cartella specifica, usa quella come destinazione
     return {
-      folderPath: fullPath,
-      folderPathArray: fullPath.split('/').filter(Boolean),
-      parentFolder: folders[folders.length - 1],
+      folderPath: currentPath || '',
+      folderPathArray: currentPath ? currentPath.split('/').filter(Boolean) : [],
+      parentFolder: currentPath ? currentPath.split('/').filter(Boolean).pop() : null,
       cleanFilename: filename,
     };
   };
@@ -141,13 +128,26 @@ export default function DocumentUploadDialog({ open, onClose, db, currentPath = 
           }
 
           // Usa fetch diretto al backend per evitare problemi con il proxy Next.js
-          const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+          const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9002';
           const token = localStorage.getItem('accessToken');
           const response = await fetch(`${backendUrl}/v1/archive/upload`, {
             method: 'POST',
             body: formData,
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           });
+
+          if (response.status === 409) {
+            // File duplicato - mostra warning ma considera "successo" parziale
+            const errorData = await response.json().catch(() => ({}));
+            console.warn(`File duplicato: ${fileData.name}`, errorData);
+            enqueueSnackbar(
+              `"${fileData.name}" esiste già nell'archivio`,
+              { variant: 'warning' }
+            );
+            // Non incrementiamo errorCount perché è un duplicato, non un errore grave
+            continue;
+          }
+
           if (!response.ok) {
             throw new Error(`Upload failed: ${response.status}`);
           }
@@ -219,10 +219,16 @@ export default function DocumentUploadDialog({ open, onClose, db, currentPath = 
 
           <Upload
             multiple
-            files={files.map((f) => f.preview || f.file)}
+            files={files.map((f) => ({
+              name: f.name,
+              size: f.size,
+              type: f.type,
+              preview: f.preview || undefined,
+              path: f.path,
+            }))}
             onDrop={handleDrop}
             onRemove={(file) => {
-              const index = files.findIndex((f) => f.file === file || f.preview === file);
+              const index = files.findIndex((f) => f.name === file.name && f.size === file.size);
               if (index !== -1) {
                 handleRemoveFile(index);
               }

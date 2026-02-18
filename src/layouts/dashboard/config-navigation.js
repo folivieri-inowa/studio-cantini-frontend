@@ -76,6 +76,10 @@ export function useNavData() {
             path: paths.dashboard.archive.root,
             icon: ICONS.folder,
             roles: ['admin', 'manager'],
+            children: [
+              { title: t('File'), path: paths.dashboard.archive.root },
+              { title: t('Assistente AI'), path: paths.dashboard.archive.chat },
+            ],
           },
           {
             title: t('Scadenziario'),

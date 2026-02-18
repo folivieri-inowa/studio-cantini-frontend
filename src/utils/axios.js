@@ -106,7 +106,13 @@ export const endpoints = {
     search: '/api/archive/search',
     stats: '/api/archive/stats',
     delete: (id) => `/api/archive/documents/${id}`,
+    retry: (id) => `/api/archive/documents/${id}/retry`,
+    clearAll: '/api/archive/documents/clear-all',
     folders: '/api/archive/folders',
     breadcrumb: '/api/archive/breadcrumb',
+    chat: {
+      sessions: '/api/archive/chat/sessions',
+      messages: (id) => `/api/archive/chat/sessions/${id}/messages`,
+    },
   },
 };

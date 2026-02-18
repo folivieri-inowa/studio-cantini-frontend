@@ -1,6 +1,7 @@
 import useSWR from 'swr';
 import { useMemo } from 'react';
 
+import axios from 'src/utils/axios';
 import { fetcher, endpoints } from 'src/utils/axios';
 
 // ----------------------------------------------------------------------
@@ -113,4 +114,105 @@ export function useGetArchiveBreadcrumb(path = '') {
     }),
     [data, error, isLoading]
   );
+}
+
+// ----------------------------------------------------------------------
+
+/**
+ * Retry del processamento di un documento
+ * @param {string} documentId - ID del documento
+ * @param {string} db - Database
+ * @returns {Promise<Object>} - Risultato del retry
+ */
+export async function retryDocumentProcessing(documentId, db) {
+  const response = await axios.post(endpoints.archive.retry(documentId), {
+    db,
+  });
+  return response.data;
+}
+
+/**
+ * Elimina TUTTI i documenti dall'archivio (operazione distruttiva)
+ * @param {string} db - Database
+ * @returns {Promise<Object>} - Risultato della cancellazione
+ */
+export async function clearAllArchiveDocuments(db) {
+  const response = await axios.delete(endpoints.archive.clearAll, {
+    data: {
+      db,
+      confirm: 'DELETE_ALL',
+    },
+  });
+  return response.data;
+}
+
+// =============================================================================
+// CHAT CONVERSAZIONALE
+// =============================================================================
+
+/**
+ * Crea una nuova sessione di chat
+ * @param {string} db - Database
+ * @param {string} title - Titolo opzionale
+ * @returns {Promise<Object>} - Sessione creata
+ */
+export async function createChatSession(db, title = null) {
+  const response = await axios.post(endpoints.archive.chat.sessions, {
+    db,
+    title,
+  });
+  return response.data;
+}
+
+/**
+ * Lista sessioni di chat
+ * @param {string} db - Database
+ * @returns {Promise<Array>} - Lista sessioni
+ */
+export async function listChatSessions(db) {
+  const response = await axios.get(endpoints.archive.chat.sessions, {
+    params: { db },
+  });
+  return response.data;
+}
+
+/**
+ * Recupera messaggi di una sessione
+ * @param {string} sessionId - ID sessione
+ * @param {string} db - Database
+ * @returns {Promise<Object>} - Messaggi e info sessione
+ */
+export async function getChatMessages(sessionId, db) {
+  const response = await axios.get(endpoints.archive.chat.messages(sessionId), {
+    params: { db },
+  });
+  return response.data;
+}
+
+/**
+ * Invia messaggio e ricevi risposta
+ * @param {string} sessionId - ID sessione
+ * @param {string} db - Database
+ * @param {string} message - Messaggio utente
+ * @returns {Promise<Object>} - Risposta dell'assistente
+ */
+export async function sendChatMessage(sessionId, db, message) {
+  const response = await axios.post(endpoints.archive.chat.messages(sessionId), {
+    db,
+    message,
+  });
+  return response.data;
+}
+
+/**
+ * Elimina una sessione di chat
+ * @param {string} sessionId - ID sessione
+ * @param {string} db - Database
+ * @returns {Promise<Object>} - Risultato
+ */
+export async function deleteChatSession(sessionId, db) {
+  const response = await axios.delete(endpoints.archive.chat.messages(sessionId).replace('/messages', ''), {
+    params: { db },
+  });
+  return response.data;
 }

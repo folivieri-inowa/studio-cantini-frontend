@@ -142,6 +142,9 @@ export async function clearAllArchiveDocuments(db) {
       db,
       confirm: 'DELETE_ALL',
     },
+    headers: {
+      'X-Confirm-Dangerous-Operation': 'DELETE_ALL_DOCUMENTS',
+    },
   });
   return response.data;
 }
@@ -211,7 +214,7 @@ export async function sendChatMessage(sessionId, db, message) {
  * @returns {Promise<Object>} - Risultato
  */
 export async function deleteChatSession(sessionId, db) {
-  const response = await axios.delete(endpoints.archive.chat.messages(sessionId).replace('/messages', ''), {
+  const response = await axios.delete(endpoints.archive.chat.session(sessionId), {
     params: { db },
   });
   return response.data;

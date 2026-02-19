@@ -22,10 +22,14 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import { useTheme } from '@mui/material/styles';
 import Autocomplete from '@mui/material/Autocomplete';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Chip from '@mui/material/Chip';
+import Skeleton from '@mui/material/Skeleton';
+import LinearProgress from '@mui/material/LinearProgress';
+import Alert from '@mui/material/Alert';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSnackbar } from 'src/components/snackbar';
@@ -38,44 +42,81 @@ import axios from 'src/utils/axios';
 import { useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 import DocumentUploadDialog from '../document-upload-dialog';
-import InputAdornment from '@mui/material/InputAdornment';
-import Chip from '@mui/material/Chip';
 
 import { retryDocumentProcessing, clearAllArchiveDocuments } from 'src/api/archive';
 
 // ----------------------------------------------------------------------
 
-// Mostra Reset Archivio solo in sviluppo o con flag esplicito
-const SHOW_RESET_BUTTON = process.env.NEXT_PUBLIC_SHOW_RESET_BUTTON === 'true' || process.env.NODE_ENV === 'development';
+const SHOW_RESET_BUTTON =
+  process.env.NEXT_PUBLIC_SHOW_RESET_BUTTON === 'true' ||
+  process.env.NODE_ENV === 'development';
 
-// Utility per formattare la dimensione file
+// Utility dimensione file
 const fData = (size) => {
-  if (!size) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(size) / Math.log(1024));
-  return `${(size / (1024 ** i)).toFixed(2)} ${units[i]}`;
+  if (!size) return '—';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 };
 
-// Utility per formattare la data
+// Utility data
 const fDate = (date) => {
-  if (!date) return '';
-  const options = { day: 'numeric', month: 'short', year: 'numeric' };
-  return new Date(date).toLocaleDateString('it-IT', options);
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString('it-IT', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 };
 
-// Componente Cartella (stile FileManager)
-function ArchiveFolderItem({ folder, onOpen, onMenuClick, sx }) {
+// Mappa stati documento
+const STATUS_CONFIG = {
+  failed: { label: 'Errore', color: 'error', icon: 'eva:alert-circle-fill' },
+  pending: { label: 'In Attesa', color: 'warning', icon: 'eva:clock-fill' },
+  completed: { label: 'Pronto', color: 'success', icon: 'eva:checkmark-circle-2-fill' },
+  ocr_in_progress: { label: 'OCR', color: 'info', icon: 'eva:loader-outline' },
+  ocr_completed: { label: 'OCR OK', color: 'info', icon: 'eva:checkmark-circle-2-fill' },
+  cleaning_in_progress: { label: 'Pulizia', color: 'info', icon: 'eva:loader-outline' },
+  cleaning_completed: { label: 'Pulizia OK', color: 'info', icon: 'eva:checkmark-circle-2-fill' },
+  embedding_in_progress: { label: 'Embedding', color: 'info', icon: 'eva:loader-outline' },
+  embedding_completed: { label: 'Embedding OK', color: 'info', icon: 'eva:checkmark-circle-2-fill' },
+};
+
+const getStatusConfig = (status) =>
+  STATUS_CONFIG[status] || { label: status || '—', color: 'default', icon: 'eva:question-mark-circle-fill' };
+
+const getFileType = (fileName) => {
+  if (!fileName) return 'file';
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  const map = {
+    pdf: 'pdf', doc: 'word', docx: 'word', txt: 'txt',
+    xls: 'excel', xlsx: 'excel', csv: 'csv',
+    jpg: 'jpg', jpeg: 'jpg', png: 'png', gif: 'gif',
+    mp3: 'audio', mp4: 'video', zip: 'zip',
+  };
+  return map[ext] || 'file';
+};
+
+// ----------------------------------------------------------------------
+// Componente Cartella
+
+function ArchiveFolderItem({ folder, onOpen, onMenuClick }) {
   return (
     <Paper
       variant="outlined"
       onClick={onOpen}
       sx={{
-        p: 2.5,
+        p: 2,
         borderRadius: 2,
         cursor: 'pointer',
-        position: 'relative',
-        '&:hover': { bgcolor: 'action.hover' },
-        ...sx,
+        transition: 'all 0.15s ease',
+        '&:hover': {
+          bgcolor: 'action.hover',
+          borderColor: 'primary.light',
+          transform: 'translateY(-1px)',
+          boxShadow: 2,
+        },
       }}
     >
       <Stack spacing={1.5}>
@@ -83,7 +124,8 @@ function ArchiveFolderItem({ folder, onOpen, onMenuClick, sx }) {
           <Box
             component="img"
             src="/assets/icons/files/ic_folder.svg"
-            sx={{ width: 48, height: 48 }}
+            sx={{ width: 44, height: 44 }}
+            onError={(e) => { e.target.style.display = 'none'; }}
           />
           <IconButton
             size="small"
@@ -91,17 +133,18 @@ function ArchiveFolderItem({ folder, onOpen, onMenuClick, sx }) {
               e.stopPropagation();
               onMenuClick?.(e, folder);
             }}
+            sx={{ opacity: 0.4, '&:hover': { opacity: 1 }, mt: -0.5, mr: -0.5 }}
           >
-            <Iconify icon="eva:more-vertical-fill" />
+            <Iconify icon="eva:more-vertical-fill" width={16} />
           </IconButton>
         </Stack>
 
         <Box>
-          <Typography variant="subtitle1" noWrap>
+          <Typography variant="subtitle2" noWrap sx={{ fontWeight: 600 }}>
             {folder.name}
           </Typography>
           <Typography variant="caption" color="text.disabled">
-            {folder.itemCount || 0} elementi
+            {folder.itemCount != null ? `${folder.itemCount} element${folder.itemCount === 1 ? 'o' : 'i'}` : '—'}
           </Typography>
         </Box>
       </Stack>
@@ -109,68 +152,50 @@ function ArchiveFolderItem({ folder, onOpen, onMenuClick, sx }) {
   );
 }
 
-// Componente File (stile FileManager)
+// ----------------------------------------------------------------------
+// Componente File
+
 function ArchiveFileItem({ file, onClick, onMenuClick }) {
-  const getFileType = (fileName) => {
-    if (!fileName) return 'file';
-    const extension = fileName.split('.').pop().toLowerCase();
-    const fileTypeMap = {
-      pdf: 'pdf', doc: 'word', docx: 'word', txt: 'txt',
-      xls: 'excel', xlsx: 'excel', csv: 'csv',
-      jpg: 'jpg', jpeg: 'jpg', png: 'png', gif: 'gif',
-      mp3: 'audio', mp4: 'video', zip: 'zip',
-    };
-    return fileTypeMap[extension] || 'file';
-  };
-
-  // Mappa degli stati per visualizzazione
-  const getStatusConfig = (status) => {
-    const configs = {
-      failed: { label: 'Errore', color: 'error', icon: 'eva:alert-circle-fill' },
-      pending: { label: 'In Attesa', color: 'warning', icon: 'eva:clock-fill' },
-      completed: { label: 'Pronto', color: 'success', icon: 'eva:checkmark-circle-2-fill' },
-      ocr_in_progress: { label: 'OCR...', color: 'info', icon: 'eva:loader-outline' },
-      ocr_completed: { label: 'OCR OK', color: 'info', icon: 'eva:checkmark-circle-2-fill' },
-      cleaning_in_progress: { label: 'Cleaning...', color: 'info', icon: 'eva:loader-outline' },
-      cleaning_completed: { label: 'Cleaning OK', color: 'info', icon: 'eva:checkmark-circle-2-fill' },
-      embedding_in_progress: { label: 'Embedding...', color: 'info', icon: 'eva:loader-outline' },
-      embedding_completed: { label: 'Embedding OK', color: 'info', icon: 'eva:checkmark-circle-2-fill' },
-    };
-    return configs[status] || { label: status, color: 'default', icon: 'eva:question-mark-circle-fill' };
-  };
-
   const statusConfig = getStatusConfig(file.status);
   const isFailed = file.status === 'failed';
+  const isProcessing = ['ocr_in_progress', 'cleaning_in_progress', 'embedding_in_progress'].includes(file.status);
 
   return (
     <Paper
       variant="outlined"
+      onClick={onClick}
       sx={{
-        p: 2.5,
+        p: 2,
         borderRadius: 2,
         cursor: 'pointer',
-        textAlign: 'center',
-        '&:hover': { bgcolor: 'action.hover' },
+        transition: 'all 0.15s ease',
+        '&:hover': {
+          bgcolor: 'action.hover',
+          transform: 'translateY(-1px)',
+          boxShadow: 2,
+          ...(!isFailed && { borderColor: 'primary.light' }),
+        },
         ...(isFailed && {
-          borderColor: 'error.main',
+          borderColor: 'error.light',
           bgcolor: 'error.lighter',
         }),
       }}
-      onClick={onClick}
     >
-      <Stack spacing={1.5}>
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between">
-          {/* Stato del documento */}
+      <Stack spacing={1}>
+        {/* Riga superiore: stato + menu */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Chip
-            icon={<Iconify icon={statusConfig.icon} />}
+            icon={<Iconify icon={statusConfig.icon} width={12} />}
             label={statusConfig.label}
             color={statusConfig.color}
             size="small"
             variant={isFailed ? 'filled' : 'soft'}
             sx={{
-              height: 24,
-              fontSize: '0.75rem',
-              '& .MuiChip-icon': { fontSize: 16 },
+              height: 22,
+              fontSize: '0.68rem',
+              fontWeight: 600,
+              '& .MuiChip-icon': { fontSize: 12, ml: '4px' },
+              '& .MuiChip-label': { px: '6px' },
             }}
           />
           <IconButton
@@ -179,70 +204,114 @@ function ArchiveFileItem({ file, onClick, onMenuClick }) {
               e.stopPropagation();
               onMenuClick?.(e, file);
             }}
+            sx={{ opacity: 0.4, '&:hover': { opacity: 1 }, mt: -0.5, mr: -0.5 }}
           >
-            <Iconify icon="eva:more-vertical-fill" />
+            <Iconify icon="eva:more-vertical-fill" width={16} />
           </IconButton>
         </Stack>
 
-        <FileThumbnail
-          file={getFileType(file.name)}
-          sx={{ width: 56, height: 56, mx: 'auto' }}
-        />
+        {/* Icona file */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
+          <FileThumbnail
+            file={getFileType(file.name)}
+            sx={{ width: 48, height: 48 }}
+          />
+        </Box>
 
-        <Typography variant="subtitle2" noWrap>
-          {file.name}
+        {/* Nome file */}
+        <Typography
+          variant="caption"
+          noWrap
+          sx={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center', lineHeight: 1.3 }}
+        >
+          {file.name || '—'}
         </Typography>
 
+        {/* Metadati */}
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="center"
-          spacing={1}
-          sx={{ typography: 'caption', color: 'text.disabled' }}
+          spacing={0.75}
+          sx={{ color: 'text.disabled' }}
         >
-          <span>{fData(file.size)}</span>
-          <Box component="span" sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'currentColor' }} />
-          <span>{fDate(file.date)}</span>
+          <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+            {fData(file.size)}
+          </Typography>
+          <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.disabled' }} />
+          <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+            {fDate(file.date)}
+          </Typography>
         </Stack>
+
+        {/* Barra di progresso per documenti in elaborazione */}
+        {isProcessing && (
+          <LinearProgress
+            sx={{ height: 2, borderRadius: 1, mt: 0.5 }}
+            color={statusConfig.color}
+          />
+        )}
       </Stack>
     </Paper>
   );
 }
 
 // ----------------------------------------------------------------------
+// Skeleton card
+
+function SkeletonCard() {
+  return (
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Stack spacing={1}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Skeleton width={60} height={22} sx={{ borderRadius: 2 }} />
+          <Skeleton variant="circular" width={24} height={24} />
+        </Stack>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
+          <Skeleton variant="rounded" width={48} height={48} />
+        </Box>
+        <Skeleton width="80%" height={14} sx={{ mx: 'auto' }} />
+        <Skeleton width="60%" height={12} sx={{ mx: 'auto' }} />
+      </Stack>
+    </Paper>
+  );
+}
+
+// ----------------------------------------------------------------------
+// View principale
 
 export default function ArchiveFileManagerView() {
-  const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
   const settings = useSettingsContext();
   const { db } = settings;
   const router = useRouter();
 
-  // Stato navigazione
+  // Navigazione
   const [currentPath, setCurrentPath] = useState('');
   const [pathHistory, setPathHistory] = useState([]);
   const [folders, setFolders] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Drawer per dettagli file
+  // Drawer dettagli
   const [selectedFile, setSelectedFile] = useState(null);
   const detailsDrawer = useBoolean(false);
 
-  // Dialog stati
+  // Dialogs
   const newFolderDialog = useBoolean(false);
   const renameFolderDialog = useBoolean(false);
   const renameFileDialog = useBoolean(false);
   const moveDialog = useBoolean(false);
   const uploadDialog = useBoolean(false);
   const previewDialog = useBoolean(false);
+
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [selectedFileForAction, setSelectedFileForAction] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFileName, setNewFileName] = useState('');
   const [moveTargetFolder, setMoveTargetFolder] = useState('');
 
-  // Stato ricerca
+  // Ricerca
   const [searchQuery, setSearchQuery] = useState('');
 
   // Menu contestuale
@@ -250,7 +319,7 @@ export default function ArchiveFileManagerView() {
   const [menuTarget, setMenuTarget] = useState(null);
   const menuOpen = Boolean(anchorEl);
 
-  // Carica cartelle e documenti
+  // Carica dati
   const loadData = useCallback(async () => {
     if (!db) return;
     setLoading(true);
@@ -260,14 +329,14 @@ export default function ArchiveFileManagerView() {
         axios.get('/api/archive/documents', { params: { db, folderPath: currentPath, limit: 100 } }),
       ]);
 
-      // Conta elementi per cartella
+      const rawFolders = foldersRes.data?.folders || [];
       const foldersWithCount = await Promise.all(
-        (foldersRes.data.folders || []).map(async (folder) => {
+        rawFolders.map(async (folder) => {
           try {
             const countRes = await axios.get('/api/archive/documents', {
               params: { db, folderPath: folder.path, limit: 1 },
             });
-            return { ...folder, itemCount: countRes.data.pagination?.total || 0 };
+            return { ...folder, itemCount: countRes.data?.pagination?.total ?? 0 };
           } catch {
             return { ...folder, itemCount: 0 };
           }
@@ -275,7 +344,7 @@ export default function ArchiveFileManagerView() {
       );
 
       setFolders(foldersWithCount);
-      setDocuments(docsRes.data.data || []);
+      setDocuments(docsRes.data?.data || []);
     } catch (error) {
       console.error('Errore caricamento dati:', error);
       enqueueSnackbar('Errore caricamento dati', { variant: 'error' });
@@ -291,16 +360,15 @@ export default function ArchiveFileManagerView() {
   // Navigazione
   const navigateToFolder = (folderName) => {
     const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-    setPathHistory([...pathHistory, currentPath]);
+    setPathHistory((prev) => [...prev, currentPath]);
     setCurrentPath(newPath);
   };
 
   const navigateBack = () => {
-    if (pathHistory.length > 0) {
-      const previousPath = pathHistory[pathHistory.length - 1];
-      setPathHistory(pathHistory.slice(0, -1));
-      setCurrentPath(previousPath);
-    }
+    if (pathHistory.length === 0) return;
+    const previousPath = pathHistory[pathHistory.length - 1];
+    setPathHistory((prev) => prev.slice(0, -1));
+    setCurrentPath(previousPath);
   };
 
   const navigateToRoot = () => {
@@ -311,7 +379,7 @@ export default function ArchiveFileManagerView() {
   const navigateToBreadcrumb = (index) => {
     const parts = currentPath.split('/').filter(Boolean);
     const newPath = parts.slice(0, index + 1).join('/');
-    setPathHistory([...pathHistory, currentPath]);
+    setPathHistory((prev) => [...prev, currentPath]);
     setCurrentPath(newPath);
   };
 
@@ -319,16 +387,12 @@ export default function ArchiveFileManagerView() {
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
     try {
-      await axios.post('/api/archive/folders', {
-        db,
-        folderName: newFolderName,
-        parentPath: currentPath,
-      });
-      enqueueSnackbar('Cartella creata con successo', { variant: 'success' });
+      await axios.post('/api/archive/folders', { db, folderName: newFolderName, parentPath: currentPath });
+      enqueueSnackbar('Cartella creata', { variant: 'success' });
       setNewFolderName('');
       newFolderDialog.onFalse();
       loadData();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Errore creazione cartella', { variant: 'error' });
     }
   };
@@ -336,26 +400,20 @@ export default function ArchiveFileManagerView() {
   const handleRenameFolder = async () => {
     if (!newFolderName.trim() || !selectedFolder) return;
     try {
-      await axios.put('/api/archive/folders', {
-        db,
-        oldPath: selectedFolder.path,
-        newName: newFolderName,
-      });
+      await axios.put('/api/archive/folders', { db, oldPath: selectedFolder.path, newName: newFolderName });
       enqueueSnackbar('Cartella rinominata', { variant: 'success' });
       setNewFolderName('');
       renameFolderDialog.onFalse();
       loadData();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Errore rinomina', { variant: 'error' });
     }
   };
 
   const handleDeleteFolder = async (folder) => {
-    if (!window.confirm(`Eliminare "${folder.name}"?`)) return;
+    if (!window.confirm(`Eliminare la cartella "${folder.name}"?`)) return;
     try {
-      await axios.delete('/api/archive/folders', {
-        params: { db, folderPath: folder.path },
-      });
+      await axios.delete('/api/archive/folders', { params: { db, folderPath: folder.path } });
       enqueueSnackbar('Cartella eliminata', { variant: 'success' });
       loadData();
     } catch (error) {
@@ -375,13 +433,13 @@ export default function ArchiveFileManagerView() {
     setMenuTarget(null);
   };
 
-  // Apertura dettagli file
+  // Dettagli file
   const handleFileClick = (file) => {
     setSelectedFile(file);
     detailsDrawer.onTrue();
   };
 
-  // Gestione file - Rinomina
+  // Rinomina file
   const handleRenameFile = async () => {
     if (!newFileName.trim() || !selectedFileForAction) return;
     try {
@@ -394,12 +452,12 @@ export default function ArchiveFileManagerView() {
       setNewFileName('');
       renameFileDialog.onFalse();
       loadData();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Errore rinomina file', { variant: 'error' });
     }
   };
 
-  // Gestione file - Elimina
+  // Elimina file
   const handleDeleteFile = async (file) => {
     if (!window.confirm(`Eliminare "${file.original_filename || file.name}"?`)) return;
     try {
@@ -407,12 +465,12 @@ export default function ArchiveFileManagerView() {
       enqueueSnackbar('File eliminato', { variant: 'success' });
       loadData();
       if (detailsDrawer.value) detailsDrawer.onFalse();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Errore eliminazione file', { variant: 'error' });
     }
   };
 
-  // Gestione file - Download
+  // Download file
   const handleDownloadFile = async (file) => {
     try {
       const response = await axios.get(`/api/archive/documents/${file.id}/download`, {
@@ -420,19 +478,19 @@ export default function ArchiveFileManagerView() {
         responseType: 'blob',
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = url;
       link.setAttribute('download', file.original_filename || file.name);
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Errore download file', { variant: 'error' });
     }
   };
 
-  // Gestione file - Sposta
+  // Sposta file
   const handleMoveFile = async () => {
     if (moveTargetFolder === undefined || !selectedFileForAction) return;
     try {
@@ -444,59 +502,72 @@ export default function ArchiveFileManagerView() {
       enqueueSnackbar('File spostato', { variant: 'success' });
       setMoveTargetFolder('');
       moveDialog.onFalse();
-      detailsDrawer.onFalse(); // Chiudi il drawer dopo lo sposta
+      detailsDrawer.onFalse();
       loadData();
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Errore spostamento file', { variant: 'error' });
     }
   };
 
-  // Gestione file - Anteprima
+  // Anteprima
   const handlePreviewFile = (file) => {
     setSelectedFileForAction(file);
     previewDialog.onTrue();
   };
 
-  // Gestione file - Retry
+  // Retry processamento
   const handleRetryFile = async (file) => {
     try {
       await retryDocumentProcessing(file.id, db);
-      enqueueSnackbar('Documento rimesso in coda per il processamento', { variant: 'success' });
+      enqueueSnackbar('Documento rimesso in coda', { variant: 'success' });
       loadData();
     } catch (error) {
-      console.error('Errore retry:', error);
       enqueueSnackbar(error.response?.data?.message || 'Errore durante il retry', { variant: 'error' });
     }
   };
 
-  // Reset tutti i documenti (TEMPORANEO - per sviluppo)
+  // Reset archivio
   const handleClearAll = async () => {
-    if (!window.confirm('ATTENZIONE: Questo eliminerà TUTTI i documenti dall\'archivio. Sei sicuro?')) {
-      return;
-    }
+    if (!window.confirm("ATTENZIONE: Questo eliminerà TUTTI i documenti dall'archivio. Sei sicuro?")) return;
     try {
       const result = await clearAllArchiveDocuments(db);
-      enqueueSnackbar(result.message || 'Tutti i documenti eliminati', { variant: 'success' });
+      enqueueSnackbar(result?.message || 'Tutti i documenti eliminati', { variant: 'success' });
       loadData();
     } catch (error) {
-      console.error('Errore clear-all:', error);
       enqueueSnackbar(error.response?.data?.message || 'Errore durante la cancellazione', { variant: 'error' });
     }
   };
 
-  // Breadcrumb
   const breadcrumbItems = currentPath.split('/').filter(Boolean);
+  const isEmpty = !loading && folders.length === 0 && documents.length === 0;
+
+  // ----------------------------------------------------------------------
 
   return (
     <Container maxWidth={false} sx={{ py: 3 }}>
       <Stack spacing={3}>
-        {/* Header */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-          <Typography variant="h4">Archivio Documenti</Typography>
-          <Stack direction="row" spacing={1} flex={1} justifyContent="flex-end">
+
+        {/* ── Header ── */}
+        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" spacing={2}>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Archivio Documenti
+            </Typography>
+            {!loading && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {folders.length > 0 && `${folders.length} cartel${folders.length === 1 ? 'la' : 'le'}`}
+                {folders.length > 0 && documents.length > 0 && ' · '}
+                {documents.length > 0 && `${documents.length} document${documents.length === 1 ? 'o' : 'i'}`}
+                {isEmpty && 'Cartella vuota'}
+              </Typography>
+            )}
+          </Box>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
+            {/* Search */}
             <TextField
               size="small"
-              placeholder="Cerca nei documenti..."
+              placeholder="Cerca…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -511,303 +582,425 @@ export default function ArchiveFileManagerView() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ width: { xs: 150, sm: 250, md: 350 } }}
+              sx={{ width: { xs: '100%', sm: 200, md: 260 } }}
             />
+
             <Button
-              variant="contained"
+              variant="outlined"
+              size="small"
+              startIcon={<Iconify icon="eva:search-fill" />}
+              onClick={() => router.push(paths.dashboard.archive.search)}
+            >
+              Avanzata
+            </Button>
+
+            <Button
+              variant="outlined"
               startIcon={<Iconify icon="eva:folder-add-fill" />}
               onClick={newFolderDialog.onTrue}
             >
-              Nuova Cartella
+              Cartella
             </Button>
+
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<Iconify icon="eva:cloud-upload-fill" />}
               onClick={uploadDialog.onTrue}
             >
               Carica
             </Button>
-            <Button
-              variant="soft"
-              color="info"
-              startIcon={<Iconify icon="eva:search-fill" />}
-              onClick={() => router.push(paths.dashboard.archive.search)}
-            >
-              Ricerca Avanzata
-            </Button>
-            {/* Bottone reset archivio - solo in development o con NEXT_PUBLIC_SHOW_RESET_BUTTON=true */}
+
             {SHOW_RESET_BUTTON && (
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              startIcon={<Iconify icon="eva:trash-2-fill" />}
-              onClick={handleClearAll}
-              sx={{ ml: 1 }}
-            >
-              Reset Archivio
-            </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<Iconify icon="eva:trash-2-fill" />}
+                onClick={handleClearAll}
+              >
+                Reset
+              </Button>
             )}
           </Stack>
         </Stack>
 
-        {/* Breadcrumbs e navigazione */}
-        <Stack direction="row" alignItems="center" spacing={2}>
+        {/* ── Barra progresso caricamento ── */}
+        {loading && <LinearProgress sx={{ borderRadius: 1, height: 3 }} />}
+
+        {/* ── Breadcrumb ── */}
+        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minHeight: 32 }}>
           {currentPath && (
-            <Tooltip title="Indietro">
-              <IconButton onClick={navigateBack} size="small">
-                <Iconify icon="eva:arrow-back-fill" />
+            <Tooltip title="Torna indietro">
+              <IconButton size="small" onClick={navigateBack} sx={{ mr: 0.5 }}>
+                <Iconify icon="eva:arrow-back-fill" width={18} />
               </IconButton>
             </Tooltip>
           )}
 
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Typography
-              variant="body2"
-              sx={{
-                cursor: 'pointer',
-                color: 'primary.main',
-                '&:hover': { textDecoration: 'underline' },
-              }}
-              onClick={navigateToRoot}
-            >
-              Archivio
-            </Typography>
+          <Chip
+            label="Archivio"
+            size="small"
+            variant={currentPath ? 'outlined' : 'filled'}
+            color={currentPath ? 'default' : 'primary'}
+            onClick={navigateToRoot}
+            sx={{ cursor: 'pointer', fontWeight: 500 }}
+          />
 
-            {breadcrumbItems.map((item, index) => (
-              <Stack key={index} direction="row" alignItems="center" spacing={1}>
-                <Iconify icon="eva:chevron-right-fill" sx={{ color: 'text.disabled', fontSize: 16 }} />
-                <Typography
-                  variant="body2"
-                  sx={{
-                    cursor: index === breadcrumbItems.length - 1 ? 'default' : 'pointer',
-                    color: index === breadcrumbItems.length - 1 ? 'text.primary' : 'primary.main',
-                    '&:hover': index === breadcrumbItems.length - 1 ? {} : { textDecoration: 'underline' },
-                  }}
-                  onClick={() => index !== breadcrumbItems.length - 1 && navigateToBreadcrumb(index)}
-                >
-                  {item}
-                </Typography>
+          {breadcrumbItems.map((item, index) => {
+            const isLast = index === breadcrumbItems.length - 1;
+            return (
+              <Stack key={index} direction="row" alignItems="center" spacing={0.5}>
+                <Iconify icon="eva:chevron-right-fill" sx={{ color: 'text.disabled', width: 14 }} />
+                <Chip
+                  label={item}
+                  size="small"
+                  variant={isLast ? 'filled' : 'outlined'}
+                  color={isLast ? 'primary' : 'default'}
+                  onClick={() => !isLast && navigateToBreadcrumb(index)}
+                  sx={{ cursor: isLast ? 'default' : 'pointer', fontWeight: 500 }}
+                />
               </Stack>
-            ))}
-          </Stack>
+            );
+          })}
         </Stack>
 
-        {/* Cartelle */}
-        {folders.length > 0 && (
-          <>
-            <Typography variant="h6" sx={{ mt: 2 }}>
-              Cartelle ({folders.length})
+        {/* ── Cartelle ── */}
+        {(loading || folders.length > 0) && (
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+              <Iconify icon="eva:folder-fill" sx={{ color: 'warning.main', width: 18 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Cartelle
+              </Typography>
+              {!loading && (
+                <Typography variant="caption" color="text.disabled">
+                  ({folders.length})
+                </Typography>
+              )}
+            </Stack>
+
+            <Grid container spacing={1.5}>
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <Grid item xs={6} sm={4} md={3} lg={2} key={i}>
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                        <Stack spacing={1.5}>
+                          <Stack direction="row" justifyContent="space-between">
+                            <Skeleton variant="rounded" width={44} height={44} />
+                            <Skeleton variant="circular" width={24} height={24} />
+                          </Stack>
+                          <Stack spacing={0.5}>
+                            <Skeleton width="70%" height={14} />
+                            <Skeleton width="40%" height={12} />
+                          </Stack>
+                        </Stack>
+                      </Paper>
+                    </Grid>
+                  ))
+                : folders.map((folder) => (
+                    <Grid item xs={6} sm={4} md={3} lg={2} key={folder.path}>
+                      <ArchiveFolderItem
+                        folder={folder}
+                        onOpen={() => navigateToFolder(folder.name)}
+                        onMenuClick={handleMenuOpen}
+                      />
+                    </Grid>
+                  ))}
+            </Grid>
+          </Box>
+        )}
+
+        {/* ── Documenti ── */}
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+            <Iconify icon="eva:file-text-fill" sx={{ color: 'primary.main', width: 18 }} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Documenti
             </Typography>
-            <Grid container spacing={2}>
-              {folders.map((folder) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={folder.path}>
-                  <ArchiveFolderItem
-                    folder={folder}
-                    onOpen={() => navigateToFolder(folder.name)}
+            {!loading && (
+              <Typography variant="caption" color="text.disabled">
+                ({documents.length})
+              </Typography>
+            )}
+          </Stack>
+
+          {loading ? (
+            <Grid container spacing={1.5}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Grid item xs={6} sm={4} md={3} lg={2} key={i}>
+                  <SkeletonCard />
+                </Grid>
+              ))}
+            </Grid>
+          ) : documents.length === 0 ? (
+            <Paper
+              variant="outlined"
+              sx={{
+                py: 6,
+                px: 3,
+                borderRadius: 2,
+                textAlign: 'center',
+                borderStyle: 'dashed',
+              }}
+            >
+              <Iconify icon="eva:inbox-outline" width={48} sx={{ color: 'text.disabled', mb: 1.5 }} />
+              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                {isEmpty ? 'Cartella vuota' : 'Nessun documento in questa cartella'}
+              </Typography>
+              <Typography variant="body2" color="text.disabled" sx={{ mb: 2.5 }}>
+                Carica un documento per iniziare
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Iconify icon="eva:cloud-upload-fill" />}
+                onClick={uploadDialog.onTrue}
+              >
+                Carica documento
+              </Button>
+            </Paper>
+          ) : (
+            <Grid container spacing={1.5}>
+              {documents.map((doc) => (
+                <Grid item xs={6} sm={4} md={3} lg={2} key={doc.id}>
+                  <ArchiveFileItem
+                    file={{
+                      id: doc.id,
+                      name: doc.original_filename,
+                      size: doc.file_size,
+                      type: doc.mime_type,
+                      date: doc.created_at,
+                      status: doc.processing_status,
+                      errorMessage: doc.error_message,
+                    }}
+                    onClick={() => handleFileClick(doc)}
                     onMenuClick={handleMenuOpen}
                   />
                 </Grid>
               ))}
             </Grid>
-          </>
-        )}
-
-        {/* Documenti */}
-        <Typography variant="h6" sx={{ mt: folders.length > 0 ? 4 : 2 }}>
-          Documenti ({documents.length})
-        </Typography>
-
-        {documents.length === 0 ? (
-          <EmptyContent
-            title="Nessun documento"
-            description="Questa cartella è vuota"
-            img="/assets/icons/empty/ic_folder_empty.svg"
-            sx={{ py: 8 }}
-          />
-        ) : (
-          <Grid container spacing={2}>
-            {documents.map((doc) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={doc.id}>
-                <ArchiveFileItem
-                  file={{
-                    id: doc.id,
-                    name: doc.original_filename,
-                    size: doc.file_size,
-                    type: doc.mime_type,
-                    date: doc.created_at,
-                    status: doc.processing_status,
-                    errorMessage: doc.error_message,
-                  }}
-                  onClick={() => handleFileClick(doc)}
-                  onMenuClick={handleMenuOpen}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        )}
+          )}
+        </Box>
       </Stack>
 
-      {/* Drawer dettagli file (apertura laterale da destra) */}
+      {/* ══════════════════════════════════════
+          DRAWER dettagli file
+      ══════════════════════════════════════ */}
       <Drawer
         anchor="right"
         open={detailsDrawer.value}
         onClose={detailsDrawer.onFalse}
-        PaperProps={{ sx: { width: { xs: '100%', sm: 400 } } }}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 380 },
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }}
       >
-        <Stack spacing={2} sx={{ p: 3, height: 1 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6">Dettagli</Typography>
-            <IconButton onClick={detailsDrawer.onFalse}>
-              <Iconify icon="eva:close-fill" />
-            </IconButton>
-          </Stack>
+        {selectedFile && (
+          <>
+            {/* Header drawer */}
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                borderBottom: 1,
+                borderColor: 'divider',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <Typography variant="h6" sx={{ flex: 1, fontWeight: 600 }}>
+                Dettagli
+              </Typography>
+              <Tooltip title="Vai al dettaglio completo">
+                <IconButton
+                  size="small"
+                  onClick={() => router.push(paths.dashboard.archive.details(selectedFile.id))}
+                >
+                  <Iconify icon="eva:external-link-fill" width={18} />
+                </IconButton>
+              </Tooltip>
+              <IconButton size="small" onClick={detailsDrawer.onFalse}>
+                <Iconify icon="eva:close-fill" />
+              </IconButton>
+            </Box>
 
-          <Divider />
-
-          {selectedFile && (
-            <Stack spacing={3}>
-              <Box sx={{ textAlign: 'center', py: 2 }}>
-                <FileThumbnail
-                  file={selectedFile.name?.split('.').pop() || 'file'}
-                  sx={{ width: 80, height: 80, mx: 'auto' }}
-                />
-              </Box>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Nome file
-                </Typography>
-                <Typography variant="body1">{selectedFile.original_filename || selectedFile.name}</Typography>
-              </Stack>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Dimensione
-                </Typography>
-                <Typography variant="body1">{fData(selectedFile.file_size || selectedFile.size)}</Typography>
-              </Stack>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Tipo
-                </Typography>
-                <Typography variant="body1">{selectedFile.mime_type || selectedFile.type}</Typography>
-              </Stack>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Data creazione
-                </Typography>
-                <Typography variant="body1">{fDate(selectedFile.created_at || selectedFile.date)}</Typography>
-              </Stack>
-
-              {/* Stato processamento */}
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Stato processamento
-                </Typography>
-                {selectedFile.processing_status === 'failed' ? (
-                  <Stack spacing={0.5} alignItems="flex-start">
-                    <Chip
-                      icon={<Iconify icon="eva:alert-circle-fill" />}
-                      label="Processamento fallito"
-                      color="error"
-                      size="small"
-                    />
-                    {selectedFile.error_message && (
-                      <Typography variant="caption" color="error.main" sx={{ mt: 0.5 }}>
-                        {selectedFile.error_message}
-                      </Typography>
-                    )}
-                  </Stack>
-                ) : selectedFile.processing_status === 'completed' ? (
-                  <Chip
-                    icon={<Iconify icon="eva:checkmark-circle-2-fill" />}
-                    label="Processato"
-                    color="success"
-                    size="small"
-                    variant="soft"
+            {/* Contenuto drawer */}
+            <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+              <Stack spacing={3}>
+                {/* Thumbnail + nome */}
+                <Box sx={{ textAlign: 'center', py: 1 }}>
+                  <FileThumbnail
+                    file={getFileType(selectedFile.original_filename || selectedFile.name)}
+                    sx={{ width: 72, height: 72, mx: 'auto', mb: 1.5 }}
                   />
-                ) : (
-                  <Chip
-                    icon={<Iconify icon="eva:loader-outline" />}
-                    label={selectedFile.processing_status?.replace(/_/g, ' ') || 'In attesa'}
-                    color="info"
-                    size="small"
-                    variant="soft"
-                  />
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 600, wordBreak: 'break-all', lineHeight: 1.4 }}
+                  >
+                    {selectedFile.original_filename || '—'}
+                  </Typography>
+                </Box>
+
+                {/* Stato */}
+                {(() => {
+                  const cfg = getStatusConfig(selectedFile.processing_status);
+                  return (
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="center"
+                      spacing={1}
+                    >
+                      <Chip
+                        icon={<Iconify icon={cfg.icon} width={14} />}
+                        label={cfg.label}
+                        color={cfg.color}
+                        size="small"
+                        variant={selectedFile.processing_status === 'failed' ? 'filled' : 'soft'}
+                      />
+                    </Stack>
+                  );
+                })()}
+
+                {/* Errore (se fallito) */}
+                {selectedFile.processing_status === 'failed' && selectedFile.error_message && (
+                  <Alert severity="error" sx={{ fontSize: '0.8rem' }}>
+                    {selectedFile.error_message}
+                  </Alert>
                 )}
+
+                <Divider />
+
+                {/* Metadati */}
+                <Stack spacing={1.5}>
+                  {[
+                    { label: 'Dimensione', value: fData(selectedFile.file_size) },
+                    { label: 'Tipo', value: selectedFile.mime_type || '—' },
+                    { label: 'Caricato il', value: fDate(selectedFile.created_at) },
+                    { label: 'Priorità', value: selectedFile.priority || '—' },
+                    {
+                      label: 'Tipo documento',
+                      value: selectedFile.document_type
+                        ? `${selectedFile.document_type}${selectedFile.document_subtype ? ` / ${selectedFile.document_subtype}` : ''}`
+                        : '—',
+                    },
+                  ].map(({ label, value }) => (
+                    <Stack key={label} direction="row" alignItems="baseline" spacing={1}>
+                      <Typography
+                        variant="caption"
+                        color="text.disabled"
+                        sx={{ minWidth: 100, flexShrink: 0, fontWeight: 500 }}
+                      >
+                        {label}
+                      </Typography>
+                      <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+                        {value}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
               </Stack>
+            </Box>
 
-              <Box flex={1} />
-
+            {/* Azioni drawer */}
+            <Box sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}>
               <Stack spacing={1}>
-                <Button
-                  variant="outlined"
-                  startIcon={<Iconify icon="eva:eye-fill" />}
-                  onClick={() => handlePreviewFile(selectedFile)}
-                >
-                  Anteprima
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Iconify icon="eva:download-fill" />}
-                  onClick={() => handleDownloadFile(selectedFile)}
-                >
-                  Download
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Iconify icon="eva:edit-2-fill" />}
-                  onClick={() => {
-                    setSelectedFileForAction(selectedFile);
-                    setNewFileName(selectedFile.original_filename || selectedFile.name);
-                    renameFileDialog.onTrue();
-                  }}
-                >
-                  Rinomina
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Iconify icon="eva:folder-move-fill" />}
-                  onClick={() => {
-                    setSelectedFileForAction(selectedFile);
-                    setMoveTargetFolder('');
-                    moveDialog.onTrue();
-                  }}
-                >
-                  Sposta
-                </Button>
-                {/* Bottone Retry nel drawer - visibile solo per documenti falliti */}
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Iconify icon="eva:eye-fill" />}
+                    onClick={() => handlePreviewFile(selectedFile)}
+                  >
+                    Anteprima
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Iconify icon="eva:download-fill" />}
+                    onClick={() => handleDownloadFile(selectedFile)}
+                  >
+                    Download
+                  </Button>
+                </Stack>
+
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Iconify icon="eva:edit-2-fill" />}
+                    onClick={() => {
+                      setSelectedFileForAction(selectedFile);
+                      setNewFileName(selectedFile.original_filename || selectedFile.name);
+                      renameFileDialog.onTrue();
+                    }}
+                  >
+                    Rinomina
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Iconify icon="eva:folder-move-fill" />}
+                    onClick={() => {
+                      setSelectedFileForAction(selectedFile);
+                      setMoveTargetFolder('');
+                      moveDialog.onTrue();
+                    }}
+                  >
+                    Sposta
+                  </Button>
+                </Stack>
+
                 {selectedFile.processing_status === 'failed' && (
                   <Button
+                    fullWidth
                     variant="contained"
                     color="warning"
+                    size="small"
                     startIcon={<Iconify icon="eva:refresh-fill" />}
                     onClick={() => handleRetryFile(selectedFile)}
                   >
                     Riprova processamento
                   </Button>
                 )}
+
                 <Button
+                  fullWidth
                   variant="outlined"
                   color="error"
+                  size="small"
                   startIcon={<Iconify icon="eva:trash-2-fill" />}
                   onClick={() => handleDeleteFile(selectedFile)}
                 >
                   Elimina
                 </Button>
               </Stack>
-            </Stack>
-          )}
-        </Stack>
+            </Box>
+          </>
+        )}
       </Drawer>
 
-      {/* Menu contestuale */}
-      <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose}>
-        {menuTarget?.path ? [
-          // Menu per cartelle
+      {/* ══════════════════════════════════════
+          MENU contestuale
+      ══════════════════════════════════════ */}
+      <Menu
+        anchorEl={anchorEl}
+        open={menuOpen}
+        onClose={handleMenuClose}
+        PaperProps={{ sx: { minWidth: 180 } }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {/* Menu cartella */}
+        {menuTarget?.path != null && !menuTarget?.id && [
           <MenuItem
             key="rename-folder"
             onClick={() => {
@@ -816,50 +1009,43 @@ export default function ArchiveFileManagerView() {
               renameFolderDialog.onTrue();
             }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:edit-2-fill" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:edit-2-fill" /></ListItemIcon>
             <ListItemText primary="Rinomina" />
           </MenuItem>,
           <MenuItem
             key="delete-folder"
-            onClick={() => {
-              handleMenuClose();
-              handleDeleteFolder(menuTarget);
-            }}
+            onClick={() => { handleMenuClose(); handleDeleteFolder(menuTarget); }}
             sx={{ color: 'error.main' }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:trash-2-fill" color="error.main" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:trash-2-fill" sx={{ color: 'error.main' }} /></ListItemIcon>
             <ListItemText primary="Elimina" />
-          </MenuItem>
-        ] : menuTarget?.id ? [
-          // Menu per file
+          </MenuItem>,
+        ]}
+
+        {/* Menu file */}
+        {menuTarget?.id && [
+          <MenuItem
+            key="view"
+            onClick={() => { handleMenuClose(); router.push(paths.dashboard.archive.details(menuTarget.id)); }}
+          >
+            <ListItemIcon><Iconify icon="eva:eye-fill" /></ListItemIcon>
+            <ListItemText primary="Dettaglio completo" />
+          </MenuItem>,
           <MenuItem
             key="preview"
-            onClick={() => {
-              handleMenuClose();
-              handlePreviewFile(menuTarget);
-            }}
+            onClick={() => { handleMenuClose(); handlePreviewFile(menuTarget); }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:eye-fill" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:image-2-fill" /></ListItemIcon>
             <ListItemText primary="Anteprima" />
           </MenuItem>,
           <MenuItem
             key="download"
-            onClick={() => {
-              handleMenuClose();
-              handleDownloadFile(menuTarget);
-            }}
+            onClick={() => { handleMenuClose(); handleDownloadFile(menuTarget); }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:download-fill" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:download-fill" /></ListItemIcon>
             <ListItemText primary="Download" />
           </MenuItem>,
+          <Divider key="div1" />,
           <MenuItem
             key="rename-file"
             onClick={() => {
@@ -869,9 +1055,7 @@ export default function ArchiveFileManagerView() {
               renameFileDialog.onTrue();
             }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:edit-2-fill" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:edit-2-fill" /></ListItemIcon>
             <ListItemText primary="Rinomina" />
           </MenuItem>,
           <MenuItem
@@ -883,44 +1067,36 @@ export default function ArchiveFileManagerView() {
               moveDialog.onTrue();
             }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:folder-move-fill" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:folder-move-fill" /></ListItemIcon>
             <ListItemText primary="Sposta" />
           </MenuItem>,
-          // Bottone Retry - visibile solo per documenti falliti
           menuTarget?.processing_status === 'failed' && (
             <MenuItem
               key="retry"
-              onClick={() => {
-                handleMenuClose();
-                handleRetryFile(menuTarget);
-              }}
+              onClick={() => { handleMenuClose(); handleRetryFile(menuTarget); }}
               sx={{ color: 'warning.main' }}
             >
-              <ListItemIcon>
-                <Iconify icon="eva:refresh-fill" color="warning.main" />
-              </ListItemIcon>
+              <ListItemIcon><Iconify icon="eva:refresh-fill" sx={{ color: 'warning.main' }} /></ListItemIcon>
               <ListItemText primary="Riprova processamento" />
             </MenuItem>
           ),
+          <Divider key="div2" />,
           <MenuItem
             key="delete-file"
-            onClick={() => {
-              handleMenuClose();
-              handleDeleteFile(menuTarget);
-            }}
+            onClick={() => { handleMenuClose(); handleDeleteFile(menuTarget); }}
             sx={{ color: 'error.main' }}
           >
-            <ListItemIcon>
-              <Iconify icon="eva:trash-2-fill" color="error.main" />
-            </ListItemIcon>
+            <ListItemIcon><Iconify icon="eva:trash-2-fill" sx={{ color: 'error.main' }} /></ListItemIcon>
             <ListItemText primary="Elimina" />
-          </MenuItem>
-        ] : null}
+          </MenuItem>,
+        ]}
       </Menu>
 
-      {/* Dialog nuova cartella */}
+      {/* ══════════════════════════════════════
+          DIALOGS
+      ══════════════════════════════════════ */}
+
+      {/* Nuova cartella */}
       <Dialog open={newFolderDialog.value} onClose={newFolderDialog.onFalse} maxWidth="xs" fullWidth>
         <DialogTitle>Nuova Cartella</DialogTitle>
         <DialogContent>
@@ -930,6 +1106,7 @@ export default function ArchiveFileManagerView() {
             label="Nome cartella"
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
             sx={{ mt: 1 }}
           />
         </DialogContent>
@@ -941,7 +1118,7 @@ export default function ArchiveFileManagerView() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog rinomina cartella */}
+      {/* Rinomina cartella */}
       <Dialog open={renameFolderDialog.value} onClose={renameFolderDialog.onFalse} maxWidth="xs" fullWidth>
         <DialogTitle>Rinomina Cartella</DialogTitle>
         <DialogContent>
@@ -951,6 +1128,7 @@ export default function ArchiveFileManagerView() {
             label="Nuovo nome"
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameFolder()}
             sx={{ mt: 1 }}
           />
         </DialogContent>
@@ -962,19 +1140,7 @@ export default function ArchiveFileManagerView() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog upload documenti */}
-      <DocumentUploadDialog
-        open={uploadDialog.value}
-        onClose={uploadDialog.onFalse}
-        db={db}
-        currentPath={currentPath}
-        onSuccess={() => {
-          uploadDialog.onFalse();
-          loadData();
-        }}
-      />
-
-      {/* Dialog rinomina file */}
+      {/* Rinomina file */}
       <Dialog open={renameFileDialog.value} onClose={renameFileDialog.onFalse} maxWidth="xs" fullWidth>
         <DialogTitle>Rinomina File</DialogTitle>
         <DialogContent>
@@ -984,6 +1150,7 @@ export default function ArchiveFileManagerView() {
             label="Nuovo nome"
             value={newFileName}
             onChange={(e) => setNewFileName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameFile()}
             sx={{ mt: 1 }}
           />
         </DialogContent>
@@ -995,80 +1162,66 @@ export default function ArchiveFileManagerView() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog sposta file */}
+      {/* Sposta file */}
       <Dialog open={moveDialog.value} onClose={moveDialog.onFalse} maxWidth="sm" fullWidth>
-        <DialogTitle>Sposta File</DialogTitle>
+        <DialogTitle>
+          Sposta — <Typography component="span" variant="body1" color="text.secondary">
+            {selectedFileForAction?.original_filename || selectedFileForAction?.name}
+          </Typography>
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Seleziona la cartella di destinazione per "{selectedFileForAction?.original_filename || selectedFileForAction?.name}"
+            Seleziona la cartella di destinazione:
           </Typography>
 
-          <Autocomplete
-            fullWidth
-            value={folders.find(f => f.path === moveTargetFolder) || null}
-            onChange={(event, newValue) => setMoveTargetFolder(newValue?.path || '')}
-            options={[{ name: '📁 Root (Archivio)', path: '' }, ...folders]}
-            getOptionLabel={(option) => option.name}
-            renderOption={(props, option) => (
-              <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Iconify icon={option.path === '' ? 'eva:home-fill' : 'eva:folder-fill'} color={option.path === '' ? 'primary.main' : 'warning.main'} />
-                <Typography>{option.name}</Typography>
-              </Box>
-            )}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Cartella destinazione"
-                placeholder="Cerca cartella..."
-                InputProps={{
-                  ...params.InputProps,
-                  startAdornment: moveTargetFolder ? (
-                    <Iconify icon="eva:folder-fill" color="warning.main" sx={{ ml: 1 }} />
-                  ) : (
-                    <Iconify icon="eva:home-fill" color="primary.main" sx={{ ml: 1 }} />
-                  ),
+          <Paper variant="outlined" sx={{ maxHeight: 260, overflow: 'auto', borderRadius: 2 }}>
+            <List dense disablePadding>
+              <ListItemButton
+                selected={moveTargetFolder === ''}
+                onClick={() => setMoveTargetFolder('')}
+                sx={{
+                  borderLeft: moveTargetFolder === '' ? '3px solid' : '3px solid transparent',
+                  borderColor: moveTargetFolder === '' ? 'primary.main' : 'transparent',
                 }}
-              />
-            )}
-            sx={{ mt: 1 }}
-          />
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <Iconify icon="eva:home-fill" sx={{ color: 'primary.main' }} />
+                </ListItemIcon>
+                <ListItemText primary="Root (Archivio principale)" />
+                {moveTargetFolder === '' && (
+                  <Iconify icon="eva:checkmark-fill" sx={{ color: 'primary.main' }} />
+                )}
+              </ListItemButton>
 
-          {folders.length > 0 && (
-            <>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, mb: 1, display: 'block' }}>
-                Cartelle disponibili:
-              </Typography>
-              <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
-                <List dense disablePadding>
-                  <ListItemButton
-                    selected={moveTargetFolder === ''}
-                    onClick={() => setMoveTargetFolder('')}
-                    sx={{ borderLeft: moveTargetFolder === '' ? 3 : 0, borderColor: 'primary.main' }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      <Iconify icon="eva:home-fill" color="primary.main" />
-                    </ListItemIcon>
-                    <ListItemText primary="Root (Archivio)" />
-                    {moveTargetFolder === '' && <Iconify icon="eva:checkmark-fill" color="primary.main" />}
-                  </ListItemButton>
-                  {folders.map((folder) => (
-                    <ListItemButton
-                      key={folder.path}
-                      selected={moveTargetFolder === folder.path}
-                      onClick={() => setMoveTargetFolder(folder.path)}
-                      sx={{ borderLeft: moveTargetFolder === folder.path ? 3 : 0, borderColor: 'primary.main' }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Iconify icon="eva:folder-fill" color="warning.main" />
-                      </ListItemIcon>
-                      <ListItemText primary={folder.name} />
-                      {moveTargetFolder === folder.path && <Iconify icon="eva:checkmark-fill" color="primary.main" />}
-                    </ListItemButton>
-                  ))}
-                </List>
-              </Paper>
-            </>
-          )}
+              {folders.map((folder) => (
+                <ListItemButton
+                  key={folder.path}
+                  selected={moveTargetFolder === folder.path}
+                  onClick={() => setMoveTargetFolder(folder.path)}
+                  sx={{
+                    borderLeft: moveTargetFolder === folder.path ? '3px solid' : '3px solid transparent',
+                    borderColor: moveTargetFolder === folder.path ? 'primary.main' : 'transparent',
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <Iconify icon="eva:folder-fill" sx={{ color: 'warning.main' }} />
+                  </ListItemIcon>
+                  <ListItemText primary={folder.name} />
+                  {moveTargetFolder === folder.path && (
+                    <Iconify icon="eva:checkmark-fill" sx={{ color: 'primary.main' }} />
+                  )}
+                </ListItemButton>
+              ))}
+
+              {folders.length === 0 && (
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.disabled">
+                    Nessuna cartella disponibile
+                  </Typography>
+                </Box>
+              )}
+            </List>
+          </Paper>
         </DialogContent>
         <DialogActions>
           <Button onClick={moveDialog.onFalse}>Annulla</Button>
@@ -1077,36 +1230,67 @@ export default function ArchiveFileManagerView() {
             onClick={handleMoveFile}
             startIcon={<Iconify icon="eva:arrow-forward-fill" />}
           >
-            Sposta in {moveTargetFolder ? folders.find(f => f.path === moveTargetFolder)?.name || 'cartella' : 'Root'}
+            Sposta in{' '}
+            {moveTargetFolder
+              ? folders.find((f) => f.path === moveTargetFolder)?.name || 'cartella'
+              : 'Root'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Dialog anteprima file */}
+      {/* Upload */}
+      <DocumentUploadDialog
+        open={uploadDialog.value}
+        onClose={uploadDialog.onFalse}
+        db={db}
+        currentPath={currentPath}
+        onSuccess={() => {
+          uploadDialog.onFalse();
+          loadData();
+        }}
+      />
+
+      {/* Anteprima */}
       <Dialog
         open={previewDialog.value}
         onClose={previewDialog.onFalse}
         maxWidth="lg"
         fullWidth
-        PaperProps={{ sx: { height: '80vh' } }}
+        PaperProps={{ sx: { height: '85vh' } }}
       >
         <DialogTitle>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" noWrap sx={{ maxWidth: 400 }}>
+            <Typography variant="subtitle1" noWrap sx={{ maxWidth: 400, fontWeight: 600 }}>
               {selectedFileForAction?.original_filename || selectedFileForAction?.name}
             </Typography>
-            <IconButton onClick={previewDialog.onFalse}>
-              <Iconify icon="eva:close-fill" />
-            </IconButton>
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="Download">
+                <IconButton size="small" onClick={() => handleDownloadFile(selectedFileForAction)}>
+                  <Iconify icon="eva:download-fill" />
+                </IconButton>
+              </Tooltip>
+              <IconButton size="small" onClick={previewDialog.onFalse}>
+                <Iconify icon="eva:close-fill" />
+              </IconButton>
+            </Stack>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100' }}>
+
+        <DialogContent
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'grey.100',
+            p: 0,
+          }}
+        >
           {selectedFileForAction?.mime_type?.startsWith('image/') ? (
             <Box
               component="img"
               src={`${process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9002'}/v1/archive/files/${selectedFileForAction?.storage_path}`}
               alt={selectedFileForAction?.original_filename}
-              sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', p: 2 }}
             />
           ) : selectedFileForAction?.mime_type === 'application/pdf' ? (
             <Box
@@ -1115,10 +1299,10 @@ export default function ArchiveFileManagerView() {
               sx={{ width: '100%', height: '100%', border: 'none' }}
             />
           ) : (
-            <Stack alignItems="center" spacing={2}>
+            <Stack alignItems="center" spacing={2} sx={{ p: 4 }}>
               <FileThumbnail
                 file={selectedFileForAction?.original_filename?.split('.').pop() || 'file'}
-                sx={{ width: 120, height: 120 }}
+                sx={{ width: 96, height: 96 }}
               />
               <Typography variant="body1" color="text.secondary">
                 Anteprima non disponibile per questo tipo di file
@@ -1128,21 +1312,11 @@ export default function ArchiveFileManagerView() {
                 startIcon={<Iconify icon="eva:download-fill" />}
                 onClick={() => handleDownloadFile(selectedFileForAction)}
               >
-                Scarica File
+                Scarica file
               </Button>
             </Stack>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={previewDialog.onFalse}>Chiudi</Button>
-          <Button
-            variant="contained"
-            startIcon={<Iconify icon="eva:download-fill" />}
-            onClick={() => handleDownloadFile(selectedFileForAction)}
-          >
-            Download
-          </Button>
-        </DialogActions>
       </Dialog>
     </Container>
   );

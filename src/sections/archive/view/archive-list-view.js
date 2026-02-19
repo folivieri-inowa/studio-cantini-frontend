@@ -30,7 +30,6 @@ import {
   useTable,
   emptyRows,
   TableNoData,
-  getComparator,
   TableEmptyRows,
   TableHeadCustom,
   TableSelectedAction,
@@ -40,7 +39,7 @@ import {
 import { useGetArchiveDocuments } from 'src/api/archive';
 
 import DocumentTableRow from '../document-table-row';
-import DocumentUploadDialog from '../document-upload-dialog';
+import DocumentUploadDialog from '../document-upload-dialog-new';
 import DocumentTableToolbar from '../document-table-toolbar';
 import DocumentTableFiltersResult from '../document-table-filters-result';
 
@@ -71,7 +70,7 @@ export default function ArchiveListView() {
   const { enqueueSnackbar } = useSnackbar();
   const uploadDialog = useBoolean();
 
-  const { documents, documentsLoading, documentsEmpty, documentsRefresh } = useGetArchiveDocuments(
+  const { documents, pagination, documentsLoading, documentsEmpty, documentsRefresh } = useGetArchiveDocuments(
     settings.db,
     {
       limit: table.rowsPerPage,
@@ -90,14 +89,10 @@ export default function ArchiveListView() {
 
   const dataFiltered = applyFilter({
     inputData: tableData,
-    comparator: getComparator(table.order, table.orderBy),
     filters,
   });
 
-  const dataInPage = dataFiltered.slice(
-    table.page * table.rowsPerPage,
-    table.page * table.rowsPerPage + table.rowsPerPage
-  );
+  const dataInPage = dataFiltered;
 
   const denseHeight = table.dense ? 56 : 76;
 
@@ -271,10 +266,6 @@ export default function ArchiveListView() {
 
                 <TableBody>
                   {dataFiltered
-                    .slice(
-                      table.page * table.rowsPerPage,
-                      table.page * table.rowsPerPage + table.rowsPerPage
-                    )
                     .map((row) => (
                       <DocumentTableRow
                         key={row.id}
@@ -298,7 +289,7 @@ export default function ArchiveListView() {
           </TableContainer>
 
           <TablePaginationCustom
-            count={dataFiltered.length}
+            count={pagination?.total ?? dataFiltered.length}
             page={table.page}
             rowsPerPage={table.rowsPerPage}
             onPageChange={table.onChangePage}
@@ -322,38 +313,30 @@ export default function ArchiveListView() {
 
 // ----------------------------------------------------------------------
 
-function applyFilter({ inputData, comparator, filters }) {
+function applyFilter({ inputData, filters }) {
   const { name, status, priority, documentType } = filters;
 
-  const stabilizedThis = inputData.map((el, index) => [el, index]);
-
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-  });
-
-  inputData = stabilizedThis.map((el) => el[0]);
+  let data = [...inputData];
 
   if (name) {
-    inputData = inputData.filter(
-      (document) =>
-        document.original_filename.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-        (document.title && document.title.toLowerCase().indexOf(name.toLowerCase()) !== -1)
+    data = data.filter(
+      (doc) =>
+        doc.original_filename.toLowerCase().includes(name.toLowerCase()) ||
+        (doc.title && doc.title.toLowerCase().includes(name.toLowerCase()))
     );
   }
 
   if (status.length) {
-    inputData = inputData.filter((document) => status.includes(document.processing_status));
+    data = data.filter((doc) => status.includes(doc.processing_status));
   }
 
   if (priority.length) {
-    inputData = inputData.filter((document) => priority.includes(document.priority));
+    data = data.filter((doc) => priority.includes(doc.priority));
   }
 
   if (documentType.length) {
-    inputData = inputData.filter((document) => documentType.includes(document.document_type));
+    data = data.filter((doc) => documentType.includes(doc.document_type));
   }
 
-  return inputData;
+  return data;
 }

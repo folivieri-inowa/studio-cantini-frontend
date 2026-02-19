@@ -37,7 +37,7 @@ import FileThumbnail from 'src/components/file-thumbnail';
 import axios from 'src/utils/axios';
 import { useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
-import DocumentUploadDialog from '../document-upload-dialog-new';
+import DocumentUploadDialog from '../document-upload-dialog';
 import InputAdornment from '@mui/material/InputAdornment';
 import Chip from '@mui/material/Chip';
 

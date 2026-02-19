@@ -23,7 +23,7 @@ import FolderBreadcrumb from '../folder-breadcrumb';
 import FileGridView from '../file-grid-view';
 import FileListView from '../file-list-view';
 import ViewModeToggle from '../view-mode-toggle';
-import DocumentUploadDialog from '../document-upload-dialog-new';
+import DocumentUploadDialog from '../document-upload-dialog';
 
 // ----------------------------------------------------------------------
 

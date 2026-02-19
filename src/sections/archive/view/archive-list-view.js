@@ -39,7 +39,7 @@ import {
 import { useGetArchiveDocuments } from 'src/api/archive';
 
 import DocumentTableRow from '../document-table-row';
-import DocumentUploadDialog from '../document-upload-dialog-new';
+import DocumentUploadDialog from '../document-upload-dialog';
 import DocumentTableToolbar from '../document-table-toolbar';
 import DocumentTableFiltersResult from '../document-table-filters-result';
 

@@ -4,22 +4,27 @@ import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
 import axios from 'src/utils/axios';
 import { endpoints } from 'src/utils/axios';
+import { fData } from 'src/utils/format-number';
 
 import Iconify from 'src/components/iconify';
 import { useSnackbar } from 'src/components/snackbar';
@@ -27,247 +32,295 @@ import { Upload } from 'src/components/upload';
 
 // ----------------------------------------------------------------------
 
-const DOCUMENT_TYPES = [
-  { value: 'fattura', label: 'Fattura' },
-  { value: 'contratto', label: 'Contratto' },
-  { value: 'bilancio', label: 'Bilancio' },
-  { value: 'dichiarazione_fiscale', label: 'Dichiarazione Fiscale' },
-  { value: 'comunicazione', label: 'Comunicazione' },
-  { value: 'ricevuta', label: 'Ricevuta' },
-  { value: 'altro', label: 'Altro' },
-];
-
-const PRIORITY_LEVELS = [
-  { value: 'URGENT', label: 'Urgente' },
-  { value: 'HIGH', label: 'Alta' },
-  { value: 'NORMAL', label: 'Normale' },
-  { value: 'LOW', label: 'Bassa' },
-  { value: 'BATCH', label: 'Batch' },
-];
-
-// ----------------------------------------------------------------------
-
-export default function DocumentUploadDialog({ open, onClose, db, onSuccess }) {
+export default function DocumentUploadDialog({ open, onClose, db, currentPath = '', onSuccess }) {
   const { enqueueSnackbar } = useSnackbar();
   const uploading = useBoolean();
 
-  const [file, setFile] = useState(null);
-  const [formData, setFormData] = useState({
-    documentType: 'altro',
-    documentSubtype: '',
-    title: '',
-    description: '',
-    priority: 'NORMAL',
-  });
+  const [files, setFiles] = useState([]);
 
   const handleDrop = useCallback((acceptedFiles) => {
-    const newFile = acceptedFiles[0];
-    if (newFile) {
-      setFile(
-        Object.assign(newFile, {
-          preview: URL.createObjectURL(newFile),
-        })
-      );
-    }
+    // Mantieni i file con il loro path relativo
+    const filesWithPath = acceptedFiles.map((file) => {
+      // In alcuni browser, webkitRelativePath contiene il path completo
+      const relativePath = file.webkitRelativePath || file.path || file.name;
+      
+      return {
+        file,
+        path: relativePath,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+      };
+    });
+
+    setFiles((prev) => [...prev, ...filesWithPath]);
   }, []);
 
-  const handleRemoveFile = useCallback(() => {
-    setFile(null);
+  const handleRemoveFile = useCallback((index) => {
+    setFiles((prev) => {
+      const newFiles = [...prev];
+      // Revoca URL preview se esiste
+      if (newFiles[index].preview) {
+        URL.revokeObjectURL(newFiles[index].preview);
+      }
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
   }, []);
 
-  const handleFieldChange = useCallback((field) => (event) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.value,
-    }));
-  }, []);
+  const handleRemoveAllFiles = useCallback(() => {
+    // Revoca tutti gli URL preview
+    files.forEach((f) => {
+      if (f.preview) {
+        URL.revokeObjectURL(f.preview);
+      }
+    });
+    setFiles([]);
+  }, [files]);
+
+  const extractFolderInfo = (filePath) => {
+    // Estrai solo il nome file dal path (ignora eventuali sottocartelle nel nome)
+    const cleanPath = filePath.replace(/^\.\//, '').replace(/^\.+$/, '');
+    const parts = cleanPath.split('/').filter(Boolean);
+    const filename = parts[parts.length - 1] || cleanPath;
+
+    // Se siamo in una cartella specifica, usa quella come destinazione
+    return {
+      folderPath: currentPath || '',
+      folderPathArray: currentPath ? currentPath.split('/').filter(Boolean) : [],
+      parentFolder: currentPath ? currentPath.split('/').filter(Boolean).pop() : null,
+      cleanFilename: filename,
+    };
+  };
 
   const handleUpload = useCallback(async () => {
-    if (!file || !db) {
-      enqueueSnackbar('File e database sono obbligatori', { variant: 'error' });
+    if (!files.length || !db) {
+      enqueueSnackbar('Seleziona almeno un file', { variant: 'error' });
       return;
     }
 
     try {
       uploading.onTrue();
 
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-      uploadFormData.append('db', db);
-      uploadFormData.append('documentType', formData.documentType);
-      uploadFormData.append('documentSubtype', formData.documentSubtype);
-      uploadFormData.append('title', formData.title);
-      uploadFormData.append('description', formData.description);
-      uploadFormData.append('priority', formData.priority);
+      let successCount = 0;
+      let errorCount = 0;
 
-      const response = await axios.post(endpoints.archive.upload, uploadFormData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // Upload sequenziale dei file
+      for (const fileData of files) {
+        try {
+          const folderInfo = extractFolderInfo(fileData.path);
+          
+          const formData = new FormData();
+          formData.append('file', fileData.file);
+          formData.append('db', db);
+          formData.append('title', folderInfo.cleanFilename); // Usa il nome file come titolo
+          
+          // Aggiungi informazioni sulla cartella solo se non vuote
+          if (folderInfo.folderPath && folderInfo.folderPath !== '') {
+            formData.append('folderPath', folderInfo.folderPath);
+          }
+          if (folderInfo.folderPathArray && folderInfo.folderPathArray.length > 0) {
+            formData.append('folderPathArray', JSON.stringify(folderInfo.folderPathArray));
+          }
+          if (folderInfo.parentFolder && folderInfo.parentFolder !== '') {
+            formData.append('parentFolder', folderInfo.parentFolder);
+          }
 
-      enqueueSnackbar(response.data.message || 'Documento caricato con successo', {
-        variant: 'success',
-      });
+          // Usa fetch diretto al backend per evitare problemi con il proxy Next.js
+          const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9002';
+          const token = localStorage.getItem('accessToken');
+          const response = await fetch(`${backendUrl}/v1/archive/upload`, {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          });
 
-      // Reset form
-      setFile(null);
-      setFormData({
-        documentType: 'altro',
-        documentSubtype: '',
-        title: '',
-        description: '',
-        priority: 'NORMAL',
-      });
+          if (response.status === 409) {
+            // File duplicato - mostra warning ma considera "successo" parziale
+            const errorData = await response.json().catch(() => ({}));
+            console.warn(`File duplicato: ${fileData.name}`, errorData);
+            enqueueSnackbar(
+              `"${fileData.name}" esiste già nell'archivio`,
+              { variant: 'warning' }
+            );
+            // Non incrementiamo errorCount perché è un duplicato, non un errore grave
+            continue;
+          }
 
-      if (onSuccess) {
-        onSuccess(response.data.document);
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status}`);
+          }
+
+          successCount++;
+        } catch (err) {
+          console.error(`Errore upload ${fileData.name}:`, err);
+          errorCount++;
+        }
       }
 
+      // Feedback all'utente
+      if (successCount > 0) {
+        enqueueSnackbar(
+          `${successCount} file caricati con successo${errorCount > 0 ? ` (${errorCount} errori)` : ''}`,
+          { variant: successCount === files.length ? 'success' : 'warning' }
+        );
+      } else {
+        enqueueSnackbar('Errore durante il caricamento', { variant: 'error' });
+      }
+
+      // Pulisci e chiudi
+      handleRemoveAllFiles();
       onClose();
+      
+      if (onSuccess && successCount > 0) {
+        onSuccess();
+      }
     } catch (error) {
       console.error('Errore upload:', error);
-      enqueueSnackbar(error.message || 'Errore durante il caricamento', {
-        variant: 'error',
-      });
+      enqueueSnackbar('Errore durante il caricamento', { variant: 'error' });
     } finally {
       uploading.onFalse();
     }
-  }, [file, db, formData, uploading, enqueueSnackbar, onSuccess, onClose]);
+  }, [files, db, currentPath, enqueueSnackbar, uploading, onClose, onSuccess, handleRemoveAllFiles]);
 
-  const handleClose = useCallback(() => {
-    if (!uploading.value) {
-      setFile(null);
-      setFormData({
-        documentType: 'altro',
-        documentSubtype: '',
-        title: '',
-        description: '',
-        priority: 'NORMAL',
-      });
-      onClose();
-    }
-  }, [uploading.value, onClose]);
+  const handleClose = () => {
+    handleRemoveAllFiles();
+    onClose();
+  };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Carica Nuovo Documento</DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle>
+        Carica Documenti
+        {currentPath && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Cartella: {currentPath}
+          </Typography>
+        )}
+      </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent>
         <Stack spacing={3}>
-          {/* Upload Area */}
+          <Alert severity="info" icon={<Iconify icon="solar:info-circle-bold" />}>
+            <Typography variant="subtitle2" gutterBottom>
+              💡 Suggerimento
+            </Typography>
+            <Typography variant="body2">
+              Organizza i file sul tuo computer in cartelle (es: autovetture/Mercedes/assicurazione/polizza.pdf)
+              e carica la cartella intera. La struttura verrà mantenuta automaticamente!
+            </Typography>
+          </Alert>
+
           <Upload
-            file={file}
+            multiple
+            files={files.map((f) => ({
+              name: f.name,
+              size: f.size,
+              type: f.type,
+              preview: f.preview || undefined,
+              path: f.path,
+            }))}
             onDrop={handleDrop}
-            onDelete={handleRemoveFile}
+            onRemove={(file) => {
+              const index = files.findIndex((f) => f.name === file.name && f.size === file.size);
+              if (index !== -1) {
+                handleRemoveFile(index);
+              }
+            }}
             accept={{
+              'image/*': [],
               'application/pdf': ['.pdf'],
-              'image/*': ['.png', '.jpg', '.jpeg'],
-              'application/msword': ['.doc'],
-              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
             }}
           />
 
-          {/* Form Fields */}
-          <Stack spacing={2}>
-            <TextField
-              fullWidth
-              label="Titolo"
-              value={formData.title}
-              onChange={handleFieldChange('title')}
-              placeholder="es. Fattura Fornitore XYZ - Gennaio 2024"
-            />
-
-            <TextField
-              fullWidth
-              select
-              label="Tipo Documento"
-              value={formData.documentType}
-              onChange={handleFieldChange('documentType')}
-            >
-              {DOCUMENT_TYPES.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              fullWidth
-              label="Sottotipo (Opzionale)"
-              value={formData.documentSubtype}
-              onChange={handleFieldChange('documentSubtype')}
-              placeholder="es. Fattura di Vendita, Contratto di Locazione"
-            />
-
-            <TextField
-              fullWidth
-              select
-              label="Priorità"
-              value={formData.priority}
-              onChange={handleFieldChange('priority')}
-            >
-              {PRIORITY_LEVELS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Descrizione (Opzionale)"
-              value={formData.description}
-              onChange={handleFieldChange('description')}
-              placeholder="Note aggiuntive sul documento..."
-            />
-          </Stack>
-
-          {/* Info Box */}
-          <Card
-            sx={{
-              p: 2,
-              bgcolor: 'background.neutral',
-            }}
-          >
-            <Stack spacing={1}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Iconify icon="solar:info-circle-bold" width={20} color="info.main" />
-                <Typography variant="subtitle2">Processamento Automatico</Typography>
+          {files.length > 0 && (
+            <Box>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">
+                  {files.length} {files.length === 1 ? 'file selezionato' : 'file selezionati'}
+                </Typography>
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
+                  onClick={handleRemoveAllFiles}
+                >
+                  Rimuovi Tutti
+                </Button>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                Il documento verrà processato automaticamente attraverso una pipeline che include:
-              </Typography>
-              <Box component="ul" sx={{ pl: 2, m: 0 }}>
-                <Typography component="li" variant="body2" color="text.secondary">
-                  <strong>OCR:</strong> Estrazione testo dal documento
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary">
-                  <strong>Pulizia:</strong> Normalizzazione e pulizia del testo
-                </Typography>
-                <Typography component="li" variant="body2" color="text.secondary">
-                  <strong>Indicizzazione:</strong> Creazione indici per ricerca semantica
-                </Typography>
-              </Box>
-            </Stack>
-          </Card>
+
+              <List dense sx={{ maxHeight: 300, overflow: 'auto', bgcolor: 'background.neutral', borderRadius: 1 }}>
+                {files.map((fileData, index) => {
+                  const folderInfo = extractFolderInfo(fileData.path);
+                  
+                  return (
+                    <ListItem
+                      key={index}
+                      secondaryAction={
+                        <IconButton 
+                          edge="end" 
+                          size="small" 
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          <Iconify icon="solar:close-circle-bold" />
+                        </IconButton>
+                      }
+                    >
+                      <ListItemIcon>
+                        <Iconify
+                          icon={
+                            fileData.type.includes('pdf')
+                              ? 'vscode-icons:file-type-pdf2'
+                              : fileData.type.includes('image')
+                                ? 'vscode-icons:file-type-image'
+                                : 'vscode-icons:default-file'
+                          }
+                          width={32}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                              {fileData.name}
+                            </Typography>
+                            <Chip label={fData(fileData.size)} size="small" variant="soft" />
+                          </Stack>
+                        }
+                        secondary={
+                          folderInfo.folderPath && (
+                            <Typography variant="caption" color="text.secondary">
+                              📁 {folderInfo.folderPath}
+                            </Typography>
+                          )
+                        }
+                      />
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </Box>
+          )}
         </Stack>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} disabled={uploading.value}>
+        <Button onClick={handleClose} color="inherit">
           Annulla
         </Button>
         <LoadingButton
           variant="contained"
-          onClick={handleUpload}
           loading={uploading.value}
-          disabled={!file}
-          startIcon={<Iconify icon="solar:upload-bold" />}
+          onClick={handleUpload}
+          disabled={files.length === 0}
         >
-          Carica Documento
+          Carica {files.length > 0 && `(${files.length})`}
         </LoadingButton>
       </DialogActions>
     </Dialog>
@@ -278,5 +331,6 @@ DocumentUploadDialog.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   db: PropTypes.string.isRequired,
+  currentPath: PropTypes.string,
   onSuccess: PropTypes.func,
 };

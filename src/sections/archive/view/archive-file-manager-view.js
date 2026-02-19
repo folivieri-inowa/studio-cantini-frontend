@@ -45,6 +45,9 @@ import { retryDocumentProcessing, clearAllArchiveDocuments } from 'src/api/archi
 
 // ----------------------------------------------------------------------
 
+// Mostra Reset Archivio solo in sviluppo o con flag esplicito
+const SHOW_RESET_BUTTON = process.env.NEXT_PUBLIC_SHOW_RESET_BUTTON === 'true' || process.env.NODE_ENV === 'development';
+
 // Utility per formattare la dimensione file
 const fData = (size) => {
   if (!size) return '0 B';
@@ -532,7 +535,8 @@ export default function ArchiveFileManagerView() {
             >
               Ricerca Avanzata
             </Button>
-            {/* TEMP: Bottone reset archivio */}
+            {/* Bottone reset archivio - solo in development o con NEXT_PUBLIC_SHOW_RESET_BUTTON=true */}
+            {SHOW_RESET_BUTTON && (
             <Button
               variant="outlined"
               color="error"
@@ -543,6 +547,7 @@ export default function ArchiveFileManagerView() {
             >
               Reset Archivio
             </Button>
+            )}
           </Stack>
         </Stack>
 

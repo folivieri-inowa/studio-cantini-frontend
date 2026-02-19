@@ -24,6 +24,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { useSnackbar } from 'src/components/snackbar';
 import Iconify from 'src/components/iconify';
 import { useResponsive } from 'src/hooks/use-responsive';
+import { useSettingsContext } from 'src/components/settings';
 
 import {
   createChatSession,
@@ -37,7 +38,8 @@ import {
 
 const DRAWER_WIDTH = 280;
 
-export default function ArchiveChatView({ db }) {
+export default function ArchiveChatView() {
+  const { db } = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
   const isDesktop = useResponsive('up', 'md');
   const messagesEndRef = useRef(null);
@@ -53,6 +55,7 @@ export default function ArchiveChatView({ db }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sessionMenuAnchor, setSessionMenuAnchor] = useState(null);
   const [selectedSessionForMenu, setSelectedSessionForMenu] = useState(null);
+  const [pendingMessage, setPendingMessage] = useState(null);
 
   // Carica sessioni all'avvio
   useEffect(() => {
@@ -65,6 +68,14 @@ export default function ArchiveChatView({ db }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Imposta il messaggio pendente quando la sessione è pronta
+  useEffect(() => {
+    if (currentSessionId && pendingMessage) {
+      setInputMessage(pendingMessage);
+      setPendingMessage(null);
+    }
+  }, [currentSessionId, pendingMessage]);
 
   // Carica sessioni
   const loadSessions = useCallback(async () => {
@@ -433,9 +444,8 @@ export default function ArchiveChatView({ db }) {
                       variant="outlined"
                       size="small"
                       onClick={() => {
-                        handleNewChat().then(() => {
-                          setInputMessage(suggestion);
-                        });
+                        setPendingMessage(suggestion);
+                        handleNewChat();
                       }}
                     >
                       {suggestion}
@@ -443,37 +453,6 @@ export default function ArchiveChatView({ db }) {
                   ))}
                 </Stack>
               </Box>
-            </Box>
-          ) : messages.length === 0 ? (
-            // Sessione nuova - suggerimenti
-            <Box
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-              }}
-            >
-              <Typography variant="h6" color="text.secondary">
-                Inizia la conversazione
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center" gap={1}>
-                {[
-                  'Cerca documenti di GREENX',
-                  'Trova fatture recenti',
-                  'Cosa c\'è nell\'archivio?',
-                ].map((suggestion) => (
-                  <Button
-                    key={suggestion}
-                    variant="outlined"
-                    onClick={() => setInputMessage(suggestion)}
-                  >
-                    {suggestion}
-                  </Button>
-                ))}
-              </Stack>
             </Box>
           ) : (
             // Lista messaggi

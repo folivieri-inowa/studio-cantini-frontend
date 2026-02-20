@@ -1,5 +1,4 @@
 import { ArchiveFileManagerView } from 'src/sections/archive/view';
-import ArchiveChat from 'src/sections/archive/archive-chat';
 
 // ----------------------------------------------------------------------
 
@@ -8,10 +7,5 @@ export const metadata = {
 };
 
 export default function ArchivePage() {
-  return (
-    <>
-      <ArchiveFileManagerView />
-      <ArchiveChat />
-    </>
-  );
+  return <ArchiveFileManagerView />;
 }

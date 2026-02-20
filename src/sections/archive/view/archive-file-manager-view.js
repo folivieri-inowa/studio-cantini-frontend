@@ -563,7 +563,13 @@ export default function ArchiveFileManagerView() {
             )}
           </Box>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            flexWrap="wrap"
+            justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}
+          >
             {/* Search */}
             <TextField
               size="small"
@@ -596,6 +602,7 @@ export default function ArchiveFileManagerView() {
 
             <Button
               variant="outlined"
+              size="small"
               startIcon={<Iconify icon="eva:folder-add-fill" />}
               onClick={newFolderDialog.onTrue}
             >
@@ -604,6 +611,7 @@ export default function ArchiveFileManagerView() {
 
             <Button
               variant="contained"
+              size="small"
               startIcon={<Iconify icon="eva:cloud-upload-fill" />}
               onClick={uploadDialog.onTrue}
             >

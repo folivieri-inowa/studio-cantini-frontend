@@ -1,6 +1,7 @@
 'use client';
 
 import PropTypes from 'prop-types';
+import { useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -21,17 +22,26 @@ import TableContainer from '@mui/material/TableContainer';
 import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { fDateTime } from 'src/utils/format-time';
 import { fData } from 'src/utils/format-number';
 
+import axios from 'src/utils/axios';
+import { endpoints } from 'src/utils/axios';
+
 import { useSettingsContext } from 'src/components/settings';
 import CustomBreadcrumbs from 'src/components/custom-breadcrumbs';
 import Iconify from 'src/components/iconify';
 import EmptyContent from 'src/components/empty-content';
 import Scrollbar from 'src/components/scrollbar';
+import { useSnackbar } from 'src/components/snackbar';
 
 import { useGetArchiveDocument } from 'src/api/archive';
 import DocumentStatusChip from '../document-status-chip';
@@ -43,8 +53,12 @@ import DocumentTypeChip from '../document-type-chip';
 export default function ArchiveDetailsView({ id }) {
   const settings = useSettingsContext();
   const router = useRouter();
-  
-  const { document, loading, error } = useGetArchiveDocument(id);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { document: archiveDocument, loading, error } = useGetArchiveDocument(id);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (loading) {
     return (
@@ -56,7 +70,7 @@ export default function ArchiveDetailsView({ id }) {
     );
   }
 
-  if (error || !document) {
+  if (error || !archiveDocument) {
     return (
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <CustomBreadcrumbs
@@ -89,26 +103,29 @@ export default function ArchiveDetailsView({ id }) {
 
   const handleDownload = async () => {
     try {
-      // Download del file originale
-      const link = document.createElement('a');
-      link.href = document.file_path;
-      link.download = document.original_filename;
-      document.body.appendChild(link);
+      const link = window.document.createElement('a');
+      link.href = archiveDocument.file_path;
+      link.download = archiveDocument.original_filename;
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
     } catch (err) {
       console.error('Errore durante il download:', err);
     }
   };
 
-  const handleDelete = async () => {
-    if (window.confirm('Sei sicuro di voler eliminare questo documento?')) {
-      try {
-        // TODO: Implementare la chiamata API di eliminazione
-        router.push(paths.dashboard.archive.root);
-      } catch (err) {
-        console.error('Errore durante l\'eliminazione:', err);
-      }
+  const handleDeleteConfirm = async () => {
+    try {
+      setDeleting(true);
+      await axios.delete(endpoints.archive.delete(id));
+      enqueueSnackbar('Documento eliminato con successo', { variant: 'success' });
+      router.push(paths.dashboard.archive.root);
+    } catch (err) {
+      console.error('Errore durante l\'eliminazione:', err);
+      enqueueSnackbar('Errore durante l\'eliminazione', { variant: 'error' });
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -116,14 +133,14 @@ export default function ArchiveDetailsView({ id }) {
     <Stack spacing={3}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
         <Stack spacing={1}>
-          <Typography variant="h4">{document.original_filename}</Typography>
+          <Typography variant="h4">{archiveDocument.original_filename}</Typography>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <DocumentStatusChip status={document.processing_status} />
-            <DocumentPriorityBadge priority={document.priority} />
-            <DocumentTypeChip type={document.document_type} subtype={document.document_subtype} />
+            <DocumentStatusChip status={archiveDocument.processing_status} />
+            <DocumentPriorityBadge priority={archiveDocument.priority} />
+            <DocumentTypeChip type={archiveDocument.document_type} subtype={archiveDocument.document_subtype} />
           </Stack>
         </Stack>
-        
+
         <Stack direction="row" spacing={1}>
           <Button
             variant="outlined"
@@ -137,17 +154,18 @@ export default function ArchiveDetailsView({ id }) {
             variant="soft"
             color="error"
             startIcon={<Iconify icon="eva:trash-2-outline" />}
-            onClick={handleDelete}
+            onClick={() => setDeleteDialogOpen(true)}
+            loading={deleting}
           >
             Elimina
           </LoadingButton>
         </Stack>
       </Stack>
 
-      {document.processing_error && (
+      {archiveDocument.processing_error && (
         <Alert severity="error" sx={{ width: '100%' }}>
           <Typography variant="subtitle2">Errore di elaborazione</Typography>
-          <Typography variant="body2">{document.processing_error}</Typography>
+          <Typography variant="body2">{archiveDocument.processing_error}</Typography>
         </Alert>
       )}
     </Stack>
@@ -163,68 +181,68 @@ export default function ArchiveDetailsView({ id }) {
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
             Nome File:
           </Typography>
-          <Typography variant="body2">{document.original_filename}</Typography>
+          <Typography variant="body2">{archiveDocument.original_filename}</Typography>
         </Stack>
-        
+
         <Stack direction="row" spacing={2}>
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
             Tipo MIME:
           </Typography>
-          <Typography variant="body2">{document.mime_type}</Typography>
+          <Typography variant="body2">{archiveDocument.mime_type}</Typography>
         </Stack>
-        
+
         <Stack direction="row" spacing={2}>
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
             Dimensione:
           </Typography>
-          <Typography variant="body2">{fData(document.file_size)}</Typography>
+          <Typography variant="body2">{fData(archiveDocument.file_size)}</Typography>
         </Stack>
-        
+
         <Stack direction="row" spacing={2}>
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
             Hash SHA-256:
           </Typography>
           <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 11 }}>
-            {document.file_hash}
+            {archiveDocument.file_hash}
           </Typography>
         </Stack>
-        
+
         <Stack direction="row" spacing={2}>
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
             Caricato il:
           </Typography>
-          <Typography variant="body2">{fDateTime(document.created_at)}</Typography>
+          <Typography variant="body2">{fDateTime(archiveDocument.created_at)}</Typography>
         </Stack>
-        
+
         <Stack direction="row" spacing={2}>
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
             Ultimo aggiornamento:
           </Typography>
-          <Typography variant="body2">{fDateTime(document.updated_at)}</Typography>
+          <Typography variant="body2">{fDateTime(archiveDocument.updated_at)}</Typography>
         </Stack>
-        
-        {document.owner_id && (
+
+        {archiveDocument.owner_id && (
           <Stack direction="row" spacing={2}>
             <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
               Proprietario:
             </Typography>
-            <Typography variant="body2">{document.owner_id}</Typography>
+            <Typography variant="body2">{archiveDocument.owner_id}</Typography>
           </Stack>
         )}
-        
-        {document.year && (
+
+        {archiveDocument.year && (
           <Stack direction="row" spacing={2}>
             <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
               Anno:
             </Typography>
-            <Typography variant="body2">{document.year}</Typography>
+            <Typography variant="body2">{archiveDocument.year}</Typography>
           </Stack>
         )}
       </Stack>
     </Card>
   );
 
-  const renderOCRText = document.raw_ocr_text && (
+  const renderOCRText = archiveDocument.raw_ocr_text && (
     <Card sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
         Testo Estratto (OCR)
@@ -241,13 +259,13 @@ export default function ArchiveDetailsView({ id }) {
             m: 0,
           }}
         >
-          {document.raw_ocr_text}
+          {archiveDocument.raw_ocr_text}
         </Typography>
       </Paper>
     </Card>
   );
 
-  const renderCleanedText = document.cleaned_text && (
+  const renderCleanedText = archiveDocument.cleaned_text && (
     <Card sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
         Testo Pulito
@@ -264,14 +282,14 @@ export default function ArchiveDetailsView({ id }) {
             m: 0,
           }}
         >
-          {document.cleaned_text}
+          {archiveDocument.cleaned_text}
         </Typography>
       </Paper>
     </Card>
   );
 
-  const renderMetadataExtracted = document.extracted_metadata && 
-    Object.keys(document.extracted_metadata).length > 0 && (
+  const renderMetadataExtracted = archiveDocument.extracted_metadata &&
+    Object.keys(archiveDocument.extracted_metadata).length > 0 && (
     <Card sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
         Metadati Estratti
@@ -279,7 +297,7 @@ export default function ArchiveDetailsView({ id }) {
       <TableContainer>
         <Table size="small">
           <TableBody>
-            {Object.entries(document.extracted_metadata).map(([key, value]) => (
+            {Object.entries(archiveDocument.extracted_metadata).map(([key, value]) => (
               <TableRow key={key}>
                 <TableCell sx={{ fontWeight: 600, width: 200 }}>
                   {key}
@@ -295,10 +313,10 @@ export default function ArchiveDetailsView({ id }) {
     </Card>
   );
 
-  const renderChunks = document.chunks && document.chunks.length > 0 && (
+  const renderChunks = archiveDocument.chunks && archiveDocument.chunks.length > 0 && (
     <Card sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
-        Chunks Semantici ({document.chunks.length})
+        Chunks Semantici ({archiveDocument.chunks.length})
       </Typography>
       <Scrollbar>
         <TableContainer>
@@ -313,7 +331,7 @@ export default function ArchiveDetailsView({ id }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {document.chunks.map((chunk) => (
+              {archiveDocument.chunks.map((chunk) => (
                 <TableRow key={chunk.id} hover>
                   <TableCell>{chunk.id}</TableCell>
                   <TableCell>{chunk.sequence_number}</TableCell>
@@ -348,10 +366,10 @@ export default function ArchiveDetailsView({ id }) {
     </Card>
   );
 
-  const renderJobs = document.jobs && document.jobs.length > 0 && (
+  const renderJobs = archiveDocument.jobs && archiveDocument.jobs.length > 0 && (
     <Card sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
-        Cronologia Elaborazioni ({document.jobs.length})
+        Cronologia Elaborazioni ({archiveDocument.jobs.length})
       </Typography>
       <Scrollbar>
         <TableContainer>
@@ -367,11 +385,11 @@ export default function ArchiveDetailsView({ id }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {document.jobs.map((job) => {
+              {archiveDocument.jobs.map((job) => {
                 const duration = job.started_at && job.completed_at
                   ? Math.round((new Date(job.completed_at) - new Date(job.started_at)) / 1000)
                   : null;
-                
+
                 return (
                   <TableRow key={job.id} hover>
                     <TableCell>{job.id}</TableCell>
@@ -405,13 +423,13 @@ export default function ArchiveDetailsView({ id }) {
           </Table>
         </TableContainer>
       </Scrollbar>
-      
-      {document.jobs.some((job) => job.error_message) && (
+
+      {archiveDocument.jobs.some((job) => job.error_message) && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="subtitle2" color="error.main" sx={{ mb: 1 }}>
             Errori
           </Typography>
-          {document.jobs
+          {archiveDocument.jobs
             .filter((job) => job.error_message)
             .map((job) => (
               <Alert key={job.id} severity="error" sx={{ mb: 1 }}>
@@ -433,7 +451,7 @@ export default function ArchiveDetailsView({ id }) {
         links={[
           { name: 'Dashboard', href: paths.dashboard.root },
           { name: 'Archivio', href: paths.dashboard.archive.root },
-          { name: document.original_filename },
+          { name: archiveDocument.original_filename },
         ]}
         sx={{ mb: { xs: 3, md: 5 } }}
       />
@@ -445,7 +463,7 @@ export default function ArchiveDetailsView({ id }) {
           <Grid size={{ xs: 12, md: 6 }}>
             {renderMetadata}
           </Grid>
-          
+
           <Grid size={{ xs: 12, md: 6 }}>
             {renderMetadataExtracted}
           </Grid>
@@ -456,6 +474,25 @@ export default function ArchiveDetailsView({ id }) {
         {renderChunks}
         {renderJobs}
       </Stack>
+
+      {/* Dialog conferma eliminazione */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Conferma eliminazione</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Sei sicuro di voler eliminare il documento <strong>{archiveDocument.original_filename}</strong>?
+            Questa operazione è irreversibile.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit" disabled={deleting}>
+            Annulla
+          </Button>
+          <LoadingButton onClick={handleDeleteConfirm} color="error" variant="contained" loading={deleting}>
+            Elimina
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

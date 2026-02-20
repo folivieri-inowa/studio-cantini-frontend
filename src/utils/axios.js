@@ -112,6 +112,7 @@ export const endpoints = {
     breadcrumb: '/api/archive/breadcrumb',
     chat: {
       sessions: '/api/archive/chat/sessions',
+      session: (id) => `/api/archive/chat/sessions/${id}`,
       messages: (id) => `/api/archive/chat/sessions/${id}/messages`,
     },
   },

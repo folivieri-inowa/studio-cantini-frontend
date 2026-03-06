@@ -65,7 +65,7 @@ export function useNavData() {
             path: paths.dashboard.anomalie.root,
             icon: ICONS.analytics,
           }, */
-          {
+          /* {
             title: t('File Manager'),
             path: paths.dashboard.fileManager,
             icon: ICONS.folder,
@@ -86,7 +86,7 @@ export function useNavData() {
             path: paths.dashboard.scadenziario.root,
             icon: ICONS.calendar,
             roles: ['admin', 'manager'],
-          },
+          }, */
           /* {
             title: t('ecommerce'),
             path: paths.dashboard.general.ecommerce,

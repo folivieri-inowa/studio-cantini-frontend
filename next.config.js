@@ -20,7 +20,10 @@ module.exports = {
     return config;
   },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9002';
+    const backendUrl =
+      process.env.NEXT_PUBLIC_HOST_BACKEND ||
+      process.env.BACKEND_API_INTERNAL ||
+      'http://localhost:9002';
     return [
       {
         source: '/api/:path*/',

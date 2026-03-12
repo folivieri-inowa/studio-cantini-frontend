@@ -14,6 +14,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
+import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -1757,25 +1758,50 @@ export default function MasterAnalyticsView() {
               </Grid>
             </Stack>
           </Grid>
-          <Grid size={12}>
-            <CategoryChartToggle
-              barSeries={chartData || []}
-              barCategories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
-              areaChart={{
-                colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
-                categories: getYearlySalesData().chartCategories,
-                series: getYearlySalesData().series,
-              }}
-            />
-          </Grid>
-          <Grid size={12}>
-            <MasterMonthlyTrendChart
-              title="Andamento mensile uscite"
-              subheader={`Media spese mensili per l'anno ${settings.year}`}
-              series={monthlyExpenseTrendData}
-              categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
-            />
-          </Grid>
+          {(() => {
+            const isAllYears = settings.year === 'all-years';
+            const isMultiYearFilter = dateFilter && dateFilter.startYear !== dateFilter.endYear;
+            const hideCharts = isAllYears || isMultiYearFilter;
+
+            if (hideCharts) {
+              return (
+                <Grid size={12}>
+                  <Card sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography variant="body1" color="text.secondary">
+                      I grafici di andamento mensile non sono disponibili per periodi che coprono più anni.
+                    </Typography>
+                    <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                      Seleziona un anno specifico per visualizzare l&apos;andamento mensile.
+                    </Typography>
+                  </Card>
+                </Grid>
+              );
+            }
+
+            return (
+              <>
+                <Grid size={12}>
+                  <CategoryChartToggle
+                    barSeries={chartData || []}
+                    barCategories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+                    areaChart={{
+                      colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
+                      categories: getYearlySalesData().chartCategories,
+                      series: getYearlySalesData().series,
+                    }}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <MasterMonthlyTrendChart
+                    title="Andamento mensile uscite"
+                    subheader={`Media spese mensili per l'anno ${settings.year}`}
+                    series={monthlyExpenseTrendData}
+                    categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+                  />
+                </Grid>
+              </>
+            );
+          })()}
         </Grid>
       ) : (
         <Typography variant="h6">

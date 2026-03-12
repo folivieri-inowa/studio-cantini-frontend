@@ -17,6 +17,7 @@ import { capitalizeCase } from '../../../../utils/change-case';
 import { useSettingsContext } from '../../../../components/settings';
 import CategoryChartToggle from '../category-chart-toggle';
 import CategoryAverageExpenseSubject from '../category-average-expense-subject';
+import MasterMonthlyTrendChart from '../../master/master-monthly-trend-chart';
 
 // ----------------------------------------------------------------------
 
@@ -122,6 +123,16 @@ export default function CategoryDetailsView({ categoryId }) {
     return { categories, series };
   };
 
+  const monthlyExpenseTrendData = (() => {
+    if (!reportCategory.monthlyTotals) return [];
+    const data = Object.entries(reportCategory.monthlyTotals)
+      .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
+      .map(([, d]) => parseFloat(d.expense.toFixed(2)));
+    return [{ name: `Uscite ${year}`, data }];
+  })();
+
+  const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
       <Stack
@@ -172,6 +183,16 @@ export default function CategoryDetailsView({ categoryId }) {
           />
         </Grid>
         
+        <Grid size={12}>
+          <MasterMonthlyTrendChart
+            title="Andamento mensile uscite"
+            subheader={`Media spese mensili — anno ${year}`}
+            series={monthlyExpenseTrendData}
+            categories={MONTHS}
+            colors={['#FF4842']}
+          />
+        </Grid>
+
         <Grid size={12}>
           <CategoryChartToggle
             barSeries={getChartData(reportCategory.monthlyTotals, year, year - 1)}

@@ -54,6 +54,7 @@ export default function AutoClassifySuggestionDialog({
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
+  const [accordionExpanded, setAccordionExpanded] = useState(true);
 
   // Stati per i dialog di creazione
   const [openNewCategoryDialog, setOpenNewCategoryDialog] = useState(false);
@@ -141,18 +142,9 @@ export default function AutoClassifySuggestionDialog({
     loadSuggestion();
   }, [suggestion, open, fetchSubjects, fetchDetails]);
 
-  // Reset quando la categoria cambia manualmente (solo se diversa dal suggerimento)
-  useEffect(() => {
-    if (selectedCategory && suggestion) {
-      // Se la categoria è diversa dal suggerimento, ricarica soggetti e resetta soggetto/dettaglio
-      if (selectedCategory !== suggestion.category_id) {
-        setSelectedSubject(null);
-        setSelectedDetail(null);
-        setDetailsList([]);
-        fetchSubjects(selectedCategory);
-      }
-    }
-  }, [selectedCategory, suggestion, fetchSubjects]);
+  // Reset quando la categoria cambia manualmente tramite l'Autocomplete
+  // NON usare useEffect qui: il reset è gestito direttamente nell'onChange dell'Autocomplete
+  // per evitare race condition con il click sui suggerimenti alternativi
 
   const handleAccept = async () => {
     setLoading(true);
@@ -493,7 +485,7 @@ export default function AutoClassifySuggestionDialog({
         
         {/* Suggestions alternative (se presenti) */}
         {suggestions && suggestions.length > 0 && (
-          <Accordion sx={{ mb: 3 }}>
+          <Accordion expanded={accordionExpanded} onChange={(e, expanded) => setAccordionExpanded(expanded)} sx={{ mb: 3 }}>
             <AccordionSummary
               expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}
               sx={{
@@ -530,13 +522,18 @@ export default function AutoClassifySuggestionDialog({
                 return (
                   <Box
                     key={index}
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedCategory(sug.category_id);
-                      setSelectedSubject(sug.subject_id);
-                      setSelectedDetail(sug.detail_id || null);
-                      fetchSubjects(sug.category_id);
+                      setSelectedSubject(null);
+                      setSelectedDetail(null);
+                      setAccordionExpanded(false);
+                      // Carica prima i soggetti, poi imposta il soggetto selezionato
+                      await fetchSubjects(sug.category_id);
+                      setSelectedSubject(sug.subject_id || null);
+                      // Carica poi i dettagli, poi imposta il dettaglio selezionato
                       if (sug.subject_id) {
-                        fetchDetails(sug.subject_id);
+                        await fetchDetails(sug.subject_id);
+                        setSelectedDetail(sug.detail_id || null);
                       }
                       enqueueSnackbar(`Suggerimento ${index + 1} applicato`, { variant: 'success' });
                     }}
@@ -603,10 +600,15 @@ export default function AutoClassifySuggestionDialog({
           options={categories || []}
           value={categories?.find((c) => c.id === selectedCategory) || null}
           onChange={(event, newValue) => {
-            setSelectedCategory(newValue?.id || null);
-            if (newValue?.id !== suggestion?.category_id) {
-              setSelectedSubject(null);
-              setSelectedDetail(null);
+            const newCategoryId = newValue?.id || null;
+            setSelectedCategory(newCategoryId);
+            setSelectedSubject(null);
+            setSelectedDetail(null);
+            setDetailsList([]);
+            if (newCategoryId) {
+              fetchSubjects(newCategoryId);
+            } else {
+              setSubjectsList([]);
             }
           }}
           getOptionLabel={(option) => option.name || ''}

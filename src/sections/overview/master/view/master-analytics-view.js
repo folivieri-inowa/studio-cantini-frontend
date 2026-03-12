@@ -29,6 +29,7 @@ import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import { useGetCategoriesForAggregation } from '../../../../api/group-aggregation';
 import CategoryChartToggle from '../../category/category-chart-toggle';
+import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
 
 // ----------------------------------------------------------------------
 
@@ -1435,7 +1436,15 @@ export default function MasterAnalyticsView() {
     if (!data || !settings.owner) return [];
     return getChartData();
   }, [data, settings.owner, settings.year, dateFilter]);
-  
+
+  const monthlyExpenseTrendData = useMemo(() => {
+    if (!chartData || chartData.length === 0) return [];
+    // Use the "Uscite {currentYear}" series (index 1)
+    const expenseSeries = chartData.find((s) => s.name && s.name.startsWith('Uscite') && !s.name.includes((parseInt(settings.year, 10) - 1).toString()));
+    if (!expenseSeries) return [];
+    return [{ name: expenseSeries.name, data: expenseSeries.data }];
+  }, [chartData, settings.year]);
+
   const categorySummaryData = useMemo(() => {
     if (!data || !settings.owner) return [];
     return getCategorySummary();
@@ -1757,6 +1766,14 @@ export default function MasterAnalyticsView() {
                 categories: getYearlySalesData().chartCategories,
                 series: getYearlySalesData().series,
               }}
+            />
+          </Grid>
+          <Grid size={12}>
+            <MasterMonthlyTrendChart
+              title="Andamento mensile uscite"
+              subheader={`Media spese mensili per l'anno ${settings.year}`}
+              series={monthlyExpenseTrendData}
+              categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
             />
           </Grid>
         </Grid>

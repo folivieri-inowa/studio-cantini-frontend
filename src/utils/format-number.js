@@ -20,7 +20,8 @@ export function fCurrencyEur(number) {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
+    useGrouping: true,
   }).format(Number(number));
 
   return euroFormatted;

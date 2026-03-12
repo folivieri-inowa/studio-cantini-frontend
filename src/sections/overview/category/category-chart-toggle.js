@@ -19,7 +19,7 @@ const STORAGE_KEY = 'category-chart-type';
 export default function CategoryChartToggle({ barSeries, barCategories, barColors, areaChart }) {
   const [chartType, setChartType] = useState(() => {
     if (typeof window === 'undefined') return 'bar';
-    return localStorage.getItem(STORAGE_KEY) || 'bar';
+    return localStorage.getItem(STORAGE_KEY) || 'area';
   });
 
   const handleToggle = (type) => {

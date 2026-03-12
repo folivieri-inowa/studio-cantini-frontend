@@ -10,8 +10,9 @@ import { fCurrencyEur } from '../../../../utils/format-number';
 
 // ----------------------------------------------------------------------
 
-export default function ChartColumnMultiple({ series = [], title, subheader, categories = [], ...other }) {
+export default function ChartColumnMultiple({ series = [], title, subheader, categories = [], colors, action, ...other }) {
   const chartOptions = useChart({
+    colors,
     stroke: {
       show: true,
       width: 2,
@@ -48,7 +49,8 @@ export default function ChartColumnMultiple({ series = [], title, subheader, cat
       <CardHeader
         title={title}
         subheader={subheader}
-        />
+        action={action}
+      />
       <Box sx={{ mt: 3, mx: 3 }}>
         <Chart 
           dir="ltr" 
@@ -68,4 +70,6 @@ ChartColumnMultiple.propTypes = {
   title: PropTypes.string,
   subheader: PropTypes.string,
   categories: PropTypes.array,
+  colors: PropTypes.array,
+  action: PropTypes.node,
 };

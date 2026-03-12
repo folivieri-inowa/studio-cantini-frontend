@@ -15,9 +15,8 @@ import axios, { endpoints } from '../../../../utils/axios';
 import { useGetReportCategory } from '../../../../api/report';
 import { capitalizeCase } from '../../../../utils/change-case';
 import { useSettingsContext } from '../../../../components/settings';
+import CategoryChartToggle from '../category-chart-toggle';
 import CategoryAverageExpenseSubject from '../category-average-expense-subject';
-import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
-import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
 
 // ----------------------------------------------------------------------
 
@@ -174,31 +173,19 @@ export default function CategoryDetailsView({ categoryId }) {
         </Grid>
         
         <Grid size={12}>
-          <Stack direction='column' spacing={3}>
-            <Grid size={12}>
-              <ChartColumnMultiple
-                title="Entrate/Uscite per anno confrontate con l'anno precedente"
-                categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
-                series={getChartData(reportCategory.monthlyTotals, year, year - 1)}
-                colors={['#00C853', '#FF3D00', '#2196F3', '#FFEB3B']}
-              />
-            </Grid>
-
-            <Grid size={12} sx={{ mt: 3 }}>
-              <EcommerceMultiYearSales
-                title="Andamento annuale entrate/uscite"
-                subheader="Confronto dettagliato entrate e uscite per anno"
-                chart={{
-                  colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
-                  ...adaptChartDataForMultiYear(
-                    getChartData(reportCategory.monthlyTotals, year, year - 1),
-                    year,
-                    year - 1
-                  ),
-                }}
-              />
-            </Grid>
-          </Stack>
+          <CategoryChartToggle
+            barSeries={getChartData(reportCategory.monthlyTotals, year, year - 1)}
+            barCategories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+            barColors={['#00C853', '#FF3D00', '#2196F3', '#FFEB3B']}
+            areaChart={{
+              colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
+              ...adaptChartDataForMultiYear(
+                getChartData(reportCategory.monthlyTotals, year, year - 1),
+                year,
+                year - 1
+              ),
+            }}
+          />
         </Grid>
       </Grid>
     </Container>

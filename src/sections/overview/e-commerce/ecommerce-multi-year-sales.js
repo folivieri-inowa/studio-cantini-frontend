@@ -8,7 +8,7 @@ import Chart, { useChart } from 'src/components/chart';
 
 // ----------------------------------------------------------------------
 
-export default function EcommerceMultiYearSales({ title, subheader, chart, ...other }) {
+export default function EcommerceMultiYearSales({ title, subheader, chart, action, ...other }) {
   const { colors = [], categories = [], series = [] } = chart || {};
 
   // Combina tutti i dati delle serie in un unico array
@@ -49,7 +49,7 @@ export default function EcommerceMultiYearSales({ title, subheader, chart, ...ot
 
   return (
     <Card {...other}>
-      <CardHeader title={title} subheader={subheader} />
+      <CardHeader title={title} subheader={subheader} action={action} />
       
       <Box sx={{ mt: 3, mx: 3, mb: 3 }}>
         <Chart
@@ -69,4 +69,5 @@ EcommerceMultiYearSales.propTypes = {
   chart: PropTypes.object,
   subheader: PropTypes.string,
   title: PropTypes.string,
+  action: PropTypes.node,
 };

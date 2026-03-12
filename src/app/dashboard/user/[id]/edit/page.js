@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 export default function UserEditPage({ params }) {
-  const { id } = await params;
+  const { id } = params;
 
   return <UserEditView id={id} />;
 }

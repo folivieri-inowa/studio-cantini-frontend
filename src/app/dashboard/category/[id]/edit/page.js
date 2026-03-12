@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 export default function SubjectEditPage({ params }) {
-  const { id } = params;
+  const { id } = await params;
 
   return <SubjectEditView id={id} />;
 }

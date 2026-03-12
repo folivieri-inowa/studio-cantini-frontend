@@ -32,7 +32,7 @@ export default function CategoryChartToggle({ barSeries, barCategories, barColor
       <Tooltip title="Grafico a barre">
         <IconButton
           size="small"
-          onClick={() => handleToggle('bar')}
+          onClick={(e) => { e.preventDefault(); handleToggle('bar'); }}
           color={chartType === 'bar' ? 'primary' : 'default'}
         >
           <BarChartIcon fontSize="small" />
@@ -41,7 +41,7 @@ export default function CategoryChartToggle({ barSeries, barCategories, barColor
       <Tooltip title="Grafico ad area">
         <IconButton
           size="small"
-          onClick={() => handleToggle('area')}
+          onClick={(e) => { e.preventDefault(); handleToggle('area'); }}
           color={chartType === 'area' ? 'primary' : 'default'}
         >
           <ShowChartIcon fontSize="small" />

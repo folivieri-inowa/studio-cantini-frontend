@@ -27,9 +27,8 @@ import { useAuthContext } from '../../../../auth/hooks';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
-import EcommerceMultiYearSales from '../../e-commerce/ecommerce-multi-year-sales';
 import { useGetCategoriesForAggregation } from '../../../../api/group-aggregation';
-import ChartColumnMultiple from '../../../_examples/extra/chart-view/chart-column-multiple';
+import CategoryChartToggle from '../../category/category-chart-toggle';
 
 // ----------------------------------------------------------------------
 
@@ -1750,31 +1749,10 @@ export default function MasterAnalyticsView() {
             </Stack>
           </Grid>
           <Grid size={12}>
-            <ChartColumnMultiple
-              title="Entrate/Uscite per anno"
-              categories={[
-                'Gen',
-                'Feb',
-                'Mar',
-                'Apr',
-                'Mag',
-                'Giu',
-                'Lug',
-                'Ago',
-                'Set',
-                'Ott',
-                'Nov',
-                'Dic',
-              ]}
-              series={chartData || []}
-            />
-          </Grid>
-          
-          <Grid size={12} sx={{ mt: 3 }}>
-            <EcommerceMultiYearSales
-              title="Andamento annuale entrate/uscite"
-              subheader="Confronto dettagliato entrate e uscite per anno"
-              chart={{
+            <CategoryChartToggle
+              barSeries={chartData || []}
+              barCategories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+              areaChart={{
                 colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
                 categories: getYearlySalesData().chartCategories,
                 series: getYearlySalesData().series,

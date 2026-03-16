@@ -201,6 +201,7 @@ export default function CategoryListView() {
                       <CategoryTableRow
                         key={row.id || row._id}
                         row={row}
+                        db={settings.db}
                         selected={table.selected.includes(row.id || row._id)}
                         onSelectRow={() => table.onSelectRow(row.id || row._id)}
                         onDeleteRow={() => handleDeleteRow(row)}

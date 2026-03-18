@@ -462,11 +462,13 @@ export default function MasterAnalyticsView() {
       );
 
       let percentChange = 0;
-      if (filteredMonths.length > 1) {
-        const lastMonthIncome = parseFloat((filteredMonths[filteredMonths.length - 1][1]?.income ?? 0).toFixed(2));
-        const prevMonthIncome = parseFloat((filteredMonths[filteredMonths.length - 2][1]?.income ?? 0).toFixed(2));
-        if (prevMonthIncome !== 0) {
-          percentChange = parseFloat(((lastMonthIncome - prevMonthIncome) / prevMonthIncome * 100).toFixed(2));
+      const prevYearReport = globalReport[parseInt(settings.year, 10) - 1];
+      if (prevYearReport) {
+        const prevYearIncome = parseFloat(
+          Object.values(prevYearReport.months).reduce((sum, m) => sum + (m?.income ?? 0), 0).toFixed(2)
+        );
+        if (prevYearIncome !== 0) {
+          percentChange = parseFloat(((totalIncome - prevYearIncome) / prevYearIncome * 100).toFixed(2));
         }
       }
 
@@ -544,11 +546,13 @@ export default function MasterAnalyticsView() {
       );
 
       let percentChange = 0;
-      if (filteredMonths.length > 1) {
-        const lastMonthExpense = parseFloat((filteredMonths[filteredMonths.length - 1][1]?.expense ?? 0).toFixed(2));
-        const prevMonthExpense = parseFloat((filteredMonths[filteredMonths.length - 2][1]?.expense ?? 0).toFixed(2));
-        if (prevMonthExpense !== 0) {
-          percentChange = parseFloat(((lastMonthExpense - prevMonthExpense) / prevMonthExpense * 100).toFixed(2));
+      const prevYearReport = globalReport[parseInt(settings.year, 10) - 1];
+      if (prevYearReport) {
+        const prevYearExpense = parseFloat(
+          Object.values(prevYearReport.months).reduce((sum, m) => sum + (m?.expense ?? 0), 0).toFixed(2)
+        );
+        if (prevYearExpense !== 0) {
+          percentChange = parseFloat(((totalExpense - prevYearExpense) / prevYearExpense * 100).toFixed(2));
         }
       }
 
@@ -821,12 +825,21 @@ export default function MasterAnalyticsView() {
             value={settings.owner?.id || ''}
             onChange={handleOwnerChange}
             displayEmpty
-            sx={{ minWidth: 200 }}
+            renderValue={(selected) => {
+              if (selected === 'all-accounts') return 'Tutti i conti';
+              const found = sortedData.find(o => o.id === selected);
+              if (!found) return '';
+              return found.cc ? `${found.name} | ${found.cc}` : found.name;
+            }}
+            sx={{
+              minWidth: 200,
+              width: `${Math.max(200, Math.max(...[{ name: 'Tutti i conti', cc: '' }, ...sortedData].map(o => (o.cc ? `${o.name} | ${o.cc}` : o.name).length)) * 9 + 48)}px`,
+            }}
           >
             <MenuItem value="all-accounts">Tutti i conti</MenuItem>
             {sortedData.map((owner) => (
               <MenuItem key={owner.id} value={owner.id}>
-                {owner.name}
+                {owner.name}{owner.cc ? ` | ${owner.cc}` : ''}
               </MenuItem>
             ))}
           </Select>

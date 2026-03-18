@@ -3,8 +3,8 @@ import { useMemo } from 'react';
 
 import { fetcher, endpoints } from '../utils/axios';
 
-export function useGetReportCategory(id, owner, year, db) {
-  const URL = id ? [endpoints.report.category.details, { params: { id, owner, year, db } }] : '';
+export function useGetReportCategory(id, owner, year, db, month) {
+  const URL = id ? [endpoints.report.category.details, { params: { id, owner, year, db, month } }] : '';
 
   const { data, isLoading, error, isValidating } = useSWR(URL, fetcher);
 

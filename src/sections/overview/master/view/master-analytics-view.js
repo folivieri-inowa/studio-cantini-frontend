@@ -18,6 +18,7 @@ import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import CategoryChartToggle from '../../category/category-chart-toggle';
 import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
+import MasterCategoryTable from '../master-category-table';
 
 // ----------------------------------------------------------------------
 
@@ -870,6 +871,13 @@ export default function MasterAnalyticsView() {
                 chart={{ series: globalExpenseData.expenseData || [] }}
               />
             </Stack>
+          </Grid>
+          <Grid size={12}>
+            <MasterCategoryTable
+              data={data}
+              mainYear={settings.year === 'all-years' ? new Date().getFullYear() : Number(settings.year)}
+              owner={settings.owner}
+            />
           </Grid>
           {(() => {
             const isAllYears = settings.year === 'all-years';

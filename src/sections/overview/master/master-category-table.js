@@ -32,10 +32,10 @@ import Tabs from '@mui/material/Tabs';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 
-import { useRouter } from '../../../../routes/hooks';
-import { paths } from '../../../../routes/paths';
-import { fCurrencyEur } from '../../../../utils/format-number';
-import Scrollbar from '../../../../components/scrollbar';
+import { useRouter } from '../../../routes/hooks';
+import { paths } from '../../../routes/paths';
+import { fCurrencyEur } from '../../../utils/format-number';
+import Scrollbar from '../../../components/scrollbar';
 
 // ----------------------------------------------------------------------
 

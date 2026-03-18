@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   useReactTable,
@@ -15,6 +15,7 @@ import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import ListItemText from '@mui/material/ListItemText';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
@@ -23,6 +24,7 @@ import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
+import TableFooter from '@mui/material/TableFooter';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
@@ -64,15 +66,15 @@ function DeltaCell({ value, referenceValue, referenceYear, isExpense, month }) {
   const diffAbsolute = value - referenceValue;
   const sign = diffAbsolute >= 0 ? '+' : '';
   const tooltipText = delta !== null
-    ? `${sign}${formatCurrency(diffAbsolute)} rispetto al ${referenceYear} (${sign}${delta.toFixed(1)}% YTD ${monthLabel})`
+    ? `${sign}${formatCurrency(diffAbsolute)} rispetto il periodo Gen a ${monthLabel} ${referenceYear} (${sign}${delta.toFixed(1)}%)`
     : 'Nessun dato di riferimento';
 
   return (
     <Tooltip title={tooltipText} placement="top" arrow>
       <Box sx={{ textAlign: 'right', cursor: 'default' }}>
-        <Typography variant="body2">{formatCurrency(value)}</Typography>
+        <Typography variant="body1">{formatCurrency(value)}</Typography>
         {delta !== null && (
-          <Typography variant="caption" sx={{ color: deltaColor, display: 'block', lineHeight: 1.2 }}>
+          <Typography variant="body2" sx={{ color: deltaColor, display: 'block', lineHeight: 1.2 }}>
             {arrow} {Math.abs(delta).toFixed(1)}% vs {referenceYear}
           </Typography>
         )}
@@ -117,7 +119,18 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
 
   const [showIncome, setShowIncome] = useState(true);
   const [showExpense, setShowExpense] = useState(true);
-  const [sorting, setSorting] = useState([]);
+  const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
+
+  // Resetta selectedMonth quando cambia l'anno principale
+  useEffect(() => {
+    setSelectedMonth(mainYear >= currentYear ? currentMonth : 12);
+  }, [mainYear, currentYear, currentMonth]);
+
+  // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
+  useEffect(() => {
+    const prev = mainYear - 1;
+    setCompareYears(availableCompareYears.includes(prev) ? [prev] : availableCompareYears.slice(0, 1));
+  }, [mainYear, availableCompareYears]);
 
   const tableData = useMemo(() => {
     if (!data || data.length === 0 || !owner) return [];
@@ -161,14 +174,14 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
   }, [data, owner, mainYear, compareYears, selectedMonth]);
 
   const columns = useMemo(() => {
+    const sortedCompareYears = [...compareYears].sort((a, b) => a - b);
     const cols = [
       columnHelper.accessor('name', {
         id: 'name',
         header: 'Categoria',
-        enableSorting: false,
         cell: info => (
           <Typography
-            variant="subtitle2"
+            variant="subtitle1"
             noWrap
             sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
             onClick={() => {
@@ -193,14 +206,14 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
           id: `income_${mainYear}`,
           header: `Entrate ${mainYear}`,
           cell: info => (
-            <Typography variant="body2" sx={{ textAlign: 'right' }}>
+            <Typography variant="body1" sx={{ textAlign: 'right' }}>
               {formatCurrency(info.getValue())}
             </Typography>
           ),
         })
       );
 
-      compareYears.forEach(year => {
+      sortedCompareYears.forEach(year => {
         cols.push(
           columnHelper.accessor(row => row.income[year] ?? 0, {
             id: `income_${year}`,
@@ -225,14 +238,14 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
           id: `expense_${mainYear}`,
           header: `Uscite ${mainYear}`,
           cell: info => (
-            <Typography variant="body2" sx={{ textAlign: 'right' }}>
+            <Typography variant="body1" sx={{ textAlign: 'right' }}>
               {formatCurrency(info.getValue())}
             </Typography>
           ),
         })
       );
 
-      compareYears.forEach(year => {
+      sortedCompareYears.forEach(year => {
         cols.push(
           columnHelper.accessor(row => row.expense[year] ?? 0, {
             id: `expense_${year}`,
@@ -264,6 +277,19 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
   });
 
   const hasData = tableData.length > 0;
+
+  // Totali per colonna
+  const columnTotals = useMemo(() => {
+    const totals = {};
+    table.getAllColumns().forEach(col => {
+      if (col.id === 'name') return;
+      totals[col.id] = tableData.reduce((sum, row) => {
+        const val = col.columnDef.accessorFn ? col.columnDef.accessorFn(row) : 0;
+        return sum + (val ?? 0);
+      }, 0);
+    });
+    return totals;
+  }, [tableData, table]);
 
   const headerAction = (
     <Stack direction="row" spacing={2} alignItems="center">
@@ -304,7 +330,8 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
         >
           {availableCompareYears.map(year => (
             <MenuItem key={year} value={year}>
-              {year}
+              <Checkbox size="small" checked={compareYears.includes(year)} />
+              <ListItemText primary={year} />
             </MenuItem>
           ))}
         </Select>
@@ -316,21 +343,20 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
     <Card>
       <CardHeader
         title="Riepilogo per categorie"
-        subheader={`YTD fino a ${MONTHS[selectedMonth - 1]} ${mainYear}`}
+        subheader={`Totale da Gen a ${MONTHS[selectedMonth - 1]} ${mainYear}`}
         action={headerAction}
         sx={{ mb: 1 }}
       />
 
       {/* Barra navigazione mensile */}
-      <Box sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
           value={selectedMonth - 1}
           onChange={(_, newIndex) => setSelectedMonth(newIndex + 1)}
-          variant="scrollable"
-          scrollButtons="auto"
+          variant="fullWidth"
         >
           {MONTHS.map((month) => (
-            <Tab key={month} label={month} sx={{ minWidth: 56, px: 1 }} />
+            <Tab key={month} label={month} sx={{ minWidth: 0, px: 0.5, fontSize: '0.75rem' }} />
           ))}
         </Tabs>
       </Box>
@@ -389,6 +415,52 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
                   </TableRow>
                 ))}
               </TableBody>
+              <TableFooter>
+                <TableRow sx={{ '& td': { borderTop: 2, borderColor: 'divider' } }}>
+                  {table.getVisibleLeafColumns().map(col => {
+                    if (col.id === 'name') {
+                      return (
+                        <TableCell key={col.id} align="left">
+                          <Typography variant="subtitle1">Totale</Typography>
+                        </TableCell>
+                      );
+                    }
+
+                    const colTotal = columnTotals[col.id] ?? 0;
+
+                    // Colonne di confronto: income_{year} o expense_{year} con year != mainYear
+                    const incomeCompareMatch = col.id.match(/^income_(\d+)$/);
+                    const expenseCompareMatch = col.id.match(/^expense_(\d+)$/);
+                    const compareYear = incomeCompareMatch?.[1] || expenseCompareMatch?.[1];
+                    const isCompareCol = compareYear && Number(compareYear) !== mainYear;
+
+                    if (isCompareCol) {
+                      const isExpense = !!expenseCompareMatch;
+                      const mainColId = isExpense ? `expense_${mainYear}` : `income_${mainYear}`;
+                      const mainTotal = columnTotals[mainColId] ?? 0;
+                      return (
+                        <TableCell key={col.id} align="right">
+                          <DeltaCell
+                            value={colTotal}
+                            referenceValue={mainTotal}
+                            referenceYear={mainYear}
+                            isExpense={isExpense}
+                            month={selectedMonth}
+                          />
+                        </TableCell>
+                      );
+                    }
+
+                    return (
+                      <TableCell key={col.id} align="right">
+                        <Typography variant="subtitle1">
+                          {formatCurrency(colTotal)}
+                        </Typography>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              </TableFooter>
             </Table>
           </Scrollbar>
         </TableContainer>

@@ -123,7 +123,7 @@ export default function BankingWidgetSummary({
               {fPercent(percent)}
             </Box>
 
-            <Box sx={{ opacity: 0.8 }}>rispetto il mese precedente</Box>
+            <Box sx={{ opacity: 0.8 }}>rispetto all&apos;anno precedente</Box>
           </Stack>
         )}
       </Stack>

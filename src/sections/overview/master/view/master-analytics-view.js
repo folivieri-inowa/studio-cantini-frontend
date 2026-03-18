@@ -3,7 +3,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Alert from '@mui/material/Alert';
-import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2';
 import MenuItem from '@mui/material/MenuItem';
@@ -13,9 +12,6 @@ import Stack from '@mui/material/Stack';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 
-import { paths } from '../../../../routes/paths';
-import { useRouter } from '../../../../routes/hooks';
-import MasterTransaction from '../master-transaction';
 import { useAuthContext } from '../../../../auth/hooks';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
@@ -26,7 +22,6 @@ import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
 // ----------------------------------------------------------------------
 
 export default function MasterAnalyticsView() {
-  const router = useRouter();
   const [data, setData] = useState([]);
   const settings = useSettingsContext();
   const { user } = useAuthContext();
@@ -308,13 +303,6 @@ export default function MasterAnalyticsView() {
       }
     }
   }, [data, settings, allAccountsOwner, setSnackbar]);
-
-  const handleViewRow = useCallback(
-    (id) => {
-      router.push(paths.dashboard.master.category.details({ id }));
-    },
-    [router]
-  );
 
   // Funzione per chiudere lo Snackbar
   const handleCloseSnackbar = useCallback(() => {
@@ -607,129 +595,6 @@ export default function MasterAnalyticsView() {
     };
   };
 
-  const getCategorySummary = () => {
-    if (!data || !settings.owner || !settings.year) return [];
-
-    const isAllYears = settings.year === 'all-years';
-    const yearsToAggregate = isAllYears ? settings.owner.report?.years || [] : [settings.year];
-
-    // Helper function to aggregate category data across multiple years with month filtering
-    const aggregateCategoryData = (categoryReports, years) => {
-      const aggregated = {};
-      
-      years.forEach(year => {
-        const yearReport = categoryReports[year];
-        if (!yearReport) return;
-        
-        Object.entries(yearReport).forEach(([category, values]) => {
-          if (!aggregated[category]) {
-            aggregated[category] = {
-              name: values.name,
-              totalIncome: 0,
-              totalExpense: 0,
-            };
-          }
-          
-          // Usa i totali annuali
-          aggregated[category].totalIncome += parseFloat(values.totalIncome) || 0;
-          aggregated[category].totalExpense += parseFloat(values.totalExpense) || 0;
-        });
-      });
-      
-      return aggregated;
-    };
-
-    // Special handling for 'all-accounts' case
-    if (settings.owner.id === 'all-accounts') {
-      const categoryReports = settings.owner.report?.categoryReport;
-      if (!categoryReports) {
-        // Nessun dato disponibile
-        return [];
-      }
-
-      // Se isAllYears, usa sempre aggregateCategoryData
-      const aggregatedData = isAllYears
-        ? aggregateCategoryData(categoryReports, yearsToAggregate)
-        : categoryReports[settings.year];
-
-      if (!aggregatedData) {
-        // Nessun dato per anno
-        return [];
-      }
-
-      return Object.entries(aggregatedData)
-        .map(([category, values]) => {
-          const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
-          const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
-          const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-
-          return {
-            id: category.toLowerCase().replace(/\s+/g, '-'),
-            category: values.name,
-            income: roundedIncome,
-            expense: roundedExpense,
-            difference: roundedDifference,
-            totalExpense: roundedExpense,
-          };
-        })
-        .sort((a, b) => a.category.localeCompare(b.category, 'it')); // Ordinamento alfabetico
-    }
-
-    // Regular case: find the owner in the data array
-    const selectedOwner = data.find((owner) => owner.id === settings.owner.id);
-    if (!selectedOwner) {
-      // Conto non trovato
-      return [];
-    }
-
-    const categoryReports = selectedOwner.report?.categoryReport;
-    if (!categoryReports) {
-      // Nessun categoryReport
-      return [];
-    }
-
-    // Se isAllYears, usa sempre aggregateCategoryData
-    const aggregatedData = isAllYears
-      ? aggregateCategoryData(categoryReports, yearsToAggregate)
-      : categoryReports[settings.year];
-
-    if (!aggregatedData) {
-      // Nessun dato per anno specifico
-      return [];
-    }
-
-    return Object.entries(aggregatedData)
-      .map(([category, values]) => {
-        const roundedIncome = parseFloat(values.totalIncome.toFixed(2)) || 0;
-        const roundedExpense = parseFloat(values.totalExpense.toFixed(2)) || 0;
-        const roundedDifference = parseFloat((roundedIncome - roundedExpense).toFixed(2));
-        
-        return {
-          id: category.toLowerCase().replace(/\s+/g, '-'),
-          category: values.name,
-          income: roundedIncome,
-          expense: roundedExpense,
-          difference: roundedDifference,
-          totalExpense: roundedExpense,
-        };
-      })
-      .sort((a, b) => a.category.localeCompare(b.category, 'it')); // Ordinamento alfabetico
-  };
-
-  // Prepare data for EcommerceYearlySales component
-  // Helper function to get the current period label
-  const getPeriodLabel = useCallback(() => {
-    if (!settings.owner || !settings.year) return '';
-
-    const ownerName = settings.owner.id === 'all-accounts' ? 'Tutti i conti' : settings.owner.name;
-
-    if (settings.year === 'all-years') {
-      return `Tutto il periodo • ${ownerName}`;
-    }
-
-    return `Anno ${settings.year} • ${ownerName}`;
-  }, [settings.owner, settings.year]);
-
   const getYearlySalesData = () => {
     // Check if we have data and settings
     const globalReport = settings.owner?.report?.globalReport;
@@ -920,11 +785,6 @@ export default function MasterAnalyticsView() {
     return [{ name: expenseSeries.name, data: expenseSeries.data }];
   }, [chartData, settings.year]);
 
-  const categorySummaryData = useMemo(() => {
-    if (!data || !settings.owner) return [];
-    return getCategorySummary();
-  }, [data, settings.owner, settings.year]);
-
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
       <Typography variant="h4" sx={{ mb: 3, mt: 2 }}>
@@ -1009,24 +869,6 @@ export default function MasterAnalyticsView() {
                 total={globalExpenseData.totalExpense || 0}
                 chart={{ series: globalExpenseData.expenseData || [] }}
               />
-            </Stack>
-          </Grid>
-          <Grid size={12}>
-            <Stack direction="column" spacing={3}>
-              <Grid size={12}>
-                <MasterTransaction
-                  title="Riepilogo per categorie"
-                  handleViewRow={handleViewRow}
-                  tableData={categorySummaryData} // Dati riepilogativi delle categorie
-                  tableLabels={[
-                    { id: 'category', label: 'Categoria' },
-                    { id: 'income', label: 'Entrate (€)', align: 'right' },
-                    { id: 'expense', label: 'Uscite (€)', align: 'right' },
-                    { id: 'totalExpense', label: 'Totale spese annuale (€)', align: 'right' },
-                    { id: 'difference', label: 'Delta annuale (€)', align: 'right' },
-                  ]}
-                />
-              </Grid>
             </Stack>
           </Grid>
           {(() => {

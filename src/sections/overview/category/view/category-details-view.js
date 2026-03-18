@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PropTypes from 'prop-types';
 
 import Grid from '@mui/material/Grid2';
@@ -16,7 +17,7 @@ import { useGetReportCategory } from '../../../../api/report';
 import { capitalizeCase } from '../../../../utils/change-case';
 import { useSettingsContext } from '../../../../components/settings';
 import CategoryChartToggle from '../category-chart-toggle';
-import CategoryAverageExpenseSubject from '../category-average-expense-subject';
+import CategorySubjectTable from '../category-subject-table';
 import MasterMonthlyTrendChart from '../../master/master-monthly-trend-chart';
 
 // ----------------------------------------------------------------------
@@ -29,9 +30,19 @@ export default function CategoryDetailsView({ categoryId }) {
   const ownerId = settings.owner ? settings.owner.id : null;
   const { year } = settings;
 
-  const { reportCategory, reportCategoryLoading } = useGetReportCategory(categoryId, ownerId, year, settings.db);
+  const searchParams = useSearchParams();
+  const selectedMonth = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1), 10);
+  const compareYearsParam = searchParams.get('compareYears');
+  const initShowIncome = searchParams.get('showIncome') !== 'false';
+  const initShowExpense = searchParams.get('showExpense') !== 'false';
+
+  const { reportCategory, reportCategoryLoading } = useGetReportCategory(categoryId, ownerId, year, settings.db, selectedMonth);
 
   if (reportCategoryLoading) {return null}
+
+  const showPrevYear = compareYearsParam
+    ? compareYearsParam.split(',').map(Number).includes(Number(reportCategory?.prevYear))
+    : true;
 
   const getSubjectDetails = async (props) => {
     const response = await axios.post(endpoints.report.category.subject.details, props);
@@ -159,20 +170,14 @@ export default function CategoryDetailsView({ categoryId }) {
 
       <Grid container spacing={3}>
         <Grid size={12}>
-          <CategoryAverageExpenseSubject
-            title="Riepilogo spese per soggetto"
-            tableData={reportCategory} // Popoliamo la tabella con i dati API
-            tableLabels={[
-              { id: "expand", label: "" },
-              { id: "subject", label: "Soggetto" },
-              { id: "averageExpense", label: "Media spese mensile (€)", align: 'right' },
-              { id: "totalExpense", label: "Uscite (€)", align: 'right'},
-              { id: "totalIncome", label: "Entrate (€)", align: 'right'},
-              { id: "difference", label: "Delta (€)", align: 'right'},
-              { id: "actions", label: ""}
-            ]}
+          <CategorySubjectTable
+            reportCategory={reportCategory}
+            selectedMonth={selectedMonth}
+            showPrevYear={showPrevYear}
+            initShowIncome={initShowIncome}
+            initShowExpense={initShowExpense}
             onViewRow={async (prop) => {
-              await getSubjectDetails(prop)
+              await getSubjectDetails({ ...prop, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year });
             }}
           />
 

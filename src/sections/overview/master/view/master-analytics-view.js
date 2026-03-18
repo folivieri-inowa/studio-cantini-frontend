@@ -5,7 +5,6 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -168,7 +167,17 @@ export default function MasterAnalyticsView() {
 
     return allAccounts;
   }, [data]);
-  
+
+  const availableYears = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const years = new Set();
+    data.forEach(ownerItem => {
+      ownerItem.report?.years?.forEach(y => years.add(y));
+    });
+    const sorted = Array.from(years).sort((a, b) => b - a);
+    return ['all-years', ...sorted];
+  }, [data]);
+
   // Stato per lo Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -922,130 +931,46 @@ export default function MasterAnalyticsView() {
         {user?.firstname || user?.firstName || ''} {user?.lastname || user?.lastName || ''}
       </Typography>
 
-      <Stack
-        spacing={3}
-        sx={{
-          mb: 5,
-          p: 3,
-          bgcolor: (theme) => theme.palette.mode === 'light' ? 'grey.50' : 'grey.900',
-          borderRadius: 2,
-          border: (theme) => `1px solid ${theme.palette.divider}`,
-          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 1px 2px 0 rgba(0,0,0,0.05)' : 'none',
-        }}
-      >
-        {data && settings.owner && settings.owner.report && settings.owner.report.years && (
-          <>
-            {/* Period Label */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              sx={{
-                py: 1.5,
-                px: 2,
-                bgcolor: 'background.paper',
-                borderRadius: 1.5,
-                border: (theme) => `1px solid ${theme.palette.primary.main}`,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'primary.main',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                }}
-              >
-                📍 Visualizzazione: <span style={{ fontWeight: 700 }}>{getPeriodLabel()}</span>
-              </Typography>
-            </Stack>
+      {/* Card filtri semplificata */}
+      {data && settings.owner && (
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          sx={{ py: 2, px: 3, mb: 3 }}
+        >
+          {/* Select Anno */}
+          <Select
+            size="small"
+            value={settings.year || ''}
+            onChange={handleYearChange}
+            displayEmpty
+            sx={{ minWidth: 140 }}
+          >
+            {availableYears.map((year) => (
+              <MenuItem key={year} value={year}>
+                {year === 'all-years' ? 'Tutti gli anni' : year}
+              </MenuItem>
+            ))}
+          </Select>
 
-            <Divider />
-
-            {/* Main Filters */}
-            <Stack direction="row" spacing={2} alignItems="flex-end">
-              <Stack spacing={0.5} sx={{ minWidth: 120 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Anno
-                </Typography>
-                <Select
-                  id="current-year"
-                  onChange={handleYearChange}
-                  value={settings.year || ''}
-                  size="small"
-                  sx={{
-                    bgcolor: 'background.paper',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'divider',
-                    },
-                  }}
-                >
-                  {settings.owner && settings.owner.report.years.length > 1 && (
-                    <MenuItem key="all-years" value="all-years">
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          📅 Tutto il periodo
-                        </Typography>
-                      </Stack>
-                    </MenuItem>
-                  )}
-                  {settings.owner && settings.owner.report.years.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Stack>
-
-              <Divider orientation="vertical" flexItem />
-
-              <Stack spacing={0.5} sx={{ flex: 1, minWidth: 300 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Conto corrente
-                </Typography>
-                <Select
-                  id="current-owner"
-                  onChange={handleOwnerChange}
-                  value={settings.owner?.id || ''}
-                  size="small"
-                  sx={{
-                    bgcolor: 'background.paper',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'divider',
-                    },
-                  }}
-                >
-                  <MenuItem key="all-accounts" value="all-accounts">
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        📊 Tutti i conti
-                      </Typography>
-                    </Stack>
-                  </MenuItem>
-                  {sortedData.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2">
-                          {option.isCreditCard ? '💳' : '🏦'}
-                        </Typography>
-                        <Typography variant="body2">
-                          {option.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ({option.cc})
-                        </Typography>
-                      </Stack>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Stack>
-            </Stack>
-
-          </>
-        )}
-      </Stack>
+          {/* Select Conto */}
+          <Select
+            size="small"
+            value={settings.owner?.id || ''}
+            onChange={handleOwnerChange}
+            displayEmpty
+            sx={{ minWidth: 200 }}
+          >
+            <MenuItem value="all-accounts">Tutti i conti</MenuItem>
+            {sortedData.map((owner) => (
+              <MenuItem key={owner.id} value={owner.id}>
+                {owner.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </Stack>
+      )}
       {data && settings.owner && settings.owner.report && currentBalanceData && globalIncomeData && globalExpenseData ? (
         <Grid container spacing={3}>
           <Grid size={12}>

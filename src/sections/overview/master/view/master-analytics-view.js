@@ -5,6 +5,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -28,7 +29,6 @@ import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
 export default function MasterAnalyticsView() {
   const router = useRouter();
   const [data, setData] = useState([]);
-  const [dateFilter, setDateFilter] = useState(null); // { startYear, startMonth, endYear, endMonth }
   const settings = useSettingsContext();
   const { user } = useAuthContext();
   
@@ -312,28 +312,6 @@ export default function MasterAnalyticsView() {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
 
-  // Helper function per filtrare i mesi in base al dateFilter
-  const shouldIncludeMonth = useCallback((year, month) => {
-    if (!dateFilter) return true;
-    
-    const yearNum = parseInt(year, 10);
-    const monthNum = parseInt(month, 10);
-    const startYearNum = parseInt(dateFilter.startYear, 10);
-    const endYearNum = parseInt(dateFilter.endYear, 10);
-    
-    // Converte anno-mese in un numero per confronto facile (es. 2025-10 diventa 202510)
-    const current = yearNum * 100 + monthNum;
-    const start = startYearNum * 100 + dateFilter.startMonth;
-    const end = endYearNum * 100 + dateFilter.endMonth;
-    
-    const included = current >= start && current <= end;
-    
-    // Debug: mostra solo i primi check per evitare spam
-    // Debug disabled
-    
-    return included;
-  }, [dateFilter]);
-
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
     if (!data || !data.length || !settings.owner) {
@@ -473,10 +451,7 @@ export default function MasterAnalyticsView() {
         ([a], [b]) => Number(a) - Number(b)
       );
 
-      // Applica filtro mese se attivo
-      const filteredMonths = sortedMonths.filter(([month]) => 
-        shouldIncludeMonth(settings.year, month)
-      );
+      const filteredMonths = sortedMonths;
 
       const incomeData = filteredMonths.map(([month, date]) => ({
         x: `${settings.year}-${month.padStart(2, '0')}`,
@@ -512,10 +487,7 @@ export default function MasterAnalyticsView() {
         ([a], [b]) => Number(a) - Number(b)
       );
 
-      // Applica filtro mese se attivo
-      const filteredMonths = sortedMonths.filter(([month]) => 
-        shouldIncludeMonth(year, month)
-      );
+      const filteredMonths = sortedMonths;
 
       filteredMonths.forEach(([month, date]) => {
         const monthIncome = parseFloat(date?.income ?? 0);
@@ -561,10 +533,7 @@ export default function MasterAnalyticsView() {
         ([a], [b]) => Number(a) - Number(b)
       );
 
-      // Applica filtro mese se attivo
-      const filteredMonths = sortedMonths.filter(([month]) => 
-        shouldIncludeMonth(settings.year, month)
-      );
+      const filteredMonths = sortedMonths;
 
       const expenseData = filteredMonths.map(([month, date]) => ({
         x: `${settings.year}-${month.padStart(2, '0')}`,
@@ -600,10 +569,7 @@ export default function MasterAnalyticsView() {
         ([a], [b]) => Number(a) - Number(b)
       );
 
-      // Applica filtro mese se attivo
-      const filteredMonths = sortedMonths.filter(([month]) => 
-        shouldIncludeMonth(year, month)
-      );
+      const filteredMonths = sortedMonths;
 
       filteredMonths.forEach(([month, date]) => {
         const monthExpense = parseFloat(date?.expense ?? 0);
@@ -655,19 +621,9 @@ export default function MasterAnalyticsView() {
             };
           }
           
-          // Se c'è un filtro attivo, aggrega solo i mesi filtrati
-          if (dateFilter && values.months) {
-            Object.entries(values.months).forEach(([month, monthData]) => {
-              if (shouldIncludeMonth(year, month)) {
-                aggregated[category].totalIncome += parseFloat(monthData.income) || 0;
-                aggregated[category].totalExpense += parseFloat(monthData.expense) || 0;
-              }
-            });
-          } else {
-            // Nessun filtro: usa i totali annuali
-            aggregated[category].totalIncome += parseFloat(values.totalIncome) || 0;
-            aggregated[category].totalExpense += parseFloat(values.totalExpense) || 0;
-          }
+          // Usa i totali annuali
+          aggregated[category].totalIncome += parseFloat(values.totalIncome) || 0;
+          aggregated[category].totalExpense += parseFloat(values.totalExpense) || 0;
         });
       });
       
@@ -682,8 +638,8 @@ export default function MasterAnalyticsView() {
         return [];
       }
 
-      // Se c'è un filtro attivo o isAllYears, usa sempre aggregateCategoryData
-      const aggregatedData = (isAllYears || dateFilter)
+      // Se isAllYears, usa sempre aggregateCategoryData
+      const aggregatedData = isAllYears
         ? aggregateCategoryData(categoryReports, yearsToAggregate)
         : categoryReports[settings.year];
 
@@ -723,8 +679,8 @@ export default function MasterAnalyticsView() {
       return [];
     }
 
-    // Se c'è un filtro attivo o isAllYears, usa sempre aggregateCategoryData
-    const aggregatedData = (isAllYears || dateFilter)
+    // Se isAllYears, usa sempre aggregateCategoryData
+    const aggregatedData = isAllYears
       ? aggregateCategoryData(categoryReports, yearsToAggregate)
       : categoryReports[settings.year];
 
@@ -758,32 +714,12 @@ export default function MasterAnalyticsView() {
 
     const ownerName = settings.owner.id === 'all-accounts' ? 'Tutti i conti' : settings.owner.name;
 
-    // Se c'è un filtro per mese attivo
-    if (dateFilter) {
-      const monthNames = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
-      const { startMonth: startMonthNum, endMonth: endMonthNum, startYear, endYear } = dateFilter;
-      const startMonth = monthNames[startMonthNum - 1];
-      const endMonth = monthNames[endMonthNum - 1];
-
-      if (startYear === endYear && startMonth === endMonth) {
-        // Singolo mese
-        return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear} • ${ownerName}`;
-      }
-      if (startYear === endYear) {
-        // Range nello stesso anno
-        return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)}-${endMonth} ${startYear} • ${ownerName}`;
-      }
-      // Range tra anni diversi
-      return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear} - ${endMonth} ${endYear} • ${ownerName}`;
-    }
-
-    // Nessun filtro mese: mostra anno
     if (settings.year === 'all-years') {
       return `Tutto il periodo • ${ownerName}`;
     }
 
     return `Anno ${settings.year} • ${ownerName}`;
-  }, [settings.owner, settings.year, dateFilter]);
+  }, [settings.owner, settings.year]);
 
   const getYearlySalesData = () => {
     // Check if we have data and settings
@@ -810,13 +746,7 @@ export default function MasterAnalyticsView() {
       const months = globalReport[year]?.months || {};
       return Array.from({ length: 12 }, (_, i) => {
         const monthKey = (i + 1).toString().padStart(2, '0');
-        const monthNum = i + 1;
-        
-        // Se c'è un filtro attivo e questo mese non è incluso, ritorna 0
-        if (!shouldIncludeMonth(year, monthNum.toString())) {
-          return { income: 0, expense: 0 };
-        }
-        
+
         return {
           income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
           expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
@@ -920,13 +850,7 @@ export default function MasterAnalyticsView() {
       const months = globalReport[year]?.months || {};
       return Array.from({ length: 12 }, (_, i) => {
         const monthKey = (i + 1).toString().padStart(2, '0'); // Formatta 01, 02, ..., 12
-        const monthNum = i + 1;
-        
-        // Se c'è un filtro attivo e questo mese non è incluso, ritorna 0
-        if (!shouldIncludeMonth(year, monthNum.toString())) {
-          return { income: 0, expense: 0 };
-        }
-        
+
         // Arrotondiamo a 2 decimali per maggiore precisione
         return {
           income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
@@ -962,22 +886,22 @@ export default function MasterAnalyticsView() {
   const currentBalanceData = useMemo(() => {
     if (!data || !settings.owner) return { balance: 0, percentChange: 0, description: '', lastUpdate: new Date() };
     return getCurrentBalance();
-  }, [data, settings.owner, settings.year, dateFilter]);
+  }, [data, settings.owner, settings.year]);
   
   const globalIncomeData = useMemo(() => {
     if (!data || !settings.owner) return { incomeData: [], totalIncome: 0, percentChange: 0 };
     return getGlobalIncome();
-  }, [data, settings.owner, settings.year, dateFilter]);
+  }, [data, settings.owner, settings.year]);
   
   const globalExpenseData = useMemo(() => {
     if (!data || !settings.owner) return { expenseData: [], totalExpense: 0, percentChange: 0 };
     return getGlobalExpense();
-  }, [data, settings.owner, settings.year, dateFilter]);
+  }, [data, settings.owner, settings.year]);
   
   const chartData = useMemo(() => {
     if (!data || !settings.owner) return [];
     return getChartData();
-  }, [data, settings.owner, settings.year, dateFilter]);
+  }, [data, settings.owner, settings.year]);
 
   const monthlyExpenseTrendData = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
@@ -990,7 +914,7 @@ export default function MasterAnalyticsView() {
   const categorySummaryData = useMemo(() => {
     if (!data || !settings.owner) return [];
     return getCategorySummary();
-  }, [data, settings.owner, settings.year, dateFilter]);
+  }, [data, settings.owner, settings.year]);
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
@@ -1011,50 +935,6 @@ export default function MasterAnalyticsView() {
       >
         {data && settings.owner && settings.owner.report && settings.owner.report.years && (
           <>
-            {/* Quick Filters */}
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mr: 1 }}>
-                ⚡ Filtri rapidi:
-              </Typography>
-              {QUICK_FILTERS.map((filter) => {
-                // Determina se questo filtro è attivo basandosi sullo stato activeFilter
-                const isActive = activeFilter === filter.id;
-                
-                return (
-                  <Chip
-                    key={filter.id}
-                    label={filter.label}
-                    size="small"
-                    onClick={() => handleQuickFilter(filter.id)}
-                    color={isActive ? 'primary' : 'default'}
-                    variant={isActive ? 'filled' : 'outlined'}
-                    sx={{
-                      cursor: 'pointer',
-                      fontWeight: isActive ? 600 : 400,
-                      boxShadow: isActive ? '0 2px 8px rgba(25, 118, 210, 0.25)' : 'none',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        bgcolor: isActive ? 'primary.dark' : 'action.hover',
-                        transform: 'translateY(-1px)',
-                        boxShadow: isActive ? '0 4px 12px rgba(25, 118, 210, 0.35)' : '0 2px 4px rgba(0,0,0,0.1)',
-                      },
-                    }}
-                  />
-                );
-              })}
-              
-              {/* Transaction Statistics */}
-              {transactionStats.total > 0 && (
-                <Chip
-                  label={`📊 ${transactionStats.total.toLocaleString('it-IT')} transazioni totali`}
-                  size="small"
-                  color="info"
-                  variant="outlined"
-                  sx={{ ml: 'auto' }}
-                />
-              )}
-            </Stack>
-
             {/* Period Label */}
             <Stack
               direction="row"
@@ -1163,68 +1043,6 @@ export default function MasterAnalyticsView() {
               </Stack>
             </Stack>
 
-            <Divider />
-
-            {/* Custom Date Filter */}
-            <Stack spacing={2}>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                🗓️ Filtro date personalizzato
-              </Typography>
-              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
-                <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-                  <DatePicker
-                    label="Data inizio (opzionale)"
-                    value={customStartDate}
-                    onChange={(newValue) => setCustomStartDate(newValue)}
-                    slotProps={{
-                      textField: {
-                        size: 'small',
-                        sx: { minWidth: 180 },
-                        placeholder: 'Dall\'inizio'
-                      }
-                    }}
-                  />
-                  <DatePicker
-                    label="Data fine *"
-                    value={customEndDate}
-                    onChange={(newValue) => setCustomEndDate(newValue)}
-                    slotProps={{
-                      textField: {
-                        size: 'small',
-                        sx: { minWidth: 180 },
-                        required: true
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="contained"
-                    size="medium"
-                    onClick={handleApplyCustomDateFilter}
-                    disabled={!customEndDate}
-                    sx={{ minWidth: 120 }}
-                  >
-                    Applica
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="medium"
-                    onClick={handleClearCustomDateFilter}
-                    disabled={!customStartDate && !customEndDate}
-                    sx={{ minWidth: 120 }}
-                  >
-                    Cancella
-                  </Button>
-                  {customEndDate && (
-                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      {customStartDate 
-                        ? '💡 Visualizza dati nel periodo specificato (ignora filtro anno)'
-                        : `💡 Visualizza tutti i dati ${settings.year === 'all-years' ? 'dall\'inizio' : 'da gennaio ' + settings.year} fino alla data di fine`
-                      }
-                    </Typography>
-                  )}
-                </Stack>
-              </LocalizationProvider>
-            </Stack>
           </>
         )}
       </Stack>
@@ -1270,19 +1088,6 @@ export default function MasterAnalyticsView() {
           </Grid>
           <Grid size={12}>
             <Stack direction="column" spacing={3}>
-              
-              {/* Sezione Analisi Raggruppata */}
-              <Grid size={12}>
-                <GroupAggregation
-                  categories={categories}
-                  categoriesLoading={categoriesLoading}
-                  categoriesError={categoriesError}
-                  db={settings.db}
-                  settings={settings}
-                  dateFilter={dateFilter}
-                />
-              </Grid>
-              
               <Grid size={12}>
                 <MasterTransaction
                   title="Riepilogo per categorie"
@@ -1301,8 +1106,7 @@ export default function MasterAnalyticsView() {
           </Grid>
           {(() => {
             const isAllYears = settings.year === 'all-years';
-            const isMultiYearFilter = dateFilter && dateFilter.startYear !== dateFilter.endYear;
-            const hideCharts = isAllYears || isMultiYearFilter;
+            const hideCharts = isAllYears;
 
             if (hideCharts) {
               return (

@@ -2,13 +2,9 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
-import { it } from 'date-fns/locale';
-
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid2';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -16,129 +12,25 @@ import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 
 import { paths } from '../../../../routes/paths';
-import GroupAggregation from '../group-aggregation';
 import { useRouter } from '../../../../routes/hooks';
 import MasterTransaction from '../master-transaction';
 import { useAuthContext } from '../../../../auth/hooks';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
-import { useGetCategoriesForAggregation } from '../../../../api/group-aggregation';
 import CategoryChartToggle from '../../category/category-chart-toggle';
 import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
-
-// ----------------------------------------------------------------------
-
-// LocalStorage utilities for filter preferences
-const STORAGE_KEY = 'master-filter-preferences';
-
-const saveFilterPreferences = (owner, year) => {
-  try {
-    console.log('💾 Saving filter preferences:', { owner, year });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ owner, year, timestamp: Date.now() }));
-  } catch (error) {
-    console.error('Error saving filter preferences:', error);
-  }
-};
-
-const loadFilterPreferences = () => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const preferences = saved ? JSON.parse(saved) : null;
-    console.log('📂 Loading filter preferences:', preferences);
-    return preferences;
-  } catch (error) {
-    console.error('Error loading filter preferences:', error);
-    return null;
-  }
-};
-
-// Quick filter presets
-const QUICK_FILTERS = [
-  { 
-    id: 'current-year', 
-    label: 'Anno corrente', 
-    getValue: () => new Date().getFullYear().toString(), 
-    type: 'year' 
-  },
-  { 
-    id: 'last-year', 
-    label: 'Anno scorso', 
-    getValue: () => (new Date().getFullYear() - 1).toString(), 
-    type: 'year' 
-  },
-  { 
-    id: 'current-month', 
-    label: 'Mese corrente', 
-    getValue: () => {
-      const now = new Date();
-      return {
-        year: now.getFullYear().toString(),
-        startMonth: now.getMonth() + 1,
-        endMonth: now.getMonth() + 1
-      };
-    }, 
-    type: 'month' 
-  },
-  { 
-    id: 'last-6-months', 
-    label: 'Ultimi 6 mesi', 
-    getValue: () => {
-      const now = new Date();
-      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-      return {
-        startYear: sixMonthsAgo.getFullYear().toString(),
-        startMonth: sixMonthsAgo.getMonth() + 1,
-        endYear: now.getFullYear().toString(),
-        endMonth: now.getMonth() + 1
-      };
-    }, 
-    type: 'range' 
-  },
-  { 
-    id: 'all-time', 
-    label: 'Tutto il periodo', 
-    getValue: () => 'all', 
-    type: 'all' 
-  },
-];
 
 // ----------------------------------------------------------------------
 
 export default function MasterAnalyticsView() {
   const router = useRouter();
   const [data, setData] = useState([]);
-  const [transactionStats, setTransactionStats] = useState({ total: 0, filtered: 0 });
-  const [activeFilter, setActiveFilter] = useState(null); // Traccia quale filtro rapido è attivo
   const [dateFilter, setDateFilter] = useState(null); // { startYear, startMonth, endYear, endMonth }
-  const [customStartDate, setCustomStartDate] = useState(null); // Date per filtro personalizzato
-  const [customEndDate, setCustomEndDate] = useState(null); // Date per filtro personalizzato
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
   const settings = useSettingsContext();
   const { user } = useAuthContext();
-  
-  // Sync activeFilter with settings.year when year is restored to 'all-years'
-  useEffect(() => {
-    // Skip if no data loaded yet
-    if (!data || data.length === 0 || !settings.year) return;
-    
-    // Only set activeFilter on initial load
-    if (isInitialLoad) {
-      if (settings.year === 'all-years') {
-        // Use setTimeout to ensure state is updated after React finishes rendering
-        setTimeout(() => {
-          setActiveFilter('all-time');
-        }, 0);
-      }
-      
-      setIsInitialLoad(false);
-    }
-  }, [settings.year, data, isInitialLoad]);
   
   // Ordina alfabeticamente i conti correnti e filtra l'eventuale 'all-accounts' dal backend
   const sortedData = useMemo(() => 
@@ -277,15 +169,6 @@ export default function MasterAnalyticsView() {
     return allAccounts;
   }, [data]);
   
-  // Hook per ottenere le categorie per l'aggregazione
-  const {
-    categories,
-    categoriesLoading,
-    categoriesError,
-  } = useGetCategoriesForAggregation(settings.db);
-  
-  // Categories loaded
-  
   // Stato per lo Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -309,38 +192,6 @@ export default function MasterAnalyticsView() {
       const responseData = Array.isArray(response.data) ? response.data : (response.data.data || []);
       const fetchedData = responseData;
       setData(fetchedData);
-      
-      // Calculate transaction statistics
-      const totalTransactions = fetchedData.reduce((sum, owner) => {
-        if (owner.report && owner.report.globalReport) {
-          return sum + Object.values(owner.report.globalReport).reduce((yearSum, yearData) => 
-            yearSum + Object.values(yearData.months || {}).reduce((monthSum, monthData) => 
-              monthSum + (monthData.transactionCount || 0), 0), 0);
-        }
-        return sum;
-      }, 0);
-      
-      setTransactionStats({ total: totalTransactions, filtered: totalTransactions });
-
-      // Try to restore saved preferences first
-      const preferences = loadFilterPreferences();
-      const shouldRestorePrefs = preferences && !settings.owner;
-      
-      if (shouldRestorePrefs) {
-        // Find the saved owner in the data
-        const savedOwner = fetchedData.find(o => o.id === preferences.owner);
-        
-        if (savedOwner && savedOwner.report && savedOwner.report.years && savedOwner.report.years.length > 0) {
-          const yearToRestore = preferences.year;
-          
-          // Restore year as-is (including 'all-years')
-          if (yearToRestore === 'all-years' || savedOwner.report.years.includes(yearToRestore)) {
-            settings.onChangeOwner(savedOwner);
-            settings.onChangeYear(yearToRestore);
-            return;
-          }
-        }
-      }
 
       // Aggiorna l'owner corrente se esiste, altrimenti imposta il primo della lista
       if (settings.owner && fetchedData.length > 0) {
@@ -371,36 +222,29 @@ export default function MasterAnalyticsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.db]); // Riesegui quando cambia il database
 
-  const handleYearChange = useCallback((event, fromQuickFilter = false) => {
+  const handleYearChange = useCallback((event) => {
     const newYear = event.target.value;
     const currentOwnerId = settings.owner?.id;
-    
-    // Reset active filter quando l'utente cambia manualmente l'anno
-    if (!fromQuickFilter) {
-      setActiveFilter(null);
-    }
-    
+
     // "all-years" è un valore speciale per visualizzare tutti i dati storici
     // Non richiede validazione perché viene gestito dalle funzioni di aggregazione
     if (newYear === 'all-years') {
       settings.onChangeYear(newYear);
-      saveFilterPreferences(settings.owner?.id, newYear);
       return;
     }
-    
+
     // Se siamo nel caso "Tutti i conti", non abbiamo bisogno di verificare l'anno
     if (currentOwnerId === 'all-accounts') {
       settings.onChangeYear(newYear);
-      saveFilterPreferences(settings.owner?.id, newYear);
       return;
     }
 
     // Controlla se il conto corrente ha dati per l'anno selezionato
     const currentOwner = data.find(owner => owner.id === currentOwnerId);
-    
+
     if (currentOwner && currentOwner.report) {
       const hasDataForYear = currentOwner.report.globalReport && currentOwner.report.globalReport[newYear];
-      
+
       if (!hasDataForYear) {
         // Mostra un avviso all'utente che il conto non ha dati per quell'anno
         setSnackbar({
@@ -410,18 +254,12 @@ export default function MasterAnalyticsView() {
         });
       }
     }
-    
+
     settings.onChangeYear(newYear);
-    saveFilterPreferences(settings.owner?.id, newYear);
-  }, [data, settings, setSnackbar, setActiveFilter]);
+  }, [data, settings, setSnackbar]);
 
-  const handleOwnerChange = useCallback((event, fromQuickFilter = false) => {
+  const handleOwnerChange = useCallback((event) => {
     const selectedValue = event.target.value;
-
-    // Reset active filter quando l'utente cambia manualmente il conto
-    if (!fromQuickFilter) {
-      setActiveFilter(null);
-    }
 
     if (selectedValue === 'all-accounts') {
       // Usa l'oggetto all-accounts già memoizzato
@@ -429,31 +267,29 @@ export default function MasterAnalyticsView() {
         console.error('allAccountsOwner non disponibile');
         return;
       }
-      
+
       // Usa l'oggetto memoizzato invece di ricrearlo
       settings.onChangeOwner(allAccountsOwner);
     } else {
       // Handle normal owner selection - qui NON filtriamo in base a isCreditCard
       const selectedOwner = data.find((owner) => owner.id === selectedValue);
-      
+
       // Verifica se l'anno attualmente selezionato è disponibile per questo conto
       const currentYear = settings.year;
       const availableYears = selectedOwner.report?.years || [];
-      
+
       // Se l'anno corrente non è disponibile e ci sono anni disponibili, seleziona il primo disponibile
       if (availableYears.length > 0 && !availableYears.includes(currentYear)) {
         // Seleziona il primo anno disponibile (solitamente il più recente)
         const firstAvailableYear = availableYears[0];
-        
+
         // Mostra il messaggio all'utente
         setSnackbar({
           open: true,
           message: `L'anno ${currentYear} non ha dati per il conto selezionato. È stato selezionato automaticamente l'anno ${firstAvailableYear}.`,
           severity: 'info'
         });
-        
-        // Anno non disponibile, seleziono automaticamente
-        
+
         // Aggiorna prima l'owner e poi l'anno per evitare problemi di rendering
         settings.onChangeOwner(selectedOwner);
         settings.onChangeYear(firstAvailableYear);
@@ -461,174 +297,8 @@ export default function MasterAnalyticsView() {
         // L'anno corrente è disponibile, aggiorna solo l'owner
         settings.onChangeOwner(selectedOwner);
       }
-      
-      // Save preferences
-      saveFilterPreferences(selectedOwner.id, settings.year);
     }
-  }, [data, settings, setActiveFilter, allAccountsOwner, saveFilterPreferences, setSnackbar]);
-
-  const handleQuickFilter = useCallback((filterId) => {
-    const filter = QUICK_FILTERS.find(f => f.id === filterId);
-    if (!filter) return;
-    
-    const filterValue = filter.getValue();
-    
-    // Imposta questo filtro come attivo
-    setActiveFilter(filterId);
-    
-    // Reset filtro date personalizzato quando si usa un filtro rapido
-    setCustomStartDate(null);
-    setCustomEndDate(null);
-    
-    // Se non ci sono dati, mostra errore
-    if (!data || data.length === 0) {
-      setSnackbar({
-        open: true,
-        message: 'Dati non ancora caricati. Attendi il caricamento e riprova.',
-        severity: 'warning'
-      });
-      return;
-    }
-
-    // Gestione basata sul tipo di filtro
-    if (filter.type === 'all') {
-      // Per "Tutto il periodo", usiamo il valore speciale "all-years" come anno
-      // Questo farà sì che il dashboard aggreghi tutti gli anni disponibili
-      if (!settings.owner || !settings.owner.report || !settings.owner.report.years || settings.owner.report.years.length === 0) {
-        setSnackbar({
-          open: true,
-          message: 'Nessun dato disponibili per il conto selezionato',
-          severity: 'warning'
-        });
-        return;
-      }
-      
-      // Trova l'anno più vecchio e più recente
-      const availableYears = settings.owner.report.years.map(y => parseInt(y, 10)).sort((a, b) => a - b);
-      const oldestYear = availableYears[0];
-      const newestYear = availableYears[availableYears.length - 1];
-      
-      // Visualizzazione periodo completo
-      
-      // Imposta l'anno speciale "all-years" per indicare che vogliamo tutti i dati
-      handleYearChange({ target: { value: 'all-years' } }, true);
-      
-      // Reset date filter per visualizzare tutto
-      setDateFilter(null);
-      
-      setSnackbar({
-        open: true,
-        message: `Visualizzazione periodo completo (${oldestYear} - ${newestYear}) per ${settings.owner.name}`,
-        severity: 'success'
-      });
-      
-    } else if (filter.type === 'month') {
-      // Filtro per mese singolo
-      const { year, startMonth, endMonth } = filterValue;
-      const monthName = new Date(year, startMonth - 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
-      
-      // Imposta l'anno
-      handleYearChange({ target: { value: year } }, true);
-      
-      // Imposta il filtro per il mese
-      setDateFilter({
-        startYear: year,
-        startMonth,
-        endYear: year,
-        endMonth
-      });
-      
-      setSnackbar({
-        open: true,
-        message: `Visualizzazione ${monthName} per ${settings.owner.name}`,
-        severity: 'success'
-      });
-      
-    } else if (filter.type === 'range') {
-      // Filtro per range di mesi
-      const { startYear, startMonth, endYear, endMonth } = filterValue;
-      const startDate = new Date(startYear, startMonth - 1);
-      const endDate = new Date(endYear, endMonth - 1);
-      
-      const startMonthName = startDate.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' });
-      const endMonthName = endDate.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' });
-      
-      // Se attraversa più anni, usa 'all-years', altrimenti usa l'anno finale
-      const yearToSet = startYear !== endYear ? 'all-years' : endYear;
-      handleYearChange({ target: { value: yearToSet } }, true);
-      
-      // Imposta il filtro per il range
-      setDateFilter({
-        startYear,
-        startMonth,
-        endYear,
-        endMonth
-      });
-      
-      setSnackbar({
-        open: true,
-        message: `Visualizzazione ${startMonthName} - ${endMonthName} per ${settings.owner.name}`,
-        severity: 'success'
-      });
-      
-    } else if (filter.type === 'year') {
-      // Filtro per anno specifico (include anche i nuovi filtri semplificati)
-      const targetYear = filterValue;
-      
-      // Checking year availability
-      
-      // Verifica se l'anno è disponibile per l'owner corrente
-      if (settings.owner?.report?.years?.includes(targetYear)) {
-        handleYearChange({ target: { value: targetYear } }, true);
-        
-        // Reset date filter per visualizzare l'anno intero
-        setDateFilter(null);
-        
-        setSnackbar({
-          open: true,
-          message: `Visualizzazione anno ${targetYear} per ${settings.owner.name}`,
-          severity: 'success'
-        });
-      } else {
-        // Cerca un owner che ha dati per questo anno
-        let ownerWithYear = null;
-        if (data && data.length > 0) {
-          const allAccounts = data.find(o => o.id === 'all-accounts');
-          if (allAccounts && allAccounts.report?.years?.includes(targetYear)) {
-            ownerWithYear = allAccounts;
-          } else {
-            ownerWithYear = data.find(owner => 
-              owner.id !== 'all-accounts' &&
-              owner.report && 
-              owner.report.years && 
-              owner.report.years.includes(targetYear)
-            );
-          }
-        }
-        
-        if (ownerWithYear) {
-          // Found owner with year
-          handleOwnerChange({ target: { value: ownerWithYear.id } }, true);
-          setTimeout(() => {
-            handleYearChange({ target: { value: targetYear } }, true);
-          }, 150);
-          
-          setSnackbar({
-            open: true,
-            message: `Passato a "${ownerWithYear.name}" per visualizzare l'anno ${targetYear}`,
-            severity: 'success'
-          });
-        } else {
-          console.warn('Year not found in any owner:', targetYear);
-          setSnackbar({
-            open: true,
-            message: `L'anno ${targetYear} non ha dati disponibili. Verifica che ci siano transazioni per quest'anno.`,
-            severity: 'error'
-          });
-        }
-      }
-    }
-  }, [data, settings.owner, handleYearChange, handleOwnerChange, setSnackbar, setActiveFilter, setDateFilter]);
+  }, [data, settings, allAccountsOwner, setSnackbar]);
 
   const handleViewRow = useCallback(
     (id) => {
@@ -641,129 +311,6 @@ export default function MasterAnalyticsView() {
   const handleCloseSnackbar = useCallback(() => {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
-
-  // Handler per applicare il filtro date personalizzato
-  const handleApplyCustomDateFilter = useCallback(() => {
-    // Verifica che almeno la data di fine sia presente
-    if (!customEndDate) {
-      setSnackbar({
-        open: true,
-        message: 'Seleziona almeno la data di fine',
-        severity: 'warning'
-      });
-      return;
-    }
-
-    // Se entrambe le date sono presenti, verifica che la data di inizio sia precedente alla data di fine
-    if (customStartDate && customStartDate > customEndDate) {
-      setSnackbar({
-        open: true,
-        message: 'La data di inizio deve essere precedente alla data di fine',
-        severity: 'error'
-      });
-      return;
-    }
-
-    // Caso 1: Solo data di fine (senza data di inizio)
-    if (!customStartDate && customEndDate) {
-      const endYear = customEndDate.getFullYear().toString();
-      const endMonth = customEndDate.getMonth() + 1;
-      
-      // Se è selezionato "Tutto il periodo" (all-years), filtriamo dall'inizio di tutti i dati
-      if (settings.year === 'all-years') {
-        // Trova l'anno più vecchio disponibile
-        const availableYears = settings.owner?.report?.years || [];
-        if (availableYears.length === 0) {
-          setSnackbar({
-            open: true,
-            message: 'Nessun dato disponibile',
-            severity: 'error'
-          });
-          return;
-        }
-        
-        const oldestYear = Math.min(...availableYears.map(y => parseInt(y, 10))).toString();
-        
-        // Imposta il filtro dalla data più vecchia (gennaio) fino alla data di fine
-        setDateFilter({ 
-          startYear: oldestYear, 
-          startMonth: 1, 
-          endYear, 
-          endMonth 
-        });
-        
-        // Mantieni all-years come anno selezionato
-        handleYearChange({ target: { value: 'all-years' } }, true);
-        
-        setSnackbar({
-          open: true,
-          message: `Filtro applicato: tutti i dati fino al ${customEndDate.toLocaleDateString('it-IT')}`,
-          severity: 'success'
-        });
-      } else {
-        // Anno specifico selezionato: filtriamo da gennaio di quell'anno
-        const selectedYear = settings.year;
-        
-        setDateFilter({ 
-          startYear: selectedYear, 
-          startMonth: 1, 
-          endYear, 
-          endMonth 
-        });
-        
-        // Se la data di fine è in un anno diverso, passiamo a all-years
-        if (selectedYear !== endYear) {
-          handleYearChange({ target: { value: 'all-years' } }, true);
-        }
-        
-        setSnackbar({
-          open: true,
-          message: `Filtro applicato: da gennaio ${selectedYear} al ${customEndDate.toLocaleDateString('it-IT')}`,
-          severity: 'success'
-        });
-      }
-      
-      // Deseleziona i filtri rapidi
-      setActiveFilter(null);
-      return;
-    }
-
-    // Caso 2: Entrambe le date sono presenti
-    // Estrai anno e mese dalle date
-    const startYear = customStartDate.getFullYear().toString();
-    const startMonth = customStartDate.getMonth() + 1;
-    const endYear = customEndDate.getFullYear().toString();
-    const endMonth = customEndDate.getMonth() + 1;
-
-    // Imposta il filtro date
-    setDateFilter({ startYear, startMonth, endYear, endMonth });
-    
-    // Deseleziona i filtri rapidi
-    setActiveFilter(null);
-
-    // Quando entrambe le date sono presenti, ignora il filtro anno e usa sempre 'all-years'
-    handleYearChange({ target: { value: 'all-years' } }, true);
-
-    setSnackbar({
-      open: true,
-      message: `Filtro applicato: ${customStartDate.toLocaleDateString('it-IT')} - ${customEndDate.toLocaleDateString('it-IT')}`,
-      severity: 'success'
-    });
-  }, [customStartDate, customEndDate, settings.year, settings.owner, handleYearChange, setSnackbar, setDateFilter, setActiveFilter]);
-
-  // Handler per resettare il filtro date personalizzato
-  const handleClearCustomDateFilter = useCallback(() => {
-    setCustomStartDate(null);
-    setCustomEndDate(null);
-    setDateFilter(null);
-    setActiveFilter(null);
-    
-    setSnackbar({
-      open: true,
-      message: 'Filtro date rimosso',
-      severity: 'info'
-    });
-  }, [setSnackbar, setDateFilter, setActiveFilter]);
 
   // Helper function per filtrare i mesi in base al dateFilter
   const shouldIncludeMonth = useCallback((year, month) => {
@@ -1210,20 +757,14 @@ export default function MasterAnalyticsView() {
     if (!settings.owner || !settings.year) return '';
 
     const ownerName = settings.owner.id === 'all-accounts' ? 'Tutti i conti' : settings.owner.name;
-    
-    // Se c'è un filtro custom attivo, mostra le date complete
-    if (customStartDate && customEndDate) {
-      const formatDate = (date) => date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
-      return `${formatDate(customStartDate)} - ${formatDate(customEndDate)} • ${ownerName}`;
-    }
-    
-    // Se c'è un filtro per mese attivo (da filtri rapidi)
+
+    // Se c'è un filtro per mese attivo
     if (dateFilter) {
       const monthNames = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
       const { startMonth: startMonthNum, endMonth: endMonthNum, startYear, endYear } = dateFilter;
       const startMonth = monthNames[startMonthNum - 1];
       const endMonth = monthNames[endMonthNum - 1];
-      
+
       if (startYear === endYear && startMonth === endMonth) {
         // Singolo mese
         return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear} • ${ownerName}`;
@@ -1235,14 +776,14 @@ export default function MasterAnalyticsView() {
       // Range tra anni diversi
       return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear} - ${endMonth} ${endYear} • ${ownerName}`;
     }
-    
+
     // Nessun filtro mese: mostra anno
     if (settings.year === 'all-years') {
       return `Tutto il periodo • ${ownerName}`;
     }
-    
+
     return `Anno ${settings.year} • ${ownerName}`;
-  }, [settings.owner, settings.year, dateFilter, customStartDate, customEndDate]);
+  }, [settings.owner, settings.year, dateFilter]);
 
   const getYearlySalesData = () => {
     // Check if we have data and settings

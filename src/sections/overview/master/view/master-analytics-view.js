@@ -793,7 +793,7 @@ export default function MasterAnalyticsView() {
       </Typography>
 
       {/* Card filtri semplificata */}
-      {data && settings.owner && (
+      {data && data.length > 0 && availableYears.length > 0 && settings.owner && (
         <Stack
           direction="row"
           spacing={2}

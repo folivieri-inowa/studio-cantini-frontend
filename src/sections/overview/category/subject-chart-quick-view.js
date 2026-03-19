@@ -135,7 +135,7 @@ LineChart.propTypes = {
 
 // ----------------------------------------------------------------------
 
-export default function SubjectChartQuickView({ data, open, onClose }) {
+export default function SubjectChartQuickView({ data, open, onClose, exclusions = [] }) {
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState(null);
 
@@ -175,6 +175,27 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
     ? buildYearSeries(chartData.currentYearSeries, chartData.currentYear, selectedMonth)
     : Array(12).fill(0);
 
+  // Apply exclusions to bar data — subtract excluded detail amounts from months
+  const adjustedCurrentData = (() => {
+    if (!exclusions.length || !chartData) return currentData;
+    const adjusted = [...currentData];
+    exclusions.forEach(exc => {
+      if (!chartData.currentYearSeries) return;
+      // Find the matching detail series
+      chartData.currentYearSeries.forEach(s => {
+        // Match by detailId if available — but series only has name, not id
+        // So we match excluded detailName against series name
+        if (exc.detailName && s.name.toLowerCase() === exc.detailName.toLowerCase()) {
+          const monthIdx = exc.month - 1;
+          if (monthIdx >= 0 && monthIdx < 12) {
+            adjusted[monthIdx] = Math.max(0, adjusted[monthIdx] - Math.abs(s.data[monthIdx] ?? 0));
+          }
+        }
+      });
+    });
+    return adjusted;
+  })();
+
   const prevData = chartData
     ? buildYearSeries(chartData.prevYearSeries, chartData.prevYear, selectedMonth)
     : Array(12).fill(0);
@@ -213,7 +234,7 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
               <BarAvgChart
                 currentYear={chartData.currentYear}
                 prevYear={chartData.prevYear}
-                currentData={currentData}
+                currentData={adjustedCurrentData}
                 prevData={prevData}
                 selectedMonth={selectedMonth}
               />
@@ -231,7 +252,7 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
               <LineChart
                 currentYear={chartData.currentYear}
                 prevYear={chartData.prevYear}
-                currentData={currentData}
+                currentData={adjustedCurrentData}
                 prevData={prevData}
                 selectedMonth={selectedMonth}
               />
@@ -257,4 +278,5 @@ SubjectChartQuickView.propTypes = {
   data: PropTypes.object,
   onClose: PropTypes.func,
   open: PropTypes.bool,
+  exclusions: PropTypes.array,
 };

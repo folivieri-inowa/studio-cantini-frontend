@@ -95,6 +95,7 @@ export default function CategorySubjectTable({
   db,
   owner,
   year,
+  exclusions = [],  // ← ADD
 }) {
   const [showIncome, setShowIncome] = useState(initShowIncome ?? true);
   const [showExpense, setShowExpense] = useState(initShowExpense ?? true);
@@ -509,6 +510,7 @@ export default function CategorySubjectTable({
         data={chartData}
         open={chartModal.value}
         onClose={chartModal.onFalse}
+        exclusions={exclusions}
       />
     </Card>
   );
@@ -524,4 +526,5 @@ CategorySubjectTable.propTypes = {
   db: PropTypes.string,
   owner: PropTypes.string,
   year: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  exclusions: PropTypes.array,
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import PropTypes from 'prop-types';
 
 import Box from '@mui/material/Box';
@@ -52,7 +52,7 @@ export default function MonthBreakdownDialog({
   category,
   db,
   owner,
-  exclusions,
+  exclusions = [],
   onToggleExclusion,
   monthlyAvg,
 }) {
@@ -62,6 +62,8 @@ export default function MonthBreakdownDialog({
 
   useEffect(() => {
     if (!open || !month) { setData(null); return; }
+
+    setExpanded({});
 
     const fetch = async () => {
       setLoading(true);
@@ -79,7 +81,7 @@ export default function MonthBreakdownDialog({
     fetch();
   }, [open, month, year, category, db, owner]);
 
-  const anomalyThreshold = monthlyAvg * 2;
+  const anomalyThreshold = monthlyAvg > 0 ? monthlyAvg * 2 : Infinity;
   const monthLabel = month ? MONTHS[month - 1] : '';
 
   const handleToggleSubject = (subject) => {
@@ -175,7 +177,7 @@ export default function MonthBreakdownDialog({
                     const isExpanded = !!expanded[subject.id];
 
                     return (
-                      <Box key={subject.id} component="tbody">
+                      <Fragment key={subject.id}>
                         {/* Subject row */}
                         <TableRow
                           hover
@@ -264,7 +266,7 @@ export default function MonthBreakdownDialog({
                             </TableRow>
                           );
                         })}
-                      </Box>
+                      </Fragment>
                     );
                   })}
                 </TableBody>

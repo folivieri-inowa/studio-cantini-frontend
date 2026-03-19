@@ -226,7 +226,7 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
             {/* Grafico barre — spesa mensile con media */}
             <Grid size={12}>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                Spesa mensile con media YTD
+                Spesa mensile da Gen a {MONTHS[selectedMonth - 1]} {chartData.currentYear} · confronto con {chartData.prevYear}
               </Typography>
               <BarAvgChart
                 currentYear={chartData.currentYear}
@@ -241,10 +241,10 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
               <Divider />
             </Grid>
 
-            {/* Grafico linea — andamento cumulativo YTD */}
+            {/* Grafico linea — andamento cumulativo */}
             <Grid size={12}>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                Andamento cumulativo YTD
+                Andamento cumulativo da Gen a {MONTHS[selectedMonth - 1]} {chartData.currentYear} · confronto con {chartData.prevYear}
               </Typography>
               <LineChart
                 currentYear={chartData.currentYear}

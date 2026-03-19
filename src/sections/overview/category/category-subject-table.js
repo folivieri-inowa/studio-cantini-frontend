@@ -299,7 +299,7 @@ export default function CategorySubjectTable({
     <Card>
       <CardHeader
         title="Riepilogo per soggetto"
-        subheader={`Totale da Gen a ${monthLabel} ${mainYear}${compareLabel}`}
+        subheader={`Spesa mensile da Gen a ${monthLabel} ${mainYear}${compareLabel}`}
         action={headerAction}
         sx={{ mb: 1 }}
       />      <TableContainer>

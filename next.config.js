@@ -1,9 +1,6 @@
 module.exports = {
   trailingSlash: true,
   output: 'standalone',
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   modularizeImports: {
     '@mui/material': {
       transform: '@mui/material/{{member}}',
@@ -12,11 +9,27 @@ module.exports = {
       transform: '@mui/lab/{{member}}',
     },
   },
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+    resolveAlias: {
+      'fflate/lib/node.cjs': 'fflate/esm/browser.js',
+      'jspdf': 'jspdf/dist/jspdf.umd.min.js',
+    },
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      jspdf: require.resolve('jspdf/dist/jspdf.umd.min.js'),
+    };
     return config;
   },
   async rewrites() {

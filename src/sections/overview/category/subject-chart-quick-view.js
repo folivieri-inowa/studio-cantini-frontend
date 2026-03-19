@@ -4,7 +4,6 @@ import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -18,12 +17,7 @@ import DialogContent from '@mui/material/DialogContent';
 import axios, { endpoints } from '../../../utils/axios';
 import { fCurrencyEur } from '../../../utils/format-number';
 import { capitalizeCase } from '../../../utils/change-case';
-import Iconify from '../../../components/iconify';
 import Chart, { useChart } from '../../../components/chart';
-
-// ----------------------------------------------------------------------
-
-const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 const MONTH_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
 // Aggrega i dati mensili per-detail in una serie unica per anno (somma tutti i detail)
@@ -173,11 +167,6 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
   }, [open, dataKey]);
 
   const selectedMonth = data?.month ? parseInt(data.month, 10) : 12;
-  const periodLabel = (() => {
-    if (!data?.year || data.year === 'all-years') return '';
-    if (selectedMonth === 12) return `${data.year}`;
-    return `Gen – ${MONTHS[selectedMonth - 1]} ${data.year}`;
-  })();
 
   const currentData = chartData
     ? buildYearSeries(chartData.currentYearSeries, chartData.currentYear, selectedMonth)
@@ -201,16 +190,6 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
               </Typography>
             )}
           </Box>
-          {periodLabel && (
-            <Chip
-              icon={<Iconify icon="solar:calendar-bold" />}
-              label={periodLabel}
-              size="small"
-              color="primary"
-              variant="soft"
-              sx={{ mt: 0.5 }}
-            />
-          )}
         </Stack>
       </DialogTitle>
 

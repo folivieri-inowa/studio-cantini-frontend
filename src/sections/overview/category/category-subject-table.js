@@ -55,10 +55,10 @@ function DeltaCell({ value, referenceValue, referenceYear, isExpense, month }) {
   const arrow = delta === null ? '' : (isPositive ? '↑' : '↓');
   const deltaColor = delta === null ? 'text.disabled' : (isPositive ? 'success.main' : 'error.main');
   const monthLabel = MONTHS[month - 1] ?? '';
-  const diffAbsolute = referenceValue - value;
+  const diffAbsolute = isExpense ? value - referenceValue : referenceValue - value;
   const sign = diffAbsolute >= 0 ? '+' : '';
   const tooltipText = delta !== null
-    ? `${sign}${formatCurrency(diffAbsolute)} rispetto al ${referenceYear} (${sign}${delta.toFixed(1)}%)`
+    ? `${sign}${formatCurrency(diffAbsolute)} rispetto al periodo Gen–${monthLabel} ${referenceYear} (${sign}${delta.toFixed(1)}%)`
     : 'Nessun dato di riferimento';
 
   return (

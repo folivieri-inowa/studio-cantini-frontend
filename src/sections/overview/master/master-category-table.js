@@ -213,7 +213,7 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
         })
       );
 
-      sortedCompareYears.forEach(year => {
+      sortedCompareYears.filter(year => year !== mainYear).forEach(year => {
         cols.push(
           columnHelper.accessor(row => row.income[year] ?? 0, {
             id: `income_${year}`,
@@ -245,7 +245,7 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
         })
       );
 
-      sortedCompareYears.forEach(year => {
+      sortedCompareYears.filter(year => year !== mainYear).forEach(year => {
         cols.push(
           columnHelper.accessor(row => row.expense[year] ?? 0, {
             id: `expense_${year}`,

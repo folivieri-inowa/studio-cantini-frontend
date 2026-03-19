@@ -2,7 +2,9 @@ import PropTypes from 'prop-types';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import CardHeader from '@mui/material/CardHeader';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import Chart, { useChart } from 'src/components/chart';
@@ -11,12 +13,19 @@ import { fCurrencyEur } from 'src/utils/format-number';
 
 // ----------------------------------------------------------------------
 
+const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
 export default function MasterMonthlyTrendChart({
   title,
   subheader,
   series = [],
   categories = [],
   colors,
+  onBarClick,
+  exclusions = [],
+  onRemoveExclusion,
+  onResetExclusions,
+  onChipClick,
   ...other
 }) {
   // --- Average computation -------------------------------------------
@@ -32,6 +41,20 @@ export default function MasterMonthlyTrendChart({
   // --- Chart options --------------------------------------------------
   const chartOptions = useChart({
     colors: colors ?? ['#FF4842'],
+
+    ...(onBarClick && {
+      chart: {
+        events: {
+          dataPointSelection: (_event, _chartContext, config) => {
+            onBarClick(config.dataPointIndex);
+          },
+        },
+        selection: { enabled: true },
+      },
+      states: {
+        active: { filter: { type: 'darken', value: 0.75 } },
+      },
+    }),
 
     stroke: {
       show: true,
@@ -99,6 +122,33 @@ export default function MasterMonthlyTrendChart({
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} />
 
+      {exclusions.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mx: 3, mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
+          {exclusions.map((exc) => {
+            const key = `${exc.subjectId}:${exc.detailId}:${exc.month}`;
+            const label = `${exc.detailName || exc.subjectName} (${MONTHS[exc.month - 1]})`;
+            return (
+              <Chip
+                key={key}
+                label={label}
+                size="small"
+                variant="outlined"
+                color="error"
+                onDelete={() => onRemoveExclusion(exc)}
+                onClick={() => onChipClick && onChipClick(exc)}
+              />
+            );
+          })}
+          <Chip
+            label="Reset tutto"
+            size="small"
+            variant="soft"
+            color="default"
+            onDelete={onResetExclusions}
+          />
+        </Stack>
+      )}
+
       {hasData ? (
         <Box sx={{ mt: 3, mx: 3 }}>
           <Chart
@@ -138,4 +188,9 @@ MasterMonthlyTrendChart.propTypes = {
   ),
   categories: PropTypes.arrayOf(PropTypes.string),
   colors: PropTypes.arrayOf(PropTypes.string),
+  onBarClick: PropTypes.func,
+  exclusions: PropTypes.array,
+  onRemoveExclusion: PropTypes.func,
+  onResetExclusions: PropTypes.func,
+  onChipClick: PropTypes.func,
 };

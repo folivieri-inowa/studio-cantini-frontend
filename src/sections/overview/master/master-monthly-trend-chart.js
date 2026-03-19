@@ -150,7 +150,7 @@ export default function MasterMonthlyTrendChart({
       )}
 
       {hasData ? (
-        <Box sx={{ mt: 3, mx: 3 }}>
+        <Box sx={{ mt: 3, mx: 3, ...(onBarClick && { '& .apexcharts-bar-series': { cursor: 'pointer' }, '& .apexcharts-series path': { cursor: 'pointer' } }) }}>
           <Chart
             dir="ltr"
             type="bar"

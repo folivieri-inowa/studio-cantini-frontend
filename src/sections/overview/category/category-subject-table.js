@@ -33,6 +33,8 @@ import { fCurrencyEur } from '../../../utils/format-number';
 import { capitalizeCase } from '../../../utils/change-case';
 import Scrollbar from '../../../components/scrollbar';
 import Iconify from '../../../components/iconify';
+import { useBoolean } from '../../../hooks/use-boolean';
+import DetailsTransactionsQuickView from './details-transactions-quick-view';
 
 // ----------------------------------------------------------------------
 
@@ -89,16 +91,26 @@ export default function CategorySubjectTable({
   initShowIncome,
   initShowExpense,
   onViewRow,
+  db,
+  owner,
+  year,
 }) {
   const [showIncome, setShowIncome] = useState(initShowIncome ?? true);
   const [showExpense, setShowExpense] = useState(initShowExpense ?? true);
   const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
   const [expanded, setExpanded] = useState({});
+  const [transactionsData, setTransactionsData] = useState(null);
+  const transactionsModal = useBoolean();
 
   const mainYear = reportCategory.year;
   const prevYear = reportCategory.prevYear;
   const categoryId = reportCategory.categoryId;
   const monthLabel = MONTHS[selectedMonth - 1] ?? '';
+
+  const handleViewTransactions = (params) => {
+    setTransactionsData({ db, owner, year, category: categoryId, ...params });
+    transactionsModal.onTrue();
+  };
 
   // tableData da averageMonthlyCosts — usa i campi YTD calcolati dal backend
   const tableData = useMemo(() =>
@@ -227,7 +239,7 @@ export default function CategorySubjectTable({
           <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
             <IconButton
               size="small"
-              onClick={() => onViewRow?.({ subject: row.original.id, category: categoryId })}
+              onClick={() => handleViewTransactions({ subject: row.original.id })}
             >
               <Iconify icon="solar:document-text-bold" />
             </IconButton>
@@ -237,7 +249,7 @@ export default function CategorySubjectTable({
     );
 
     return cols;
-  }, [showIncome, showExpense, showPrevYear, mainYear, prevYear, selectedMonth, expanded, categoryId, onViewRow]);
+  }, [showIncome, showExpense, showPrevYear, mainYear, prevYear, selectedMonth, expanded, categoryId, handleViewTransactions]);
 
   const table = useReactTable({
     data: tableData,
@@ -270,8 +282,7 @@ export default function CategorySubjectTable({
         subheader={`Totale da Gen a ${monthLabel} ${mainYear}`}
         action={headerAction}
         sx={{ mb: 1 }}
-      />
-      <TableContainer>
+      />      <TableContainer>
         <Scrollbar>
           <Table sx={{ minWidth: 680 }}>
             <TableHead>
@@ -324,7 +335,9 @@ export default function CategorySubjectTable({
                                 <TableRow>
                                   <TableCell>Dettaglio</TableCell>
                                   {showIncome && <TableCell align="right">Entrate {mainYear}</TableCell>}
+                                  {showIncome && showPrevYear && <TableCell align="right">Entrate {prevYear}</TableCell>}
                                   {showExpense && <TableCell align="right">Uscite {mainYear}</TableCell>}
+                                  {showExpense && showPrevYear && <TableCell align="right">Uscite {prevYear}</TableCell>}
                                   <TableCell />
                                 </TableRow>
                               </TableHead>
@@ -343,6 +356,17 @@ export default function CategorySubjectTable({
                                         </Typography>
                                       </TableCell>
                                     )}
+                                    {showIncome && showPrevYear && (
+                                      <TableCell align="right">
+                                        <DeltaCell
+                                          value={parseFloat(val.prevTotalIncome || 0)}
+                                          referenceValue={parseFloat(val.totalIncome || 0)}
+                                          referenceYear={mainYear}
+                                          isExpense={false}
+                                          month={selectedMonth}
+                                        />
+                                      </TableCell>
+                                    )}
                                     {showExpense && (
                                       <TableCell align="right">
                                         <Typography variant="body2">
@@ -350,11 +374,22 @@ export default function CategorySubjectTable({
                                         </Typography>
                                       </TableCell>
                                     )}
+                                    {showExpense && showPrevYear && (
+                                      <TableCell align="right">
+                                        <DeltaCell
+                                          value={parseFloat(val.prevTotalExpense || 0)}
+                                          referenceValue={parseFloat(val.totalExpense || 0)}
+                                          referenceYear={mainYear}
+                                          isExpense
+                                          month={selectedMonth}
+                                        />
+                                      </TableCell>
+                                    )}
                                     <TableCell align="right">
                                       <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
                                         <IconButton
                                           size="small"
-                                          onClick={() => onViewRow?.({ details: val.id, subject: row.original.id, category: categoryId })}
+                                          onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}
                                         >
                                           <Iconify icon="solar:document-text-bold" />
                                         </IconButton>
@@ -421,6 +456,12 @@ export default function CategorySubjectTable({
           </Table>
         </Scrollbar>
       </TableContainer>
+
+      <DetailsTransactionsQuickView
+        data={transactionsData}
+        open={transactionsModal.value}
+        onClose={transactionsModal.onFalse}
+      />
     </Card>
   );
 }
@@ -432,4 +473,7 @@ CategorySubjectTable.propTypes = {
   initShowIncome: PropTypes.bool,
   initShowExpense: PropTypes.bool,
   onViewRow: PropTypes.func,
+  db: PropTypes.string,
+  owner: PropTypes.string,
+  year: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };

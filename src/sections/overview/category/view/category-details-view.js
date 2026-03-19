@@ -176,6 +176,9 @@ export default function CategoryDetailsView({ categoryId }) {
             showPrevYear={showPrevYear}
             initShowIncome={initShowIncome}
             initShowExpense={initShowExpense}
+            db={settings.db}
+            owner={settings.owner ? settings.owner.id : 'all-accounts'}
+            year={settings.year}
             onViewRow={async (prop) => {
               await getSubjectDetails({ ...prop, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year });
             }}

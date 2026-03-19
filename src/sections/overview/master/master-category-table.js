@@ -50,8 +50,8 @@ const formatCurrency = (value) => fCurrencyEur(value ?? 0);
 
 // Calcola il delta percentuale tra due valori
 function calcDelta(value, reference, isExpense) {
-  if (!reference || reference === 0) return null;
-  const raw = ((value - reference) / Math.abs(reference)) * 100;
+  if (value == null || value === 0 || reference == null) return null;
+  const raw = ((reference - value) / Math.abs(value)) * 100;
   return isExpense ? -raw : raw;
 }
 
@@ -63,10 +63,10 @@ function DeltaCell({ value, referenceValue, referenceYear, isExpense, month }) {
   const deltaColor = delta === null ? 'text.disabled' : (isPositive ? 'success.main' : 'error.main');
   const monthLabel = MONTHS[month - 1] ?? '';
 
-  const diffAbsolute = value - referenceValue;
+  const diffAbsolute = isExpense ? value - referenceValue : referenceValue - value;
   const sign = diffAbsolute >= 0 ? '+' : '';
   const tooltipText = delta !== null
-    ? `${sign}${formatCurrency(diffAbsolute)} rispetto il periodo Gen a ${monthLabel} ${referenceYear} (${sign}${delta.toFixed(1)}%)`
+    ? `${sign}${formatCurrency(diffAbsolute)} rispetto al periodo Gen–${monthLabel} ${referenceYear} (${sign}${delta.toFixed(1)}%)`
     : 'Nessun dato di riferimento';
 
   return (

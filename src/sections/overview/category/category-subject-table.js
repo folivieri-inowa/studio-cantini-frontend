@@ -51,7 +51,7 @@ function calcDelta(value, reference, isExpense) {
 
 function DeltaCell({ value, referenceValue, referenceYear, isExpense, month }) {
   const delta = calcDelta(value, referenceValue, isExpense);
-  const isPositive = delta !== null && delta >= 0;
+  const isPositive = delta !== null && (isExpense ? delta >= 0 : delta <= 0);
   const arrow = delta === null ? '' : (isPositive ? '↑' : '↓');
   const deltaColor = delta === null ? 'text.disabled' : (isPositive ? 'success.main' : 'error.main');
   const monthLabel = MONTHS[month - 1] ?? '';

@@ -347,89 +347,98 @@ export default function CategorySubjectTable({
                   {/* Righe espanse — dettagli soggetto */}
                   {expanded[row.id] && row.original.values?.length > 0 && (
                     <TableRow key={`${row.id}-expanded`}>
-                      <TableCell colSpan={table.getVisibleLeafColumns().length} sx={{ py: 0 }}>
+                      <TableCell colSpan={table.getVisibleLeafColumns().length} sx={{ py: 0, bgcolor: 'background.neutral' }}>
                         <Collapse in timeout="auto" unmountOnExit>
-                          <Box sx={{ my: 1, ml: 4 }}>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Dettaglio</TableCell>
-                                  {showIncome && <TableCell align="right">Entrate {mainYear}</TableCell>}
-                                  {showIncome && showPrevYear && <TableCell align="right">Entrate {prevYear}</TableCell>}
-                                  {showExpense && <TableCell align="right">Uscite {mainYear}</TableCell>}
-                                  {showExpense && showPrevYear && <TableCell align="right">Uscite {prevYear}</TableCell>}
-                                  <TableCell />
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {row.original.values.map((val, idx) => (
-                                  <TableRow key={val.id || idx}>
-                                    <TableCell>
+                          <Table size="small">
+                            <colgroup>
+                              <col style={{ width: 50 }} />   {/* expand placeholder */}
+                              <col />                          {/* nome dettaglio — flex */}
+                              {showIncome && <col style={{ width: 160 }} />}
+                              {showIncome && showPrevYear && <col style={{ width: 200 }} />}
+                              {showExpense && <col style={{ width: 160 }} />}
+                              {showExpense && showPrevYear && <col style={{ width: 200 }} />}
+                              <col style={{ width: 100 }} />  {/* azioni */}
+                            </colgroup>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell />  {/* expand placeholder */}
+                                <TableCell sx={{ color: 'text.secondary' }}>Dettaglio</TableCell>
+                                {showIncome && <TableCell align="right" sx={{ color: 'text.secondary' }}>Entrate {mainYear}</TableCell>}
+                                {showIncome && showPrevYear && <TableCell align="right" sx={{ color: 'text.secondary' }}>Entrate {prevYear}</TableCell>}
+                                {showExpense && <TableCell align="right" sx={{ color: 'text.secondary' }}>Uscite {mainYear}</TableCell>}
+                                {showExpense && showPrevYear && <TableCell align="right" sx={{ color: 'text.secondary' }}>Uscite {prevYear}</TableCell>}
+                                <TableCell />
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {row.original.values.map((val, idx) => (
+                                <TableRow key={val.id || idx}>
+                                  <TableCell />  {/* expand placeholder */}
+                                  <TableCell>
+                                    <Typography variant="body2">
+                                      {capitalizeCase(val.title)}
+                                    </Typography>
+                                  </TableCell>
+                                  {showIncome && (
+                                    <TableCell align="right">
                                       <Typography variant="body2">
-                                        {capitalizeCase(val.title)}
+                                        {formatCurrency(parseFloat(val.totalIncome || 0))}
                                       </Typography>
                                     </TableCell>
-                                    {showIncome && (
-                                      <TableCell align="right">
-                                        <Typography variant="body2">
-                                          {formatCurrency(parseFloat(val.totalIncome || 0))}
-                                        </Typography>
-                                      </TableCell>
-                                    )}
-                                    {showIncome && showPrevYear && (
-                                      <TableCell align="right">
-                                        <DeltaCell
-                                          value={parseFloat(val.prevTotalIncome || 0)}
-                                          referenceValue={parseFloat(val.totalIncome || 0)}
-                                          referenceYear={mainYear}
-                                          isExpense={false}
-                                          month={selectedMonth}
-                                        />
-                                      </TableCell>
-                                    )}
-                                    {showExpense && (
-                                      <TableCell align="right">
-                                        <Typography variant="body2">
-                                          {formatCurrency(parseFloat(val.totalExpense || 0))}
-                                        </Typography>
-                                      </TableCell>
-                                    )}
-                                    {showExpense && showPrevYear && (
-                                      <TableCell align="right">
-                                        <DeltaCell
-                                          value={parseFloat(val.prevTotalExpense || 0)}
-                                          referenceValue={parseFloat(val.totalExpense || 0)}
-                                          referenceYear={mainYear}
-                                          isExpense
-                                          month={selectedMonth}
-                                        />
-                                      </TableCell>
-                                    )}
+                                  )}
+                                  {showIncome && showPrevYear && (
                                     <TableCell align="right">
-                                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                                        <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}
-                                          >
-                                            <Iconify icon="solar:document-text-bold" />
-                                          </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Vedi grafici" placement="top" arrow>
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}
-                                          >
-                                            <Iconify icon="solar:chart-bold" />
-                                          </IconButton>
-                                        </Tooltip>
-                                      </Stack>
+                                      <DeltaCell
+                                        value={parseFloat(val.prevTotalIncome || 0)}
+                                        referenceValue={parseFloat(val.totalIncome || 0)}
+                                        referenceYear={mainYear}
+                                        isExpense={false}
+                                        month={selectedMonth}
+                                      />
                                     </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
+                                  )}
+                                  {showExpense && (
+                                    <TableCell align="right">
+                                      <Typography variant="body2">
+                                        {formatCurrency(parseFloat(val.totalExpense || 0))}
+                                      </Typography>
+                                    </TableCell>
+                                  )}
+                                  {showExpense && showPrevYear && (
+                                    <TableCell align="right">
+                                      <DeltaCell
+                                        value={parseFloat(val.prevTotalExpense || 0)}
+                                        referenceValue={parseFloat(val.totalExpense || 0)}
+                                        referenceYear={mainYear}
+                                        isExpense
+                                        month={selectedMonth}
+                                      />
+                                    </TableCell>
+                                  )}
+                                  <TableCell align="right">
+                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                      <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}
+                                        >
+                                          <Iconify icon="solar:document-text-bold" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Vedi grafici" placement="top" arrow>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}
+                                        >
+                                          <Iconify icon="solar:chart-bold" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Stack>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
                         </Collapse>
                       </TableCell>
                     </TableRow>

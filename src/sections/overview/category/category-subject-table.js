@@ -44,7 +44,7 @@ const columnHelper = createColumnHelper();
 const formatCurrency = (value) => fCurrencyEur(value ?? 0);
 
 function calcDelta(value, reference, isExpense) {
-  if (!value || value === 0) return null;
+  if (!value || !reference) return null;
   const raw = ((reference - value) / Math.abs(value)) * 100;
   return isExpense ? -raw : raw;
 }
@@ -345,104 +345,94 @@ export default function CategorySubjectTable({
                     ))}
                   </TableRow>
                   {/* Righe espanse — dettagli soggetto */}
-                  {expanded[row.id] && row.original.values?.length > 0 && (
-                    <TableRow key={`${row.id}-expanded`}>
-                      <TableCell colSpan={table.getVisibleLeafColumns().length} sx={{ py: 0, bgcolor: 'background.neutral' }}>
-                        <Collapse in timeout="auto" unmountOnExit>
-                          <Table size="small">
-                            <colgroup>
-                              <col style={{ width: 50 }} />   {/* expand placeholder */}
-                              <col />                          {/* nome dettaglio — flex */}
-                              {showIncome && <col style={{ width: 160 }} />}
-                              {showIncome && showPrevYear && <col style={{ width: 200 }} />}
-                              {showExpense && <col style={{ width: 160 }} />}
-                              {showExpense && showPrevYear && <col style={{ width: 200 }} />}
-                              <col style={{ width: 100 }} />  {/* azioni */}
-                            </colgroup>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell />  {/* expand placeholder */}
-                                <TableCell sx={{ color: 'text.secondary' }}>Dettaglio</TableCell>
-                                {showIncome && <TableCell align="right" sx={{ color: 'text.secondary' }}>Entrate {mainYear}</TableCell>}
-                                {showIncome && showPrevYear && <TableCell align="right" sx={{ color: 'text.secondary' }}>Entrate {prevYear}</TableCell>}
-                                {showExpense && <TableCell align="right" sx={{ color: 'text.secondary' }}>Uscite {mainYear}</TableCell>}
-                                {showExpense && showPrevYear && <TableCell align="right" sx={{ color: 'text.secondary' }}>Uscite {prevYear}</TableCell>}
-                                <TableCell />
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {row.original.values.map((val, idx) => (
-                                <TableRow key={val.id || idx}>
-                                  <TableCell />  {/* expand placeholder */}
-                                  <TableCell>
-                                    <Typography variant="body2">
-                                      {capitalizeCase(val.title)}
-                                    </Typography>
-                                  </TableCell>
-                                  {showIncome && (
-                                    <TableCell align="right">
-                                      <Typography variant="body2">
-                                        {formatCurrency(parseFloat(val.totalIncome || 0))}
-                                      </Typography>
-                                    </TableCell>
-                                  )}
-                                  {showIncome && showPrevYear && (
-                                    <TableCell align="right">
-                                      <DeltaCell
-                                        value={parseFloat(val.prevTotalIncome || 0)}
-                                        referenceValue={parseFloat(val.totalIncome || 0)}
-                                        referenceYear={mainYear}
-                                        isExpense={false}
-                                        month={selectedMonth}
-                                      />
-                                    </TableCell>
-                                  )}
-                                  {showExpense && (
-                                    <TableCell align="right">
-                                      <Typography variant="body2">
-                                        {formatCurrency(parseFloat(val.totalExpense || 0))}
-                                      </Typography>
-                                    </TableCell>
-                                  )}
-                                  {showExpense && showPrevYear && (
-                                    <TableCell align="right">
-                                      <DeltaCell
-                                        value={parseFloat(val.prevTotalExpense || 0)}
-                                        referenceValue={parseFloat(val.totalExpense || 0)}
-                                        referenceYear={mainYear}
-                                        isExpense
-                                        month={selectedMonth}
-                                      />
-                                    </TableCell>
-                                  )}
-                                  <TableCell align="right">
-                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                                      <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}
-                                        >
-                                          <Iconify icon="solar:document-text-bold" />
-                                        </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title="Vedi grafici" placement="top" arrow>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}
-                                        >
-                                          <Iconify icon="solar:chart-bold" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </Stack>
-                                  </TableCell>
+                  {expanded[row.id] && row.original.values?.length > 0 && (() => {
+                    // Legge le larghezze reali delle colonne dalla tabella madre
+                    const cols = table.getVisibleLeafColumns();
+                    const colWidths = Object.fromEntries(cols.map(c => [c.id, c.getSize()]));
+
+                    return (
+                      <TableRow key={`${row.id}-expanded`}>
+                        <TableCell colSpan={cols.length} sx={{ py: 0, px: 0, bgcolor: 'background.neutral' }}>
+                          <Collapse in timeout="auto" unmountOnExit>
+                            <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
+                              <colgroup>
+                                {cols.map(c => (
+                                  <col key={c.id} style={{ width: colWidths[c.id] || 'auto' }} />
+                                ))}
+                              </colgroup>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ width: colWidths.expand }} />
+                                  <TableCell sx={{ color: 'text.secondary', width: colWidths.name }}>Dettaglio</TableCell>
+                                  {showIncome && <TableCell align="right" sx={{ color: 'text.secondary', width: colWidths[`income_${mainYear}`] }}>Entrate {mainYear}</TableCell>}
+                                  {showIncome && showPrevYear && <TableCell align="right" sx={{ color: 'text.secondary', width: colWidths[`income_${prevYear}`] }}>Entrate {prevYear}</TableCell>}
+                                  {showExpense && <TableCell align="right" sx={{ color: 'text.secondary', width: colWidths[`expense_${mainYear}`] }}>Uscite {mainYear}</TableCell>}
+                                  {showExpense && showPrevYear && <TableCell align="right" sx={{ color: 'text.secondary', width: colWidths[`expense_${prevYear}`] }}>Uscite {prevYear}</TableCell>}
+                                  <TableCell sx={{ width: colWidths.actions }} />
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </Collapse>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                              </TableHead>
+                              <TableBody>
+                                {row.original.values.map((val, idx) => (
+                                  <TableRow key={val.id || idx}>
+                                    <TableCell />
+                                    <TableCell>
+                                      <Typography variant="body2">{capitalizeCase(val.title)}</Typography>
+                                    </TableCell>
+                                    {showIncome && (
+                                      <TableCell align="right">
+                                        <Typography variant="body2">{formatCurrency(parseFloat(val.totalIncome || 0))}</Typography>
+                                      </TableCell>
+                                    )}
+                                    {showIncome && showPrevYear && (
+                                      <TableCell align="right">
+                                        <DeltaCell
+                                          value={parseFloat(val.prevTotalIncome || 0)}
+                                          referenceValue={parseFloat(val.totalIncome || 0)}
+                                          referenceYear={mainYear}
+                                          isExpense={false}
+                                          month={selectedMonth}
+                                        />
+                                      </TableCell>
+                                    )}
+                                    {showExpense && (
+                                      <TableCell align="right">
+                                        <Typography variant="body2">{formatCurrency(parseFloat(val.totalExpense || 0))}</Typography>
+                                      </TableCell>
+                                    )}
+                                    {showExpense && showPrevYear && (
+                                      <TableCell align="right">
+                                        <DeltaCell
+                                          value={parseFloat(val.prevTotalExpense || 0)}
+                                          referenceValue={parseFloat(val.totalExpense || 0)}
+                                          referenceYear={mainYear}
+                                          isExpense
+                                          month={selectedMonth}
+                                        />
+                                      </TableCell>
+                                    )}
+                                    <TableCell align="right">
+                                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+                                          <IconButton size="small" onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}>
+                                            <Iconify icon="solar:document-text-bold" />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Vedi grafici" placement="top" arrow>
+                                          <IconButton size="small" onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}>
+                                            <Iconify icon="solar:chart-bold" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })()}
                 </Fragment>
               ))}
             </TableBody>

@@ -44,7 +44,7 @@ const columnHelper = createColumnHelper();
 const formatCurrency = (value) => fCurrencyEur(value ?? 0);
 
 function calcDelta(value, reference, isExpense) {
-  if (!value || !reference) return null;
+  if (value == null || value === 0 || reference == null) return null;
   const raw = ((reference - value) / Math.abs(value)) * 100;
   return isExpense ? -raw : raw;
 }
@@ -154,6 +154,7 @@ export default function CategorySubjectTable({
         id: 'expand',
         header: '',
         enableSorting: false,
+        size: 50,
         cell: ({ row }) => row.original.values?.length > 0 ? (
           <IconButton
             size="small"
@@ -167,6 +168,7 @@ export default function CategorySubjectTable({
       columnHelper.accessor('name', {
         id: 'name',
         header: 'Soggetto',
+        size: 300,
         cell: info => (
           <Typography variant="subtitle1" noWrap>
             {capitalizeCase(info.getValue())}
@@ -180,6 +182,7 @@ export default function CategorySubjectTable({
         columnHelper.accessor('ytdIncome', {
           id: `income_${mainYear}`,
           header: `Entrate ${mainYear}`,
+          size: 160,
           cell: info => (
             <Typography variant="body1" sx={{ textAlign: 'right' }}>
               {formatCurrency(info.getValue())}
@@ -192,6 +195,7 @@ export default function CategorySubjectTable({
           columnHelper.accessor('prevYtdIncome', {
             id: `income_${prevYear}`,
             header: `Entrate ${prevYear}`,
+            size: 200,
             cell: info => (
               <DeltaCell
                 value={info.getValue()}
@@ -211,6 +215,7 @@ export default function CategorySubjectTable({
         columnHelper.accessor('ytdExpense', {
           id: `expense_${mainYear}`,
           header: `Uscite ${mainYear}`,
+          size: 160,
           cell: info => (
             <Typography variant="body1" sx={{ textAlign: 'right' }}>
               {formatCurrency(info.getValue())}
@@ -223,6 +228,7 @@ export default function CategorySubjectTable({
           columnHelper.accessor('prevYtdExpense', {
             id: `expense_${prevYear}`,
             header: `Uscite ${prevYear}`,
+            size: 200,
             cell: info => (
               <DeltaCell
                 value={info.getValue()}
@@ -243,6 +249,7 @@ export default function CategorySubjectTable({
         id: 'actions',
         header: '',
         enableSorting: false,
+        size: 100,
         cell: ({ row }) => (
           <Stack direction="row" spacing={0.5}>
             <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
@@ -276,6 +283,7 @@ export default function CategorySubjectTable({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    defaultColumn: { minSize: 50 },
   });
 
   const headerAction = (
@@ -304,7 +312,12 @@ export default function CategorySubjectTable({
         sx={{ mb: 1 }}
       />      <TableContainer>
         <Scrollbar>
-          <Table sx={{ minWidth: 680 }}>
+          <Table sx={{ minWidth: 680, tableLayout: 'fixed' }}>
+            <colgroup>
+              {table.getVisibleLeafColumns().map(col => (
+                <col key={col.id} style={{ width: col.getSize() }} />
+              ))}
+            </colgroup>
             <TableHead>
               {table.getHeaderGroups().map(hg => (
                 <TableRow key={hg.id}>

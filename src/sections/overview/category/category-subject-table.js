@@ -35,6 +35,7 @@ import Scrollbar from '../../../components/scrollbar';
 import Iconify from '../../../components/iconify';
 import { useBoolean } from '../../../hooks/use-boolean';
 import DetailsTransactionsQuickView from './details-transactions-quick-view';
+import SubjectChartQuickView from './subject-chart-quick-view';
 
 // ----------------------------------------------------------------------
 
@@ -101,6 +102,8 @@ export default function CategorySubjectTable({
   const [expanded, setExpanded] = useState({});
   const [transactionsData, setTransactionsData] = useState(null);
   const transactionsModal = useBoolean();
+  const [chartData, setChartData] = useState(null);
+  const chartModal = useBoolean();
 
   const mainYear = reportCategory.year;
   const prevYear = reportCategory.prevYear;
@@ -108,8 +111,13 @@ export default function CategorySubjectTable({
   const monthLabel = MONTHS[selectedMonth - 1] ?? '';
 
   const handleViewTransactions = (params) => {
-    setTransactionsData({ db, owner, year, category: categoryId, ...params });
+    setTransactionsData({ db, owner, year, month: selectedMonth, category: categoryId, ...params });
     transactionsModal.onTrue();
+  };
+
+  const handleViewChart = (params) => {
+    setChartData({ db, owner, year, month: selectedMonth, category: categoryId, categoryName: reportCategory.categoryName, ...params });
+    chartModal.onTrue();
   };
 
   // tableData da averageMonthlyCosts — usa i campi YTD calcolati dal backend
@@ -236,20 +244,30 @@ export default function CategorySubjectTable({
         header: '',
         enableSorting: false,
         cell: ({ row }) => (
-          <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
-            <IconButton
-              size="small"
-              onClick={() => handleViewTransactions({ subject: row.original.id })}
-            >
-              <Iconify icon="solar:document-text-bold" />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+              <IconButton
+                size="small"
+                onClick={() => handleViewTransactions({ subject: row.original.id })}
+              >
+                <Iconify icon="solar:document-text-bold" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Vedi grafici" placement="top" arrow>
+              <IconButton
+                size="small"
+                onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}
+              >
+                <Iconify icon="solar:chart-bold" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
         ),
       })
     );
 
     return cols;
-  }, [showIncome, showExpense, showPrevYear, mainYear, prevYear, selectedMonth, expanded, categoryId, handleViewTransactions]);
+  }, [showIncome, showExpense, showPrevYear, mainYear, prevYear, selectedMonth, expanded, categoryId, handleViewTransactions, handleViewChart]);
 
   const table = useReactTable({
     data: tableData,
@@ -461,6 +479,12 @@ export default function CategorySubjectTable({
         data={transactionsData}
         open={transactionsModal.value}
         onClose={transactionsModal.onFalse}
+      />
+
+      <SubjectChartQuickView
+        data={chartData}
+        open={chartModal.value}
+        onClose={chartModal.onFalse}
       />
     </Card>
   );

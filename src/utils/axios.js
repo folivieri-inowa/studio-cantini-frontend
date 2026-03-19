@@ -68,6 +68,7 @@ export const endpoints = {
       details: '/api/report/category/details',
       subject: {
         details: '/api/report/category/subject/details',
+        chart: '/api/report/category/subject/details/chart',
       }
     },
     // Nuovi endpoint per il raggruppamento

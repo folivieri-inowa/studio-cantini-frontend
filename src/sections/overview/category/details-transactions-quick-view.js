@@ -1,23 +1,28 @@
-import PropTypes from 'prop-types';
-import isEqual from 'lodash/isEqual';
-import { useState, useEffect, useCallback } from 'react';
+'use client';
 
+import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
+
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
 import TableBody from '@mui/material/TableBody';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import TableContainer from '@mui/material/TableContainer';
+import InputAdornment from '@mui/material/InputAdornment';
 
 import axios, { endpoints } from '../../../utils/axios';
 import Scrollbar from '../../../components/scrollbar/scrollbar';
+import Iconify from '../../../components/iconify';
 import PrimaNotaTableRow from '../../prima-nota/prima-nota-table-row';
-import PrimaNotaTableToolbar from '../../prima-nota/prima-nota-table-toolbar';
-import PrimaNotaTableFiltersResult from '../../prima-nota/prima-nota-table-filters-result';
 import {
   useTable, emptyRows,
   TableNoData,
@@ -28,18 +33,7 @@ import {
 
 // ----------------------------------------------------------------------
 
-const defaultFilters = {
-  owner: [],
-  description: '',
-  status: [],
-  categories: []
-};
-
-const PUBLISH_OPTIONS = [
-  { value: 'pending', label: 'In revisione' },
-  { value: 'completed', label: 'Completate' },
-  { value: 'toCheck', label: 'Da controllare' },
-];
+const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
 const TABLE_HEAD = [
   { id: 'date', label: 'Data' },
@@ -50,141 +44,119 @@ const TABLE_HEAD = [
 ];
 
 export default function DetailsTransactionsQuickView({ data, open, onClose }) {
-  const table = useTable({
-    defaultOrderBy: 'date',
-    defaultOrder: 'asc',
-  });
+  const table = useTable({ defaultOrderBy: 'date', defaultOrder: 'asc' });
 
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [tableData, setTableData] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [filters, setFilters] = useState(defaultFilters);
+  const [descriptionFilter, setDescriptionFilter] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
-      setTransactionsLoading(true)
-
+      setTransactionsLoading(true);
       try {
-        // Verifica che data esista prima di fare la richiesta
-        if (!data) {
-          console.warn("Nessun dato da inviare per la richiesta");
-          setTableData([]);
-          setTransactionsLoading(false);
-          return;
-        }
-
-        console.log('DetailsTransactionsQuickView - Dati ricevuti:', data);
-        console.log('DetailsTransactionsQuickView - Struttura dati:', Object.keys(data || {}));
+        if (!data) { setTableData([]); setTransactionsLoading(false); return; }
 
         const response = await axios.post(endpoints.prima_nota.filtered_list, data);
-        if (response.status === 200) {
-          // La struttura della risposta è response.data.data.data
-          if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
-            console.log("Dati ricevuti:", response.data.data.data);
-
-            // Mappiamo i dati nel formato che il componente PrimaNotaTableRow si aspetta
-            const formattedData = response.data.data.data.map((item, index) => ({
-              _id: `transaction-${index}`, // Creiamo un ID unico
-              date: item.date,
-              description: item.description,
-              ownername: item.ownername || "Non specificato",
-              ownerid: item.ownerid || null,
-              amount: item.amount,
-              status: 'completed' // Default status
-            }));
-
-            setTableData(formattedData);
-          } else {
-            console.warn("Risposta API non nel formato atteso:", response.data);
-            setTableData([]);
-          }
+        if (response.status === 200 && response.data?.data?.data && Array.isArray(response.data.data.data)) {
+          const formattedData = response.data.data.data.map((item, index) => ({
+            _id: `transaction-${index}`,
+            date: item.date,
+            description: item.description,
+            ownername: item.ownername || 'Non specificato',
+            ownerid: item.ownerid || null,
+            amount: item.amount,
+            status: 'completed',
+          }));
+          setTableData(formattedData);
         } else {
-          console.warn("Risposta API non valida:", response.data);
           setTableData([]);
         }
       } catch (error) {
-        console.error("Error fetching master data:", error);
+        console.error('Error fetching transactions:', error);
         setTableData([]);
       }
       setTransactionsLoading(false);
     };
 
-    // Reset dei dati quando il componente viene chiuso
     if (!open) {
       setTableData([]);
-    }
-    // Recupera i dati solo quando il modal è aperto e abbiamo dei dati
-    else if (open && data) {
+      setDescriptionFilter('');
+    } else if (open && data) {
       fetchData();
       table.setRowsPerPage(rowsPerPage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data]);
 
-  const dataFiltered = applyFilter({
-    inputData: tableData,
-    comparator: getComparator(table.order, table.orderBy),
-    filters,
+  // Filtro descrizione client-side
+  const dataFiltered = tableData.filter(row => {
+    if (!descriptionFilter) return true;
+    return row.description?.toLowerCase().includes(descriptionFilter.toLowerCase());
   });
+
+  // Ordinamento
+  const stabilized = dataFiltered.map((el, index) => [el, index]);
+  stabilized.sort((a, b) => {
+    const order = getComparator(table.order, table.orderBy)(a[0], b[0]);
+    return order !== 0 ? order : a[1] - b[1];
+  });
+  const dataOrdered = stabilized.map(el => el[0]);
 
   const denseHeight = table.dense ? 60 : 80;
 
-  const canReset = !isEqual(defaultFilters, filters);
-
-  const notFound = (!dataFiltered.length && canReset);
-
-  const handleFilters = useCallback(
-    (name, value) => {
-      table.onResetPage();
-      setFilters((prevState) => ({
-        ...prevState,
-        [name]: value,
-      }));
-    },
-    [table]
-  );
-
-  const handleResetFilters = useCallback(() => {
-    setFilters(defaultFilters);
-  }, []);
-
+  // Label periodo di riferimento
+  const periodLabel = (() => {
+    if (!data?.year || data.year === 'all-years') return '';
+    const m = data?.month ? parseInt(data.month, 10) : null;
+    if (!m || m === 12) return `Anno ${data.year}`;
+    return `Gen – ${MONTHS[m - 1]} ${data.year}`;
+  })();
 
   return (
     <Dialog fullWidth maxWidth="lg" open={open} onClose={onClose}>
       <DialogTitle>
-        <Typography variant="h5" component="span" gutterBottom>
-          Elenco movimenti
-        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="h5">Elenco movimenti</Typography>
+          {periodLabel && (
+            <Chip
+              icon={<Iconify icon="solar:calendar-bold" />}
+              label={periodLabel}
+              size="small"
+              color="primary"
+              variant="soft"
+            />
+          )}
+        </Stack>
       </DialogTitle>
 
       <DialogContent>
-        <Stack spacing={3}>
-          <PrimaNotaTableToolbar
-            filters={filters}
-            onFilters={handleFilters}
-            //
-            publishOptions={PUBLISH_OPTIONS}
-            stateFilter={false}
-          />
-
-          {canReset && (
-            <PrimaNotaTableFiltersResult
-              filters={filters}
-              onFilters={handleFilters}
-              //
-              onResetFilters={handleResetFilters}
-              //
-              results={dataFiltered.length}
-              publishOptions={PUBLISH_OPTIONS}
-              ownersOptions={[]}
-              categoriesOptions={[]}
-              sx={{ p: 2.5, pt: 0 }}
+        <Stack spacing={2}>
+          <Box sx={{ pt: 1 }}>
+            <TextField
+              size="small"
+              placeholder="Cerca per descrizione..."
+              value={descriptionFilter}
+              onChange={e => setDescriptionFilter(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: descriptionFilter ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setDescriptionFilter('')}>
+                      <Iconify icon="eva:close-fill" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+              sx={{ width: 320 }}
             />
-          )}
+          </Box>
 
           <TableContainer sx={{ position: 'relative', overflow: 'unset' }}>
-            {/* TableSelectedAction rimossa perché questa è una vista di sola consultazione */}
-
             <Scrollbar>
               <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }}>
                 <TableHeadCustom
@@ -195,7 +167,6 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
                   numSelected={table.selected.length}
                   onSort={table.onSort}
                 />
-
                 <TableBody>
                   {transactionsLoading ? (
                     [...Array(table.rowsPerPage)].map((_, index) => (
@@ -203,11 +174,8 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
                     ))
                   ) : (
                     <>
-                      {dataFiltered
-                        .slice(
-                          table.page * table.rowsPerPage,
-                          table.page * table.rowsPerPage + table.rowsPerPage
-                        )
+                      {dataOrdered
+                        .slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
                         .map((row, index) => (
                           <PrimaNotaTableRow
                             key={row._id || `row-${index}`}
@@ -219,28 +187,25 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
                         ))}
                     </>
                   )}
-
                   <TableEmptyRows
                     height={denseHeight}
-                    emptyRows={emptyRows(table.page, table.rowsPerPage, tableData.length)}
+                    emptyRows={emptyRows(table.page, table.rowsPerPage, dataOrdered.length)}
                   />
-
-                  <TableNoData notFound={notFound} />
+                  <TableNoData notFound={!dataOrdered.length && !transactionsLoading} />
                 </TableBody>
               </Table>
             </Scrollbar>
           </TableContainer>
 
           <TablePaginationCustom
-            count={dataFiltered.length}
+            count={dataOrdered.length}
             page={table.page}
             rowsPerPage={rowsPerPage}
             onPageChange={table.onChangePage}
             onRowsPerPageChange={(e) => {
-              setRowsPerPage(e.target.value)
+              setRowsPerPage(e.target.value);
               table.setRowsPerPage(e.target.value);
             }}
-            //
             dense={table.dense}
             onChangeDense={table.onChangeDense}
           />
@@ -248,9 +213,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
       </DialogContent>
 
       <DialogActions>
-        <Button variant="outlined" onClick={onClose}>
-          Chiudi
-        </Button>
+        <Button variant="outlined" onClick={onClose}>Chiudi</Button>
       </DialogActions>
     </Dialog>
   );
@@ -261,48 +224,3 @@ DetailsTransactionsQuickView.propTypes = {
   onClose: PropTypes.func,
   open: PropTypes.bool,
 };
-
-function applyFilter({ inputData, comparator, filters }) {
-  const { name, description, status } = filters;
-
-  // Verifica che inputData sia un array
-  if (!Array.isArray(inputData)) {
-    console.warn('applyFilter: inputData non è un array', inputData);
-    return [];
-  }
-
-  const stabilizedThis = inputData.map((el, index) => [el, index]);
-
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-  });
-
-  inputData = stabilizedThis.map((el) => el[0]);
-
-  // Filtro per owner name
-  if (name) {
-    inputData = inputData.filter(
-      (transaction) => transaction.ownername &&
-        transaction.ownername.toLowerCase().indexOf(name.toLowerCase()) !== -1
-    );
-  }
-
-  // Filtro per descrizione
-  if (description) {
-    inputData = inputData.filter(
-      (transaction) => transaction.description &&
-        transaction.description.toLowerCase().indexOf(description.toLowerCase()) !== -1
-    );
-  }
-
-  // Filtro per stato
-  if (status && status.length) {
-    inputData = inputData.filter((transaction) =>
-      transaction.status && status.includes(transaction.status)
-    );
-  }
-
-  return inputData;
-}

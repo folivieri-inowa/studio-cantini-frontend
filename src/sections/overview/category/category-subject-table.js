@@ -406,14 +406,24 @@ export default function CategorySubjectTable({
                                       </TableCell>
                                     )}
                                     <TableCell align="right">
-                                      <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}
-                                        >
-                                          <Iconify icon="solar:document-text-bold" />
-                                        </IconButton>
-                                      </Tooltip>
+                                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}
+                                          >
+                                            <Iconify icon="solar:document-text-bold" />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Vedi grafici" placement="top" arrow>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}
+                                          >
+                                            <Iconify icon="solar:chart-bold" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
                                     </TableCell>
                                   </TableRow>
                                 ))}

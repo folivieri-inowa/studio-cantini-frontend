@@ -6,10 +6,15 @@ import PropTypes from 'prop-types';
 
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 
+import { paths } from '../../../../routes/paths';
+import { useRouter } from '../../../../routes/hooks';
 import DetailsQuickView from '../details-quick-view';
 import { useBoolean } from '../../../../hooks/use-boolean';
 import axios, { endpoints } from '../../../../utils/axios';
@@ -19,6 +24,7 @@ import { useSettingsContext } from '../../../../components/settings';
 import CategoryChartToggle from '../category-chart-toggle';
 import CategorySubjectTable from '../category-subject-table';
 import MasterMonthlyTrendChart from '../../master/master-monthly-trend-chart';
+import MonthBreakdownDialog from '../month-breakdown-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -26,6 +32,11 @@ export default function CategoryDetailsView({ categoryId }) {
   const [detailsData, setDetailsData] = useState(null);
   const quickView = useBoolean();
   const settings = useSettingsContext();
+  const router = useRouter();
+
+  const [exclusions, setExclusions] = useState([]);
+  const [breakdownMonth, setBreakdownMonth] = useState(null);
+  const breakdownDialog = useBoolean();
 
   const ownerId = settings.owner ? settings.owner.id : null;
   const { year } = settings;
@@ -92,29 +103,29 @@ export default function CategoryDetailsView({ categoryId }) {
 
   // La funzione getYearlySalesData è stata rimossa perché ora utilizziamo getChartData
   // per uniformare la rappresentazione dei dati in tutti i grafici
-  
+
   // Funzione per adattare i dati di getChartData al formato richiesto da EcommerceMultiYearSales
   const adaptChartDataForMultiYear = (chartData, currentYear, previousYear) => {
     if (!chartData || chartData.length === 0) return { categories: [], series: [] };
-    
+
     // Separare i dati per anno
-    const currentYearData = chartData.filter(item => 
+    const currentYearData = chartData.filter(item =>
       item.name.includes(`${currentYear}`)
     );
-    
-    const previousYearData = chartData.filter(item => 
+
+    const previousYearData = chartData.filter(item =>
       item.name.includes(`${previousYear}`)
     );
-    
+
     // Create categories array (months)
     const categories = [
       'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
       'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
     ];
-    
+
     // Costruire le serie nel formato richiesto da EcommerceMultiYearSales
     const series = [];
-    
+
     // Anno corrente
     if (currentYearData.length > 0) {
       series.push({
@@ -122,7 +133,7 @@ export default function CategoryDetailsView({ categoryId }) {
         data: currentYearData
       });
     }
-    
+
     // Anno precedente
     if (previousYearData.length > 0) {
       series.push({
@@ -130,7 +141,7 @@ export default function CategoryDetailsView({ categoryId }) {
         data: previousYearData
       });
     }
-    
+
     return { categories, series };
   };
 
@@ -144,6 +155,69 @@ export default function CategoryDetailsView({ categoryId }) {
 
   const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
+  // Recalculate monthlyTotals subtracting excluded items
+  const getAdjustedExpenseData = (monthlyTotals, excls) => {
+    if (!monthlyTotals || excls.length === 0) {
+      // Same shape as monthlyExpenseTrendData
+      const data = Object.entries(monthlyTotals)
+        .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
+        .map(([, d]) => parseFloat(d.expense.toFixed(2)));
+      return [{ name: `Uscite ${year}`, data }];
+    }
+    const adjusted = {};
+    Object.entries(monthlyTotals).forEach(([m, d]) => {
+      adjusted[m] = { ...d };
+    });
+    excls.forEach(exc => {
+      if (adjusted[exc.month]) {
+        adjusted[exc.month].expense = Math.max(0, adjusted[exc.month].expense - exc.amount);
+      }
+    });
+    const data = Object.entries(adjusted)
+      .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
+      .map(([, d]) => parseFloat(d.expense.toFixed(2)));
+    return [{ name: `Uscite ${year}`, data }];
+  };
+
+  const adjustedExpenseData = getAdjustedExpenseData(reportCategory.monthlyTotals, exclusions);
+
+  const handleBarClick = (monthIndex) => {
+    setBreakdownMonth(monthIndex + 1); // convert 0-based to 1-based
+    breakdownDialog.onTrue();
+  };
+
+  const handleToggleExclusion = (exc) => {
+    setExclusions(prev => {
+      const key = `${exc.subjectId}:${exc.detailId}:${exc.month}`;
+      const exists = prev.find(e => `${e.subjectId}:${e.detailId}:${e.month}` === key);
+      if (exists) {
+        return prev.filter(e => `${e.subjectId}:${e.detailId}:${e.month}` !== key);
+      }
+      return [...prev, exc];
+    });
+  };
+
+  const handleRemoveExclusion = (exc) => {
+    const key = `${exc.subjectId}:${exc.detailId}:${exc.month}`;
+    setExclusions(prev => prev.filter(e => `${e.subjectId}:${e.detailId}:${e.month}` !== key));
+  };
+
+  const handleResetExclusions = () => setExclusions([]);
+
+  const handleChipClick = (exc) => {
+    setBreakdownMonth(exc.month);
+    breakdownDialog.onTrue();
+  };
+
+  // Monthly average from ORIGINAL data (not adjusted) — used for anomaly threshold
+  const originalMonthlyAvg = (() => {
+    if (!reportCategory.monthlyTotals) return 0;
+    const values = Object.values(reportCategory.monthlyTotals)
+      .map(d => parseFloat(d.expense))
+      .filter(v => v > 0);
+    return values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+  })();
+
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
       <Stack
@@ -152,6 +226,11 @@ export default function CategoryDetailsView({ categoryId }) {
         sx={{ mb: 5 }}
       >
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
+          <Tooltip title="Torna alla dashboard">
+            <IconButton onClick={() => router.push(paths.dashboard.root)}>
+              <ArrowBackIosNewIcon />
+            </IconButton>
+          </Tooltip>
           <Stack direction="column" spacing={3}>
             <Typography variant="h4" component="div">
               Report relativo alla categoria: &#34;{capitalizeCase(reportCategory.categoryName)}&#34;
@@ -179,6 +258,7 @@ export default function CategoryDetailsView({ categoryId }) {
             db={settings.db}
             owner={settings.owner ? settings.owner.id : 'all-accounts'}
             year={settings.year}
+            exclusions={exclusions}
             onViewRow={async (prop) => {
               await getSubjectDetails({ ...prop, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year });
             }}
@@ -190,14 +270,31 @@ export default function CategoryDetailsView({ categoryId }) {
             onClose={quickView.onFalse}
           />
         </Grid>
-        
+
         <Grid size={12}>
           <MasterMonthlyTrendChart
             title="Andamento mensile uscite"
             subheader={`Media spese mensili — anno ${year}`}
-            series={monthlyExpenseTrendData}
+            series={adjustedExpenseData}
             categories={MONTHS}
             colors={['#FF4842']}
+            onBarClick={handleBarClick}
+            exclusions={exclusions}
+            onRemoveExclusion={handleRemoveExclusion}
+            onResetExclusions={handleResetExclusions}
+            onChipClick={handleChipClick}
+          />
+          <MonthBreakdownDialog
+            open={breakdownDialog.value}
+            onClose={breakdownDialog.onFalse}
+            month={breakdownMonth}
+            year={year}
+            category={categoryId}
+            db={settings.db}
+            owner={settings.owner ? settings.owner.id : 'all-accounts'}
+            exclusions={exclusions}
+            onToggleExclusion={handleToggleExclusion}
+            monthlyAvg={originalMonthlyAvg}
           />
         </Grid>
 

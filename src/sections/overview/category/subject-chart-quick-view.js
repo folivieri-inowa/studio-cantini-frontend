@@ -18,7 +18,10 @@ import axios, { endpoints } from '../../../utils/axios';
 import { fCurrencyEur } from '../../../utils/format-number';
 import { capitalizeCase } from '../../../utils/change-case';
 import Chart, { useChart } from '../../../components/chart';
-const MONTH_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+// ----------------------------------------------------------------------
+
+const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
 // Aggrega i dati mensili per-detail in una serie unica per anno (somma tutti i detail)
 function buildYearSeries(seriesArray, year, selectedMonth) {
@@ -63,7 +66,7 @@ function BarAvgChart({ currentYear, prevYear, currentData, prevData, selectedMon
   const chartOptions = useChart({
     colors: ['#FF4842', '#FFA48D'],
     stroke: { show: true, width: 2, colors: ['transparent'] },
-    xaxis: { categories: MONTH_LABELS },
+    xaxis: { categories: MONTHS },
     yaxis: {
       labels: { formatter: v => fCurrencyEur(v ?? 0) },
     },
@@ -111,7 +114,7 @@ function LineChart({ currentYear, prevYear, currentData, prevData, selectedMonth
   const chartOptions = useChart({
     colors: ['#FF4842', '#FFA48D'],
     stroke: { width: [3, 2], dashArray: [0, 4] },
-    xaxis: { categories: MONTH_LABELS },
+    xaxis: { categories: MONTHS },
     yaxis: { labels: { formatter: v => fCurrencyEur(v ?? 0) } },
     tooltip: { y: { formatter: v => fCurrencyEur(v ?? 0) } },
     markers: { size: 4 },

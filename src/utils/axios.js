@@ -66,6 +66,7 @@ export const endpoints = {
     base: '/api/reports',
     category: {
       details: '/api/report/category/details',
+      monthBreakdown: '/api/report/category/month-breakdown',
       subject: {
         details: '/api/report/category/subject/details',
         chart: '/api/report/category/subject/details/chart',

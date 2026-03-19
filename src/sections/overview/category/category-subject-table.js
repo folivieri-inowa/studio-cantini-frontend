@@ -293,11 +293,13 @@ export default function CategorySubjectTable({
     </Stack>
   );
 
+  const compareLabel = showPrevYear && prevYear ? ` · confronto con ${prevYear}` : '';
+
   return (
     <Card>
       <CardHeader
         title="Riepilogo per soggetto"
-        subheader={`Totale da Gen a ${monthLabel} ${mainYear}`}
+        subheader={`Totale da Gen a ${monthLabel} ${mainYear}${compareLabel}`}
         action={headerAction}
         sx={{ mb: 1 }}
       />      <TableContainer>

@@ -142,6 +142,10 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState(null);
 
+  // Usa stringify come dipendenza per evitare loop su object reference
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const dataKey = JSON.stringify(data);
+
   useEffect(() => {
     if (!open || !data) { setChartData(null); return; }
 
@@ -155,7 +159,9 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
           owner: data.owner,
           db: data.db,
         });
-        if (response.data) setChartData(response.data);
+        // Il backend restituisce direttamente { subject, subjectName, currentYearSeries, prevYearSeries, ... }
+        const payload = response.data?.data ?? response.data;
+        if (payload) setChartData(payload);
       } catch (err) {
         console.error('Error fetching subject chart:', err);
       }
@@ -163,7 +169,8 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
     };
 
     fetchChart();
-  }, [open, data]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, dataKey]);
 
   const selectedMonth = data?.month ? parseInt(data.month, 10) : 12;
   const periodLabel = (() => {

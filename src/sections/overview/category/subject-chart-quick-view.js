@@ -110,8 +110,8 @@ BarAvgChart.propTypes = {
 
 function LineChart({ currentYear, prevYear, currentData, prevData, selectedMonth }) {
   const series = [
-    { name: `YTD ${currentYear}`, data: buildCumulativeSeries(currentData, selectedMonth) },
-    { name: `YTD ${prevYear}`, data: buildCumulativeSeries(prevData, selectedMonth) },
+    { name: `${currentYear}`, data: buildCumulativeSeries(currentData, selectedMonth) },
+    { name: `${prevYear}`, data: buildCumulativeSeries(prevData, selectedMonth) },
   ];
 
   const chartOptions = useChart({
@@ -175,7 +175,7 @@ export default function SubjectChartQuickView({ data, open, onClose }) {
   const selectedMonth = data?.month ? parseInt(data.month, 10) : 12;
   const periodLabel = (() => {
     if (!data?.year || data.year === 'all-years') return '';
-    if (selectedMonth === 12) return `Anno ${data.year}`;
+    if (selectedMonth === 12) return `${data.year}`;
     return `Gen – ${MONTHS[selectedMonth - 1]} ${data.year}`;
   })();
 

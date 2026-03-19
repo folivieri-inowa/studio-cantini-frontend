@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   useReactTable,
@@ -44,8 +44,8 @@ const columnHelper = createColumnHelper();
 const formatCurrency = (value) => fCurrencyEur(value ?? 0);
 
 function calcDelta(value, reference, isExpense) {
-  if (!reference || reference === 0) return null;
-  const raw = ((value - reference) / Math.abs(reference)) * 100;
+  if (!value || value === 0) return null;
+  const raw = ((reference - value) / Math.abs(value)) * 100;
   return isExpense ? -raw : raw;
 }
 
@@ -55,10 +55,10 @@ function DeltaCell({ value, referenceValue, referenceYear, isExpense, month }) {
   const arrow = delta === null ? '' : (isPositive ? '↑' : '↓');
   const deltaColor = delta === null ? 'text.disabled' : (isPositive ? 'success.main' : 'error.main');
   const monthLabel = MONTHS[month - 1] ?? '';
-  const diffAbsolute = value - referenceValue;
+  const diffAbsolute = referenceValue - value;
   const sign = diffAbsolute >= 0 ? '+' : '';
   const tooltipText = delta !== null
-    ? `${sign}${formatCurrency(diffAbsolute)} rispetto il periodo Gen a ${monthLabel} ${referenceYear} (${sign}${delta.toFixed(1)}%)`
+    ? `${sign}${formatCurrency(diffAbsolute)} rispetto al ${referenceYear} (${sign}${delta.toFixed(1)}%)`
     : 'Nessun dato di riferimento';
 
   return (
@@ -333,8 +333,8 @@ export default function CategorySubjectTable({
             </TableHead>
             <TableBody>
               {table.getRowModel().rows.map(row => (
-                <>
-                  <TableRow key={row.id} hover>
+                <Fragment key={row.id}>
+                  <TableRow hover>
                     {row.getVisibleCells().map(cell => (
                       <TableCell
                         key={cell.id}
@@ -424,7 +424,7 @@ export default function CategorySubjectTable({
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
             <TableFooter>

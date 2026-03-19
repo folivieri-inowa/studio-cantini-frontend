@@ -9,6 +9,7 @@ import Table from '@mui/material/Table';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Tooltip from '@mui/material/Tooltip';
 import Checkbox from '@mui/material/Checkbox';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
@@ -24,8 +25,10 @@ import TableContainer from '@mui/material/TableContainer';
 import axios, { endpoints } from '../../../utils/axios';
 import { fCurrencyEur } from '../../../utils/format-number';
 import { capitalizeCase } from '../../../utils/change-case';
+import { useBoolean } from '../../../hooks/use-boolean';
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
+import DetailsTransactionsQuickView from './details-transactions-quick-view';
 
 // ----------------------------------------------------------------------
 
@@ -59,6 +62,14 @@ export default function MonthBreakdownDialog({
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [expanded, setExpanded] = useState({});
+
+  const [transactionsData, setTransactionsData] = useState(null);
+  const transactionsModal = useBoolean();
+
+  const handleViewTransactions = (params) => {
+    setTransactionsData({ db, owner, year, month, category, ...params });
+    transactionsModal.onTrue();
+  };
 
   useEffect(() => {
     if (!open || !month) { setData(null); return; }
@@ -125,6 +136,7 @@ export default function MonthBreakdownDialog({
   };
 
   return (
+    <>
     <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
       <DialogTitle>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -215,6 +227,14 @@ export default function MonthBreakdownDialog({
                             </Typography>
                           </TableCell>
                           <TableCell align="center">
+                            <Tooltip title="Elenco movimenti" placement="top" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewTransactions({ subject: subject.id })}
+                              >
+                                <Iconify icon="solar:document-text-bold" />
+                              </IconButton>
+                            </Tooltip>
                             {isAnomaly && (
                               <Chip label="⚠" size="small" color="error" variant="soft" />
                             )}
@@ -256,6 +276,14 @@ export default function MonthBreakdownDialog({
                                 </Typography>
                               </TableCell>
                               <TableCell align="center">
+                                <Tooltip title="Elenco movimenti" placement="top" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleViewTransactions({ subject: subject.id, details: detail.id })}
+                                  >
+                                    <Iconify icon="solar:document-text-bold" />
+                                  </IconButton>
+                                </Tooltip>
                                 {detailAnomaly && (
                                   <Chip label="⚠" size="small" color="error" variant="soft" />
                                 )}
@@ -286,6 +314,13 @@ export default function MonthBreakdownDialog({
         <Button variant="outlined" onClick={onClose}>Chiudi</Button>
       </DialogActions>
     </Dialog>
+
+    <DetailsTransactionsQuickView
+      open={transactionsModal.value}
+      onClose={transactionsModal.onFalse}
+      data={transactionsData}
+    />
+    </>
   );
 }
 

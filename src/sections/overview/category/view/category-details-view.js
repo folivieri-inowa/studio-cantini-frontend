@@ -283,6 +283,11 @@ export default function CategoryDetailsView({ categoryId }) {
             onRemoveExclusion={handleRemoveExclusion}
             onResetExclusions={handleResetExclusions}
             onChipClick={handleChipClick}
+            localExclusionsPerMonth={reportCategory.localExclusionsPerMonth || {}}
+            onLocalChipClick={(month) => {
+              setBreakdownMonth(month);
+              breakdownDialog.onTrue();
+            }}
           />
           <MonthBreakdownDialog
             open={breakdownDialog.value}

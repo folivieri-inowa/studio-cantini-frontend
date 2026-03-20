@@ -26,6 +26,8 @@ export default function MasterMonthlyTrendChart({
   onRemoveExclusion,
   onResetExclusions,
   onChipClick,
+  localExclusionsPerMonth = {},
+  onLocalChipClick,
   ...other
 }) {
   // --- Average computation -------------------------------------------
@@ -150,6 +152,21 @@ export default function MasterMonthlyTrendChart({
         </Stack>
       )}
 
+      {Object.keys(localExclusionsPerMonth).length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mx: 3, mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
+          {Object.entries(localExclusionsPerMonth).map(([month, count]) => (
+            <Chip
+              key={`local-exc-${month}`}
+              label={`${MONTHS[parseInt(month, 10) - 1]} (${count} esclus${count === 1 ? 'a' : 'e'})`}
+              size="small"
+              variant="outlined"
+              color="warning"
+              onClick={() => onLocalChipClick && onLocalChipClick(parseInt(month, 10))}
+            />
+          ))}
+        </Stack>
+      )}
+
       {hasData ? (
         <Box sx={{ mt: 3, mx: 3, ...(onBarClick && { '& .apexcharts-bar-series': { cursor: 'pointer' }, '& .apexcharts-series path': { cursor: 'pointer' } }) }}>
           <Chart
@@ -194,4 +211,6 @@ MasterMonthlyTrendChart.propTypes = {
   onRemoveExclusion: PropTypes.func,
   onResetExclusions: PropTypes.func,
   onChipClick: PropTypes.func,
+  localExclusionsPerMonth: PropTypes.object,
+  onLocalChipClick: PropTypes.func,
 };

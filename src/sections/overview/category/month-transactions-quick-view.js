@@ -67,7 +67,7 @@ export default function MonthTransactionsQuickView({ data, open, onClose, onExcl
             ownername: item.ownername || 'Non specificato',
             ownerid: item.ownerid || null,
             amount: item.amount,
-            excluded_from_stats: item.excluded_from_stats || false,
+            excluded_from_stats: item.excluded_locally || false,  // usa excluded_locally
             status: 'completed',
           }));
           setTableData(formattedData);
@@ -94,10 +94,11 @@ export default function MonthTransactionsQuickView({ data, open, onClose, onExcl
   const handleToggleExclusion = useCallback(async (transactionId, currentExcluded) => {
     try {
       const newValue = !currentExcluded;
-      await axios.post(endpoints.prima_nota.toggle_stats_exclusion, {
-        id: transactionId,
+      await axios.post(endpoints.category_exclusion.toggle, {
         db: data?.db,
-        excludedFromStats: newValue,
+        transactionId,
+        categoryId: data?.category,
+        excluded: newValue,
       });
       setTableData(prev =>
         prev.map(row =>
@@ -106,9 +107,9 @@ export default function MonthTransactionsQuickView({ data, open, onClose, onExcl
       );
       if (onExclusionChange) onExclusionChange();
     } catch (error) {
-      console.error('Error toggling exclusion:', error);
+      console.error('Error toggling category exclusion:', error);
     }
-  }, [data?.db, onExclusionChange]);
+  }, [data?.db, data?.category, onExclusionChange]);
 
   // Filtro descrizione client-side
   const dataFiltered = tableData.filter(row => {

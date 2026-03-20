@@ -43,7 +43,7 @@ const TABLE_HEAD = [
   { id: '', label: '' },
 ];
 
-export default function DetailsTransactionsQuickView({ data, open, onClose }) {
+export default function DetailsTransactionsQuickView({ data, open, onClose, onExclusionChange }) {
   const table = useTable({ defaultOrderBy: 'date', defaultOrder: 'asc' });
 
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -104,10 +104,11 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
           row.id === transactionId ? { ...row, excluded_from_stats: newValue } : row
         )
       );
+      if (onExclusionChange) onExclusionChange();
     } catch (error) {
       console.error('Error toggling exclusion:', error);
     }
-  }, [data?.db]);
+  }, [data?.db, onExclusionChange]);
 
   // Filtro descrizione client-side
   const dataFiltered = tableData.filter(row => {
@@ -244,5 +245,6 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
 DetailsTransactionsQuickView.propTypes = {
   data: PropTypes.object,
   onClose: PropTypes.func,
+  onExclusionChange: PropTypes.func,
   open: PropTypes.bool,
 };

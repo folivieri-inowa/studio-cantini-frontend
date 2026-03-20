@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import PropTypes from 'prop-types';
 
 import Box from '@mui/material/Box';
@@ -71,26 +71,24 @@ export default function MonthBreakdownDialog({
     transactionsModal.onTrue();
   };
 
-  useEffect(() => {
+  const fetchBreakdown = useCallback(async () => {
     if (!open || !month) { setData(null); return; }
-
-    setExpanded({});
-
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.post(endpoints.report.category.monthBreakdown, {
-          db, owner, category, year, month,
-        });
-        setData(res.data);
-      } catch (err) {
-        console.error('month-breakdown fetch error:', err);
-      }
-      setLoading(false);
-    };
-
-    fetch();
+    setLoading(true);
+    try {
+      const res = await axios.post(endpoints.report.category.monthBreakdown, {
+        db, owner, category, year, month,
+      });
+      setData(res.data);
+    } catch (err) {
+      console.error('month-breakdown fetch error:', err);
+    }
+    setLoading(false);
   }, [open, month, year, category, db, owner]);
+
+  useEffect(() => {
+    setExpanded({});
+    fetchBreakdown();
+  }, [fetchBreakdown]);
 
   const anomalyThreshold = monthlyAvg > 0 ? monthlyAvg * 2 : Infinity;
   const monthLabel = month ? MONTHS[month - 1] : '';
@@ -187,6 +185,9 @@ export default function MonthBreakdownDialog({
                     const someExcluded = subject.details.some(d => isExcluded(exclusions, subject.id, d.id, month));
                     const isAnomaly = subject.total > anomalyThreshold;
                     const isExpanded = !!expanded[subject.id];
+                    // Esclusioni per-transazione dal backend
+                    const allTxExcluded = subject.txCount > 0 && subject.excludedCount === subject.txCount;
+                    const someTxExcluded = subject.excludedCount > 0 && subject.excludedCount < subject.txCount;
 
                     return (
                       <Fragment key={subject.id}>
@@ -241,6 +242,12 @@ export default function MonthBreakdownDialog({
                             {subjectExcluded && (
                               <Chip label="Escluso" size="small" color="default" variant="soft" />
                             )}
+                            {!subjectExcluded && allTxExcluded && (
+                              <Chip label="Tutto escluso" size="small" color="warning" variant="soft" />
+                            )}
+                            {!subjectExcluded && someTxExcluded && (
+                              <Chip label="Parz. escluso" size="small" color="warning" variant="soft" />
+                            )}
                           </TableCell>
                         </TableRow>
 
@@ -248,6 +255,8 @@ export default function MonthBreakdownDialog({
                         {isExpanded && subject.details.map(detail => {
                           const detailExcluded = isExcluded(exclusions, subject.id, detail.id, month);
                           const detailAnomaly = detail.total > anomalyThreshold;
+                          const allDetailTxExcluded = detail.txCount > 0 && detail.excludedCount === detail.txCount;
+                          const someDetailTxExcluded = detail.excludedCount > 0 && detail.excludedCount < detail.txCount;
 
                           return (
                             <TableRow
@@ -290,6 +299,12 @@ export default function MonthBreakdownDialog({
                                 {detailExcluded && (
                                   <Chip label="Escluso" size="small" color="default" variant="soft" />
                                 )}
+                                {!detailExcluded && allDetailTxExcluded && (
+                                  <Chip label="Tutto escluso" size="small" color="warning" variant="soft" />
+                                )}
+                                {!detailExcluded && someDetailTxExcluded && (
+                                  <Chip label="Parz. escluso" size="small" color="warning" variant="soft" />
+                                )}
                               </TableCell>
                             </TableRow>
                           );
@@ -319,6 +334,7 @@ export default function MonthBreakdownDialog({
       open={transactionsModal.value}
       onClose={transactionsModal.onFalse}
       data={transactionsData}
+      onExclusionChange={fetchBreakdown}
     />
     </>
   );

@@ -47,7 +47,7 @@ export default function CategoryDetailsView({ categoryId }) {
   const initShowIncome = searchParams.get('showIncome') !== 'false';
   const initShowExpense = searchParams.get('showExpense') !== 'false';
 
-  const { reportCategory, reportCategoryLoading } = useGetReportCategory(categoryId, ownerId, year, settings.db, selectedMonth);
+  const { reportCategory, reportCategoryLoading, mutateReportCategory } = useGetReportCategory(categoryId, ownerId, year, settings.db, selectedMonth);
 
   if (reportCategoryLoading) {return null}
 
@@ -295,6 +295,7 @@ export default function CategoryDetailsView({ categoryId }) {
             exclusions={exclusions}
             onToggleExclusion={handleToggleExclusion}
             monthlyAvg={originalMonthlyAvg}
+            onReportRefresh={mutateReportCategory}
           />
         </Grid>
 

@@ -59,6 +59,7 @@ export default function MonthBreakdownDialog({
   exclusions = [],
   onToggleExclusion,
   monthlyAvg,
+  onReportRefresh,
 }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -84,7 +85,8 @@ export default function MonthBreakdownDialog({
       console.error('month-breakdown fetch error:', err);
     }
     setLoading(false);
-  }, [open, month, year, category, db, owner]);
+    if (onReportRefresh) onReportRefresh();
+  }, [open, month, year, category, db, owner, onReportRefresh]);
 
   useEffect(() => {
     setExpanded({});
@@ -352,4 +354,5 @@ MonthBreakdownDialog.propTypes = {
   exclusions: PropTypes.array,
   onToggleExclusion: PropTypes.func,
   monthlyAvg: PropTypes.number,
+  onReportRefresh: PropTypes.func,
 };

@@ -37,6 +37,10 @@ export const endpoints = {
     undo_import: '/api/prima-nota/undo-import',
     toggle_stats_exclusion: '/api/prima-nota/toggle-stats-exclusion',
   },
+  category_exclusion: {
+    toggle: '/api/category-exclusion/toggle',
+    list: '/api/category-exclusion/list',
+  },
   owner: {
     list: '/api/owner/list'
   },

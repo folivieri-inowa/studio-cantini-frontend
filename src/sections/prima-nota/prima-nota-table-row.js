@@ -152,7 +152,7 @@ export default function PrimaNotaTableRow({
                   onClick={(target) => {
                     editPopover.onOpen(target);
                   }}
-                  sx={{ 
+                  sx={{
                     color: '#1976d2', // Blu Material-UI
                     '&:hover': {
                       bgcolor: '#e3f2fd', // Blu chiaro
@@ -163,24 +163,37 @@ export default function PrimaNotaTableRow({
                   <Iconify icon="solar:pen-bold" width={18} />
                 </IconButton>
               </Tooltip>
-              
+
               {/* Bottoni AI disponibili per tutti gli utenti */}
               <AutoClassifyButton transaction={row} onUpdate={onUpdate} />
               <SearchSimilarButton transaction={row} />
-              
+
               <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
                 <IconButton
                   size="small"
                   onClick={() => onToggleStatsExclusion && onToggleStatsExclusion(row.id, excluded_from_stats)}
                   color={excluded_from_stats ? 'warning' : 'success'}
                 >
-                  <Iconify 
-                    icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'} 
+                  <Iconify
+                    icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'}
                     width={18}
                   />
                 </IconButton>
               </Tooltip>
             </Stack>
+          ) : onToggleStatsExclusion ? (
+            <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
+              <IconButton
+                size="small"
+                onClick={() => onToggleStatsExclusion(row.id, excluded_from_stats)}
+                color={excluded_from_stats ? 'warning' : 'success'}
+              >
+                <Iconify
+                  icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'}
+                  width={18}
+                />
+              </IconButton>
+            </Tooltip>
           ) : (
             // Modalità consultazione: mostra solo un trattino o spazio vuoto
             <span>-</span>

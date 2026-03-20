@@ -1,7 +1,7 @@
 'use client';
 
 import PropTypes from 'prop-types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -43,7 +43,7 @@ const TABLE_HEAD = [
   { id: '', label: '' },
 ];
 
-export default function DetailsTransactionsQuickView({ data, open, onClose }) {
+export default function MonthTransactionsQuickView({ data, open, onClose, onExclusionChange }) {
   const table = useTable({ defaultOrderBy: 'date', defaultOrder: 'asc' });
 
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -57,15 +57,17 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
       try {
         if (!data) { setTableData([]); setTransactionsLoading(false); return; }
 
-        const response = await axios.post(endpoints.prima_nota.filtered_list, data);
+        const response = await axios.post(endpoints.prima_nota.month_transactions, data);
         if (response.status === 200 && response.data?.data?.data && Array.isArray(response.data.data.data)) {
           const formattedData = response.data.data.data.map((item, index) => ({
-            _id: `transaction-${index}`,
+            _id: item.id || `transaction-${index}`,
+            id: item.id,
             date: item.date,
             description: item.description,
             ownername: item.ownername || 'Non specificato',
             ownerid: item.ownerid || null,
             amount: item.amount,
+            excluded_from_stats: item.excluded_from_stats || false,
             status: 'completed',
           }));
           setTableData(formattedData);
@@ -73,7 +75,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
           setTableData([]);
         }
       } catch (error) {
-        console.error('Error fetching transactions:', error);
+        console.error('Error fetching month transactions:', error);
         setTableData([]);
       }
       setTransactionsLoading(false);
@@ -88,6 +90,25 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, data]);
+
+  const handleToggleExclusion = useCallback(async (transactionId, currentExcluded) => {
+    try {
+      const newValue = !currentExcluded;
+      await axios.post(endpoints.prima_nota.toggle_stats_exclusion, {
+        id: transactionId,
+        db: data?.db,
+        excludedFromStats: newValue,
+      });
+      setTableData(prev =>
+        prev.map(row =>
+          row.id === transactionId ? { ...row, excluded_from_stats: newValue } : row
+        )
+      );
+      if (onExclusionChange) onExclusionChange();
+    } catch (error) {
+      console.error('Error toggling exclusion:', error);
+    }
+  }, [data?.db, onExclusionChange]);
 
   // Filtro descrizione client-side
   const dataFiltered = tableData.filter(row => {
@@ -110,7 +131,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
     if (!data?.year || data.year === 'all-years') return '';
     const m = data?.month ? parseInt(data.month, 10) : null;
     if (!m || m === 12) return `Anno ${data.year}`;
-    return `Gen – ${MONTHS[m - 1]} ${data.year}`;
+    return `${MONTHS[m - 1]} ${data.year}`;
   })();
 
   return (
@@ -183,6 +204,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
                             selectColumns={false}
                             editable={false}
                             showStatus={false}
+                            onToggleStatsExclusion={handleToggleExclusion}
                           />
                         ))}
                     </>
@@ -219,8 +241,9 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
   );
 }
 
-DetailsTransactionsQuickView.propTypes = {
+MonthTransactionsQuickView.propTypes = {
   data: PropTypes.object,
   onClose: PropTypes.func,
+  onExclusionChange: PropTypes.func,
   open: PropTypes.bool,
 };

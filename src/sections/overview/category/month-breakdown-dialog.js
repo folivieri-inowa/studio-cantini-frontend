@@ -29,6 +29,7 @@ import { useBoolean } from '../../../hooks/use-boolean';
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
 import DetailsTransactionsQuickView from './details-transactions-quick-view';
+import MonthTransactionsQuickView from './month-transactions-quick-view';
 
 // ----------------------------------------------------------------------
 
@@ -330,7 +331,7 @@ export default function MonthBreakdownDialog({
       </DialogActions>
     </Dialog>
 
-    <DetailsTransactionsQuickView
+    <MonthTransactionsQuickView
       open={transactionsModal.value}
       onClose={transactionsModal.onFalse}
       data={transactionsData}

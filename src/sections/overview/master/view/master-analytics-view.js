@@ -9,7 +9,6 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
-import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 
 import { useAuthContext } from '../../../../auth/hooks';
@@ -961,20 +960,32 @@ export default function MasterAnalyticsView() {
           </Grid>
           {(() => {
             const isAllYears = settings.year === 'all-years';
-            const hideCharts = isAllYears;
 
-            if (hideCharts) {
+            if (isAllYears) {
               return (
-                <Grid size={12}>
-                  <Card sx={{ p: 4, textAlign: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
-                      I grafici di andamento mensile non sono disponibili per periodi che coprono più anni.
-                    </Typography>
-                    <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                      Seleziona un anno specifico per visualizzare l&apos;andamento mensile.
-                    </Typography>
-                  </Card>
-                </Grid>
+                <>
+                  <Grid size={12}>
+                    <CategoryChartToggle
+                      barSeries={[]}
+                      barCategories={[]}
+                      hideToggle
+                      areaChart={{
+                        colors: multiYearAreaData?.colors || [],
+                        categories: multiYearAreaData?.categories || [],
+                        series: multiYearAreaData?.series || [],
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={12}>
+                    <MasterMonthlyTrendChart
+                      title="Andamento mensile uscite"
+                      subheader="Confronto uscite mensili per anno"
+                      chartType="line"
+                      series={multiYearExpenseData}
+                      categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+                    />
+                  </Grid>
+                </>
               );
             }
 

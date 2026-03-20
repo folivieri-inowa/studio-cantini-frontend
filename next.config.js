@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   trailingSlash: true,
   output: 'standalone',
@@ -17,8 +19,8 @@ module.exports = {
       },
     },
     resolveAlias: {
-      'fflate/lib/node.cjs': 'fflate/esm/browser.js',
-      'jspdf': 'jspdf/dist/jspdf.umd.min.js',
+      'fflate/lib/node.cjs': './node_modules/fflate/esm/browser.js',
+      'jspdf': './node_modules/jspdf/dist/jspdf.umd.min.js',
     },
   },
   webpack(config) {

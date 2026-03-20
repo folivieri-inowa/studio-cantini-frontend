@@ -593,11 +593,71 @@ export default function MasterAnalyticsView() {
       }
     }
 
-    return { 
-      expenseData: allMonthsData, 
-      totalExpense: parseFloat(totalExpense.toFixed(2)), 
-      percentChange 
+    return {
+      expenseData: allMonthsData,
+      totalExpense: parseFloat(totalExpense.toFixed(2)),
+      percentChange
     };
+  };
+
+  const getMultiYearAreaData = () => {
+    const globalReport = settings.owner?.report?.globalReport;
+    if (!globalReport) return { categories: [], series: [], colors: [] };
+
+    const years = (settings.owner.report?.years || []).slice().sort();
+
+    // Palette colori per anno: entrate, uscite
+    const yearColors = [
+      ['#4ADDDE', '#F45757'],
+      ['#22C55E', '#F97316'],
+      ['#A855F7', '#EAB308'],
+      ['#3B82F6', '#EC4899'],
+      ['#14B8A6', '#F43F5E'],
+    ];
+
+    const categories = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+    const series = years.map((year, idx) => {
+      const yearReport = globalReport[year];
+      const months = yearReport?.months || {};
+      const monthlyData = Array.from({ length: 12 }, (_, i) => {
+        const monthKey = (i + 1).toString().padStart(2, '0');
+        return {
+          income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
+          expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
+        };
+      });
+
+      return {
+        year,
+        data: [
+          { name: `Entrate ${year}`, data: monthlyData.map(m => m.income) },
+          { name: `Uscite ${year}`,  data: monthlyData.map(m => m.expense) },
+        ],
+      };
+    });
+
+    // Appiattisci i colori nell'ordine corretto
+    const colors = years.flatMap((_, idx) => yearColors[idx % yearColors.length]);
+
+    return { categories, series, colors };
+  };
+
+  const getMultiYearExpenseData = () => {
+    const globalReport = settings.owner?.report?.globalReport;
+    if (!globalReport) return [];
+
+    const years = (settings.owner.report?.years || []).slice().sort();
+
+    return years.map((year) => {
+      const yearReport = globalReport[year];
+      const months = yearReport?.months || {};
+      const data = Array.from({ length: 12 }, (_, i) => {
+        const monthKey = (i + 1).toString().padStart(2, '0');
+        return parseFloat((months[monthKey]?.expense || 0).toFixed(2));
+      });
+      return { name: `Uscite ${year}`, data };
+    });
   };
 
   const getYearlySalesData = () => {
@@ -789,6 +849,18 @@ export default function MasterAnalyticsView() {
     if (!expenseSeries) return [];
     return [{ name: expenseSeries.name, data: expenseSeries.data }];
   }, [chartData, settings.year]);
+
+  const multiYearAreaData = useMemo(() => {
+    if (!data || !settings.owner || settings.year !== 'all-years') return null;
+    return getMultiYearAreaData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, settings.owner, settings.year]);
+
+  const multiYearExpenseData = useMemo(() => {
+    if (!data || !settings.owner || settings.year !== 'all-years') return [];
+    return getMultiYearExpenseData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, settings.owner, settings.year]);
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>

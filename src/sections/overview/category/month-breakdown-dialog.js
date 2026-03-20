@@ -67,7 +67,7 @@ export default function MonthBreakdownDialog({
   const transactionsModal = useBoolean();
 
   const handleViewTransactions = (params) => {
-    setTransactionsData({ db, owner, year, month, category, ...params });
+    setTransactionsData({ db, owner, year, month, category, exactMonth: true, ...params });
     transactionsModal.onTrue();
   };
 

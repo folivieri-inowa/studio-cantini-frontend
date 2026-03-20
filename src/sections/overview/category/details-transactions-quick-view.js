@@ -110,6 +110,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
     if (!data?.year || data.year === 'all-years') return '';
     const m = data?.month ? parseInt(data.month, 10) : null;
     if (!m || m === 12) return `Anno ${data.year}`;
+    if (data?.exactMonth) return `${MONTHS[m - 1]} ${data.year}`;
     return `Gen – ${MONTHS[m - 1]} ${data.year}`;
   })();
 

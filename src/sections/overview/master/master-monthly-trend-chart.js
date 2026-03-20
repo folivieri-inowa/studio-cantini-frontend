@@ -21,6 +21,7 @@ export default function MasterMonthlyTrendChart({
   series = [],
   categories = [],
   colors,
+  chartType = 'bar',
   onBarClick,
   exclusions = [],
   onRemoveExclusion,
@@ -41,10 +42,12 @@ export default function MasterMonthlyTrendChart({
       : 0;
 
   // --- Chart options --------------------------------------------------
-  const chartOptions = useChart({
-    colors: colors ?? ['#FF4842'],
+  const isLine = chartType === 'line';
 
-    ...(onBarClick && {
+  const chartOptions = useChart({
+    colors: colors ?? (isLine ? undefined : ['#FF4842']),
+
+    ...(onBarClick && !isLine && {
       chart: {
         events: {
           dataPointSelection: (_event, _chartContext, config) => {
@@ -58,11 +61,9 @@ export default function MasterMonthlyTrendChart({
       },
     }),
 
-    stroke: {
-      show: true,
-      width: 2,
-      colors: ['transparent'],
-    },
+    stroke: isLine
+      ? { show: true, width: 2, curve: 'smooth' }
+      : { show: true, width: 2, colors: ['transparent'] },
 
     xaxis: {
       categories,
@@ -85,36 +86,33 @@ export default function MasterMonthlyTrendChart({
           if (value === null || value === undefined || Number.isNaN(value)) {
             return fCurrencyEur(0);
           }
-          if (value === 0) return 'Tutto escluso';
+          if (!isLine && value === 0) return 'Tutto escluso';
           return fCurrencyEur(parseFloat(value.toFixed(2)));
         },
       },
     },
 
-    plotOptions: {
-      bar: { columnWidth: '36%', minHeight: 4 },
-    },
+    ...(isLine ? {} : {
+      plotOptions: {
+        bar: { columnWidth: '36%', minHeight: 4 },
+      },
+    }),
 
-    // Horizontal annotation line for the average
     annotations: {
-      yaxis:
-        avgValue > 0
-          ? [
-              {
-                y: avgValue,
-                borderColor: '#FF4842',
-                borderWidth: 2,
-                strokeDashArray: 6,
-                label: {
-                  text: `Media: ${fCurrencyEur(avgValue)}`,
-                  style: {
-                    color: '#fff',
-                    background: '#FF4842',
-                  },
-                },
+      yaxis: (!isLine && avgValue > 0)
+        ? [
+            {
+              y: avgValue,
+              borderColor: '#FF4842',
+              borderWidth: 2,
+              strokeDashArray: 6,
+              label: {
+                text: `Media: ${fCurrencyEur(avgValue)}`,
+                style: { color: '#fff', background: '#FF4842' },
               },
-            ]
-          : [],
+            },
+          ]
+        : [],
     },
   });
 
@@ -171,7 +169,7 @@ export default function MasterMonthlyTrendChart({
         <Box sx={{ mt: 3, mx: 3, ...(onBarClick && { '& .apexcharts-bar-series': { cursor: 'pointer' }, '& .apexcharts-series path': { cursor: 'pointer' } }) }}>
           <Chart
             dir="ltr"
-            type="bar"
+            type={chartType}
             series={series}
             options={chartOptions}
             width="100%"
@@ -206,6 +204,7 @@ MasterMonthlyTrendChart.propTypes = {
   ),
   categories: PropTypes.arrayOf(PropTypes.string),
   colors: PropTypes.arrayOf(PropTypes.string),
+  chartType: PropTypes.oneOf(['bar', 'line']),
   onBarClick: PropTypes.func,
   exclusions: PropTypes.array,
   onRemoveExclusion: PropTypes.func,

@@ -617,7 +617,7 @@ export default function MasterAnalyticsView() {
 
     const categories = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
-    const series = years.map((year, idx) => {
+    const series = years.flatMap((year) => {
       const yearReport = globalReport[year];
       const months = yearReport?.months || {};
       const monthlyData = Array.from({ length: 12 }, (_, i) => {
@@ -628,13 +628,10 @@ export default function MasterAnalyticsView() {
         };
       });
 
-      return {
-        year,
-        data: [
-          { name: `Entrate ${year}`, data: monthlyData.map(m => m.income) },
-          { name: `Uscite ${year}`,  data: monthlyData.map(m => m.expense) },
-        ],
-      };
+      return [
+        { name: `Entrate ${year}`, data: monthlyData.map((m) => m.income) },
+        { name: `Uscite ${year}`, data: monthlyData.map((m) => m.expense) },
+      ];
     });
 
     // Appiattisci i colori nell'ordine corretto
@@ -853,13 +850,11 @@ export default function MasterAnalyticsView() {
   const multiYearAreaData = useMemo(() => {
     if (!data || !settings.owner || settings.year !== 'all-years') return null;
     return getMultiYearAreaData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, settings.owner, settings.year]);
 
   const multiYearExpenseData = useMemo(() => {
     if (!data || !settings.owner || settings.year !== 'all-years') return [];
     return getMultiYearExpenseData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, settings.owner, settings.year]);
 
   return (

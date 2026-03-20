@@ -16,7 +16,7 @@ import ChartColumnMultiple from '../../_examples/extra/chart-view/chart-column-m
 
 const STORAGE_KEY = 'category-chart-type';
 
-export default function CategoryChartToggle({ barSeries, barCategories, barColors, areaChart }) {
+export default function CategoryChartToggle({ barSeries, barCategories, barColors, areaChart, hideToggle = false }) {
   const [chartType, setChartType] = useState(() => {
     if (typeof window === 'undefined') return 'bar';
     return localStorage.getItem(STORAGE_KEY) || 'area';
@@ -27,7 +27,7 @@ export default function CategoryChartToggle({ barSeries, barCategories, barColor
     localStorage.setItem(STORAGE_KEY, type);
   };
 
-  const toggleAction = (
+  const toggleAction = hideToggle ? null : (
     <Box sx={{ display: 'flex', gap: 0.5 }}>
       <Tooltip title="Grafico a barre">
         <IconButton
@@ -77,4 +77,5 @@ CategoryChartToggle.propTypes = {
   barCategories: PropTypes.array,
   barColors: PropTypes.array,
   areaChart: PropTypes.object,
+  hideToggle: PropTypes.bool,
 };

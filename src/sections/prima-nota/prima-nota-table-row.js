@@ -181,19 +181,6 @@ export default function PrimaNotaTableRow({
                 </IconButton>
               </Tooltip>
             </Stack>
-          ) : onToggleStatsExclusion ? (
-            <Tooltip title={excluded_from_stats ? 'Escluso dalle statistiche - Clicca per includere' : 'Incluso nelle statistiche - Clicca per escludere'}>
-              <IconButton
-                size="small"
-                onClick={() => onToggleStatsExclusion(row.id, excluded_from_stats)}
-                color={excluded_from_stats ? 'warning' : 'success'}
-              >
-                <Iconify
-                  icon={excluded_from_stats ? 'solar:eye-closed-bold' : 'solar:eye-bold'}
-                  width={18}
-                />
-              </IconButton>
-            </Tooltip>
           ) : (
             // Modalità consultazione: mostra solo un trattino o spazio vuoto
             <span>-</span>

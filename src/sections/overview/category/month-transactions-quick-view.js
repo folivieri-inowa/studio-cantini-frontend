@@ -203,7 +203,7 @@ export default function MonthTransactionsQuickView({ data, open, onClose, onExcl
                             key={row._id || `row-${index}`}
                             row={row}
                             selectColumns={false}
-                            editable={false}
+                            editable
                             showStatus={false}
                             onToggleStatsExclusion={handleToggleExclusion}
                           />

@@ -40,6 +40,7 @@ export const endpoints = {
   category_exclusion: {
     toggle: '/api/category-exclusion/toggle',
     list: '/api/category-exclusion/list',
+    reset: '/api/category-exclusion/reset',
   },
   owner: {
     list: '/api/owner/list'

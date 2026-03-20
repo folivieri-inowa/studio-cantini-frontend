@@ -73,6 +73,28 @@ export default function MonthBreakdownDialog({
     transactionsModal.onTrue();
   };
 
+  const handleResetSubjectExclusions = async (subject) => {
+    try {
+      await axios.post(endpoints.category_exclusion.reset, {
+        db, categoryId: category, subjectId: subject.id, year, month,
+      });
+      fetchBreakdown();
+    } catch (err) {
+      console.error('Error resetting subject exclusions:', err);
+    }
+  };
+
+  const handleResetDetailExclusions = async (subject, detail) => {
+    try {
+      await axios.post(endpoints.category_exclusion.reset, {
+        db, categoryId: category, subjectId: subject.id, detailId: detail.id, year, month,
+      });
+      fetchBreakdown();
+    } catch (err) {
+      console.error('Error resetting detail exclusions:', err);
+    }
+  };
+
   const fetchBreakdown = useCallback(async () => {
     if (!open || !month) { setData(null); return; }
     setLoading(true);
@@ -205,9 +227,15 @@ export default function MonthBreakdownDialog({
                           <TableCell padding="checkbox">
                             <Checkbox
                               size="small"
-                              checked={subjectExcluded}
-                              indeterminate={someExcluded && !subjectExcluded}
-                              onChange={() => handleToggleSubject(subject)}
+                              checked={subjectExcluded || allTxExcluded}
+                              indeterminate={!subjectExcluded && !allTxExcluded && (someExcluded || someTxExcluded)}
+                              onChange={() => {
+                                if (allTxExcluded || someTxExcluded) {
+                                  handleResetSubjectExclusions(subject);
+                                } else {
+                                  handleToggleSubject(subject);
+                                }
+                              }}
                             />
                           </TableCell>
                           <TableCell sx={{ width: 40 }}>
@@ -245,12 +273,6 @@ export default function MonthBreakdownDialog({
                             {subjectExcluded && (
                               <Chip label="Escluso" size="small" color="default" variant="soft" />
                             )}
-                            {!subjectExcluded && allTxExcluded && (
-                              <Chip label="Tutto escluso" size="small" color="warning" variant="soft" />
-                            )}
-                            {!subjectExcluded && someTxExcluded && (
-                              <Chip label="Parz. escluso" size="small" color="warning" variant="soft" />
-                            )}
                           </TableCell>
                         </TableRow>
 
@@ -272,8 +294,15 @@ export default function MonthBreakdownDialog({
                               <TableCell padding="checkbox" sx={{ pl: 4 }}>
                                 <Checkbox
                                   size="small"
-                                  checked={detailExcluded}
-                                  onChange={() => handleToggleDetail(subject, detail)}
+                                  checked={detailExcluded || allDetailTxExcluded}
+                                  indeterminate={!detailExcluded && !allDetailTxExcluded && someDetailTxExcluded}
+                                  onChange={() => {
+                                    if (allDetailTxExcluded || someDetailTxExcluded) {
+                                      handleResetDetailExclusions(subject, detail);
+                                    } else {
+                                      handleToggleDetail(subject, detail);
+                                    }
+                                  }}
                                 />
                               </TableCell>
                               <TableCell />
@@ -301,12 +330,6 @@ export default function MonthBreakdownDialog({
                                 )}
                                 {detailExcluded && (
                                   <Chip label="Escluso" size="small" color="default" variant="soft" />
-                                )}
-                                {!detailExcluded && allDetailTxExcluded && (
-                                  <Chip label="Tutto escluso" size="small" color="warning" variant="soft" />
-                                )}
-                                {!detailExcluded && someDetailTxExcluded && (
-                                  <Chip label="Parz. escluso" size="small" color="warning" variant="soft" />
                                 )}
                               </TableCell>
                             </TableRow>

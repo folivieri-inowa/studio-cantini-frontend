@@ -57,7 +57,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
       try {
         if (!data) { setTableData([]); setTransactionsLoading(false); return; }
 
-        const response = await axios.post(endpoints.prima_nota.filtered_list, data);
+        const response = await axios.post(endpoints.prima_nota.month_transactions, data);
         if (response.status === 200 && response.data?.data?.data && Array.isArray(response.data.data.data)) {
           const formattedData = response.data.data.data.map((item, index) => ({
             _id: `transaction-${index}`,

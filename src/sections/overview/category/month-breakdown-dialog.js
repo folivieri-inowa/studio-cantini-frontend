@@ -279,7 +279,7 @@ export default function MonthBreakdownDialog({
                                 <Tooltip title="Elenco movimenti" placement="top" arrow>
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleViewTransactions({ subject: subject.id, details: detail.id })}
+                                    onClick={() => handleViewTransactions({ subject: subject.id, detail: detail.id })}
                                   >
                                     <Iconify icon="solar:document-text-bold" />
                                   </IconButton>

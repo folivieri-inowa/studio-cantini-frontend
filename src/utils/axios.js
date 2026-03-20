@@ -30,6 +30,7 @@ export const endpoints = {
   prima_nota: {
     list: '/api/prima-nota/list',
     filtered_list: '/api/prima-nota/filtered_list',
+    month_transactions: '/api/prima-nota/month_transactions',
     details: '/api/prima-nota/details',
     import_history: '/api/prima-nota/import-history',
     import_details: '/api/prima-nota/import-history/details',

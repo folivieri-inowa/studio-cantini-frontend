@@ -1,6 +1,7 @@
 'use client';
 
 import PropTypes from 'prop-types';
+import { format } from 'date-fns';
 import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
@@ -9,6 +10,9 @@ import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Tooltip from '@mui/material/Tooltip';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import TableBody from '@mui/material/TableBody';
@@ -16,13 +20,15 @@ import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
+import ListItemText from '@mui/material/ListItemText';
 import TableContainer from '@mui/material/TableContainer';
 import InputAdornment from '@mui/material/InputAdornment';
 
+import Label from '../../../components/label';
 import axios, { endpoints } from '../../../utils/axios';
 import Scrollbar from '../../../components/scrollbar/scrollbar';
 import Iconify from '../../../components/iconify';
-import PrimaNotaTableRow from '../../prima-nota/prima-nota-table-row';
+import { fCurrencyEur } from '../../../utils/format-number';
 import {
   useTable, emptyRows,
   TableNoData,
@@ -42,6 +48,59 @@ const TABLE_HEAD = [
   { id: 'amount', label: 'Importo', align: 'right' },
   { id: '', label: '' },
 ];
+
+// Row semplice: solo dati + occhio per esclusione locale dal grafico
+function CategoryTxRow({ row, onToggleExclusion }) {
+  const { id, date, description, ownername, amount, excluded_from_stats: excludedLocally } = row;
+
+  return (
+    <TableRow hover>
+      <TableCell>
+        <ListItemText primary={format(new Date(date), 'dd MMM yyyy')} />
+      </TableCell>
+
+      <TableCell>
+        <ListItemText primary={description} />
+      </TableCell>
+
+      <TableCell>
+        <Label variant="soft" color="info">
+          {ownername}
+        </Label>
+      </TableCell>
+
+      <TableCell align="right">{fCurrencyEur(amount)}</TableCell>
+
+      <TableCell align="center">
+        <Tooltip
+          title={
+            excludedLocally
+              ? 'Esclusa dal grafico — clicca per includere'
+              : 'Inclusa nel grafico — clicca per escludere'
+          }
+        >
+          <IconButton
+            size="small"
+            onClick={() => onToggleExclusion(id, excludedLocally)}
+            color={excludedLocally ? 'warning' : 'success'}
+          >
+            <Iconify
+              icon={excludedLocally ? 'solar:eye-closed-bold' : 'solar:eye-bold'}
+              width={18}
+            />
+          </IconButton>
+        </Tooltip>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+CategoryTxRow.propTypes = {
+  onToggleExclusion: PropTypes.func,
+  row: PropTypes.object,
+};
+
+// ----------------------------------------------------------------------
 
 export default function MonthTransactionsQuickView({ data, open, onClose, onExclusionChange }) {
   const table = useTable({ defaultOrderBy: 'date', defaultOrder: 'asc' });
@@ -67,7 +126,7 @@ export default function MonthTransactionsQuickView({ data, open, onClose, onExcl
             ownername: item.ownername || 'Non specificato',
             ownerid: item.ownerid || null,
             amount: item.amount,
-            excluded_from_stats: item.excluded_locally || false,  // usa excluded_locally
+            excluded_from_stats: item.excluded_locally || false,
             status: 'completed',
           }));
           setTableData(formattedData);
@@ -199,13 +258,10 @@ export default function MonthTransactionsQuickView({ data, open, onClose, onExcl
                       {dataOrdered
                         .slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
                         .map((row, index) => (
-                          <PrimaNotaTableRow
+                          <CategoryTxRow
                             key={row._id || `row-${index}`}
                             row={row}
-                            selectColumns={false}
-                            editable
-                            showStatus={false}
-                            onToggleStatsExclusion={handleToggleExclusion}
+                            onToggleExclusion={handleToggleExclusion}
                           />
                         ))}
                     </>

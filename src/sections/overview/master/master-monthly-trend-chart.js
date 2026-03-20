@@ -83,13 +83,14 @@ export default function MasterMonthlyTrendChart({
           if (value === null || value === undefined || Number.isNaN(value)) {
             return fCurrencyEur(0);
           }
+          if (value === 0) return 'Tutto escluso';
           return fCurrencyEur(parseFloat(value.toFixed(2)));
         },
       },
     },
 
     plotOptions: {
-      bar: { columnWidth: '36%' },
+      bar: { columnWidth: '36%', minHeight: 4 },
     },
 
     // Horizontal annotation line for the average

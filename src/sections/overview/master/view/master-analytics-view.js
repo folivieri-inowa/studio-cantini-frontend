@@ -2,8 +2,6 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
-import { useBoolean } from '../../../../hooks/use-boolean';
-
 import Alert from '@mui/material/Alert';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2';
@@ -14,6 +12,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useAuthContext } from '../../../../auth/hooks';
+import { useBoolean } from '../../../../hooks/use-boolean';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
@@ -21,7 +20,6 @@ import CategoryChartToggle from '../../category/category-chart-toggle';
 import MasterCategoryTable from '../master-category-table';
 import MasterMonthBreakdownDialog from '../master-month-breakdown-dialog';
 import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
-import MonthCategoriesReadonlyDialog from '../month-categories-readonly-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -219,7 +217,6 @@ export default function MasterAnalyticsView() {
   );
 
   const [compareYears, setCompareYears] = useState([]);
-  const [monthCategoriesOpen, setMonthCategoriesOpen] = useState(false);
   const [breakdownMonth, setBreakdownMonth] = useState(null);
   const breakdownDialog = useBoolean();
 
@@ -365,10 +362,10 @@ export default function MasterAnalyticsView() {
     }
   }, []);
 
-  const handleMonthBarClick = useCallback((monthIndex) => {
-    setBreakdownMonth(monthIndex + 1);
-    setMonthCategoriesOpen(true);
-  }, []);
+  const handleBreakdownBarClick = useCallback((idx) => {
+    setBreakdownMonth(idx + 1);
+    breakdownDialog.onTrue();
+  }, [breakdownDialog]);
 
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
@@ -1003,22 +1000,10 @@ export default function MasterAnalyticsView() {
                     tooltipInfo={`Uscite mensili dell'anno ${settings.year} con indicazione della media.\nLa linea tratteggiata rappresenta la media mensile.`}
                     series={monthlyExpenseTrendData}
                     categories={MONTHS_LABELS}
-                    onBarClick={(idx) => {
-                      setBreakdownMonth(idx + 1);
-                      breakdownDialog.onTrue();
-                    }}
+                    onBarClick={handleBreakdownBarClick}
                   />
                 </Grid>
-                <MonthCategoriesReadonlyDialog
-                  open={monthCategoriesOpen}
-                  onClose={() => setMonthCategoriesOpen(false)}
-                  month={breakdownMonth}
-                  year={settings.year}
-                  categories={categoriesForMonth}
-                  db={settings.db}
-                  owner={settings.owner?.id}
-                />
-                <Grid size={12}>
+<Grid size={12}>
                   <CategoryChartToggle
                     barSeries={chartData || []}
                     barCategories={MONTHS_LABELS}
@@ -1065,7 +1050,7 @@ export default function MasterAnalyticsView() {
         open={breakdownDialog.value}
         onClose={breakdownDialog.onFalse}
         month={breakdownMonth}
-        year={settings.year === 'all-years' ? new Date().getFullYear() : Number(settings.year)}
+        year={settings.year === 'all-years' ? currentRealYear : Number(settings.year)}
         owner={settings.owner}
         db={settings.db}
         compareYears={compareYears}

@@ -271,8 +271,12 @@ export default function MasterAnalyticsView() {
   // currentRealYear e currentRealMonth sono primitivi numerici costanti per la sessione
   useEffect(() => {
     const derived = deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth);
-    setSelectedMonth(derived);
-    settings.onChangeMonth(derived);
+    // Se c'è un mese persistito e è valido per l'anno corrente, mantienilo
+    // Altrimenti usa il mese derivato (es. cambio anno)
+    const persistedMonth = settings.month;
+    const effectiveMonth = (persistedMonth && persistedMonth >= 1 && persistedMonth <= derived) ? persistedMonth : derived;
+    setSelectedMonth(effectiveMonth);
+    settings.onChangeMonth(effectiveMonth);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.year, currentRealYear, currentRealMonth]);
 

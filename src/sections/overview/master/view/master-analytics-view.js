@@ -5,12 +5,10 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import Alert from '@mui/material/Alert';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2';
-import IconButton from '@mui/material/IconButton';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import { useAuthContext } from '../../../../auth/hooks';
@@ -991,23 +989,9 @@ export default function MasterAnalyticsView() {
                 percent={globalIncomeData.percentChange || 0}
                 total={globalIncomeData.totalIncome || 0}
                 description={formatYtdDescription(globalIncomeData.percentChange, selectedMonthLabel, settings.year)}
+                tooltipContent={settings.year !== 'all-years' ? buildTooltipContent('Entrate', globalIncomeData.totalIncome, globalIncomeData.prevYearTotal ?? 0, globalIncomeData.percentChange, selectedMonthLabel, settings.year) : undefined}
                 chart={{ series: globalIncomeData.incomeData || [] }}
               />
-              {settings.year !== 'all-years' && (
-                <Tooltip
-                  title={
-                    <span style={{ whiteSpace: 'pre-line' }}>
-                      {buildTooltipContent('Entrate', globalIncomeData.totalIncome, globalIncomeData.prevYearTotal ?? 0, globalIncomeData.percentChange, selectedMonthLabel, settings.year)}
-                    </span>
-                  }
-                  placement="bottom"
-                  arrow
-                >
-                  <IconButton size="small" sx={{ mt: -1, ml: 0.5, opacity: 0.6 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>ⓘ</span>
-                  </IconButton>
-                </Tooltip>
-              )}
 
               <BankingWidgetSummary
                 title="Uscite"
@@ -1016,23 +1000,9 @@ export default function MasterAnalyticsView() {
                 percent={globalExpenseData.percentChange || 0}
                 total={globalExpenseData.totalExpense || 0}
                 description={formatYtdDescription(globalExpenseData.percentChange, selectedMonthLabel, settings.year)}
+                tooltipContent={settings.year !== 'all-years' ? buildTooltipContent('Uscite', globalExpenseData.totalExpense, globalExpenseData.prevYearTotal ?? 0, globalExpenseData.percentChange, selectedMonthLabel, settings.year) : undefined}
                 chart={{ series: globalExpenseData.expenseData || [] }}
               />
-              {settings.year !== 'all-years' && (
-                <Tooltip
-                  title={
-                    <span style={{ whiteSpace: 'pre-line' }}>
-                      {buildTooltipContent('Uscite', globalExpenseData.totalExpense, globalExpenseData.prevYearTotal ?? 0, globalExpenseData.percentChange, selectedMonthLabel, settings.year)}
-                    </span>
-                  }
-                  placement="bottom"
-                  arrow
-                >
-                  <IconButton size="small" sx={{ mt: -1, ml: 0.5, opacity: 0.6 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>ⓘ</span>
-                  </IconButton>
-                </Tooltip>
-              )}
             </Stack>
           </Grid>
           <Grid size={12}>

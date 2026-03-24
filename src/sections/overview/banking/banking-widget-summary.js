@@ -1,7 +1,9 @@
 import PropTypes from 'prop-types';
 
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 
@@ -22,6 +24,7 @@ export default function BankingWidgetSummary({
   color = 'primary',
   chart = {},
   description,
+  tooltipContent,
   sx,
   ...other
 }) {
@@ -105,9 +108,22 @@ export default function BankingWidgetSummary({
         <Typography variant="h3">{fCurrencyEur(total)}</Typography>
 
         {description ? (
-          <Typography variant="body2" sx={{ opacity: 0.8 }}>
-            {description}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+              {description}
+            </Typography>
+            {tooltipContent && (
+              <Tooltip
+                title={<span style={{ whiteSpace: 'pre-line' }}>{tooltipContent}</span>}
+                placement="bottom"
+                arrow
+              >
+                <IconButton size="small" sx={{ p: 0, opacity: 0.6, color: 'inherit' }}>
+                  <span style={{ fontSize: '0.8rem' }}>ⓘ</span>
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
         ) : (
           <Stack
             spacing={0.5}
@@ -150,5 +166,6 @@ BankingWidgetSummary.propTypes = {
   percent: PropTypes.number,
   sx: PropTypes.object,
   title: PropTypes.string,
+  tooltipContent: PropTypes.string,
   total: PropTypes.number,
 };

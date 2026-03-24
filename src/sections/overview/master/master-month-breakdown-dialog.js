@@ -1,7 +1,7 @@
 'use client';
 
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -35,6 +35,8 @@ import MonthBreakdownDialog from '../category/month-breakdown-dialog';
 
 const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
+const EMPTY_EXCLUSIONS = [];
+
 export default function MasterMonthBreakdownDialog({
   open,
   onClose,
@@ -52,7 +54,7 @@ export default function MasterMonthBreakdownDialog({
   const paddedMonth = month ? String(month).padStart(2, '0') : null;
 
   // Deriva le categorie dai dati già in memoria — zero fetch
-  const categories = (() => {
+  const categories = useMemo(() => {
     if (!owner?.report?.categoryReport || !year || !paddedMonth) return [];
     const catReport = owner.report.categoryReport[year] ?? {};
     return Object.entries(catReport)
@@ -63,7 +65,7 @@ export default function MasterMonthBreakdownDialog({
       }))
       .filter((c) => c.expense > 0)
       .sort((a, b) => b.expense - a.expense);
-  })();
+  }, [owner, year, paddedMonth]);
 
   const totalExpense = categories.reduce((sum, c) => sum + c.expense, 0);
 
@@ -175,17 +177,19 @@ export default function MasterMonthBreakdownDialog({
       </Dialog>
 
       {/* Livello 1 — Soggetti/Dettagli per categoria selezionata */}
-      <MonthBreakdownDialog
-        open={categoryBreakdown.value}
-        onClose={categoryBreakdown.onFalse}
-        month={month}
-        year={year}
-        category={selectedCategory?.id}
-        db={db}
-        owner={typeof owner?.id === 'string' ? owner.id : 'all-accounts'}
-        viewOnly
-        exclusions={[]}
-      />
+      {selectedCategory && (
+        <MonthBreakdownDialog
+          open={categoryBreakdown.value}
+          onClose={categoryBreakdown.onFalse}
+          month={month}
+          year={year}
+          category={selectedCategory.id}
+          db={db}
+          owner={typeof owner?.id === 'string' ? owner.id : 'all-accounts'}
+          viewOnly
+          exclusions={EMPTY_EXCLUSIONS}
+        />
+      )}
     </>
   );
 }

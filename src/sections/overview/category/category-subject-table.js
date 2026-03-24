@@ -128,8 +128,8 @@ export default function CategorySubjectTable({
       name: row.category,
       ytdIncome: parseFloat(row.ytdIncome ?? row.totalIncome ?? 0),
       ytdExpense: parseFloat(row.ytdExpense ?? row.totalExpense ?? 0),
-      prevYtdIncome: parseFloat(row.prevYtdIncome ?? 0),
-      prevYtdExpense: parseFloat(row.prevYtdExpense ?? 0),
+      prevYtdIncome:  parseFloat(row.prevYtdIncome ?? row.prevTotalIncome ?? 0),
+      prevYtdExpense: parseFloat(row.prevYtdExpense ?? row.prevTotalExpense ?? 0),
       values: row.values || [],
     }))
   , [reportCategory]);

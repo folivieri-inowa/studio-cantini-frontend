@@ -124,7 +124,7 @@ export default function BankingWidgetSummary({
               </Tooltip>
             )}
           </Stack>
-        ) : (
+        ) : (percent !== null && percent !== undefined) ? (
           <Stack
             spacing={0.5}
             direction="row"
@@ -141,7 +141,7 @@ export default function BankingWidgetSummary({
 
             <Box sx={{ opacity: 0.8 }}>rispetto all&apos;anno precedente</Box>
           </Stack>
-        )}
+        ) : null}
       </Stack>
 
       {series && Array.isArray(series) && series.length > 0 && (

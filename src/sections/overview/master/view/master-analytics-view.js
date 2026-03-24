@@ -213,7 +213,7 @@ export default function MasterAnalyticsView() {
   const currentRealMonth = _now.getMonth() + 1;
 
   const [selectedMonth, setSelectedMonth] = useState(
-    () => deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth)
+    () => settings.month ?? deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth)
   );
 
   const [compareYears, setCompareYears] = useState([]);
@@ -270,7 +270,10 @@ export default function MasterAnalyticsView() {
 
   // currentRealYear e currentRealMonth sono primitivi numerici costanti per la sessione
   useEffect(() => {
-    setSelectedMonth(deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth));
+    const derived = deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth);
+    setSelectedMonth(derived);
+    settings.onChangeMonth(derived);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.year, currentRealYear, currentRealMonth]);
 
   const handleYearChange = useCallback((event) => {
@@ -359,7 +362,9 @@ export default function MasterAnalyticsView() {
   const handleMonthChange = useCallback((month) => {
     if (month >= 1 && month <= 12) {
       setSelectedMonth(month);
+      settings.onChangeMonth(month);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleBreakdownBarClick = useCallback((idx) => {

@@ -44,6 +44,14 @@ export function SettingsProvider({ children, defaultSettings }) {
     [update]
   );
 
+  // Month select
+  const onChangeMonth = useCallback(
+    (month) => {
+      update('month', month);
+    },
+    [update]
+  );
+
   // Owner select
   const onChangeOwner = useCallback(
     (owner) => {
@@ -81,6 +89,8 @@ export function SettingsProvider({ children, defaultSettings }) {
       onChangeDb,
       // Year select
       onChangeYear,
+      // Month select
+      onChangeMonth,
       // Owner select
       onChangeOwner,
       // Reset
@@ -91,7 +101,7 @@ export function SettingsProvider({ children, defaultSettings }) {
       onToggle: onToggleDrawer,
       onClose: onCloseDrawer,
     }),
-    [state, update, onChangeDirectionByLang, onChangeDb, onChangeYear, onChangeOwner, canReset, reset, openDrawer, onToggleDrawer, onCloseDrawer]
+    [state, update, onChangeDirectionByLang, onChangeDb, onChangeYear, onChangeMonth, onChangeOwner, canReset, reset, openDrawer, onToggleDrawer, onCloseDrawer]
   );
 
   return <SettingsContext.Provider value={memoizedValue}>{children}</SettingsContext.Provider>;

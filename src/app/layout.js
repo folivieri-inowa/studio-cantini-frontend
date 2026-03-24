@@ -60,6 +60,7 @@ export default function RootLayout({ children }) {
                 // Valori di default per il sistema di gestione
                 db: null,
                 year: null,
+                month: null,
                 owner: null,
               }}
             >

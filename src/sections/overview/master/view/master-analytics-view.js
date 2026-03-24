@@ -328,7 +328,9 @@ export default function MasterAnalyticsView() {
   }, []);
 
   const handleMonthChange = useCallback((month) => {
-    setSelectedMonth(month);
+    if (month >= 1 && month <= 12) {
+      setSelectedMonth(month);
+    }
   }, []);
 
   const getCurrentBalance = () => {
@@ -485,11 +487,10 @@ export default function MasterAnalyticsView() {
       let percentChange = 0;
       const prevYearReport = globalReport[parseInt(settings.year, 10) - 1];
       if (prevYearReport) {
+        const prevFilteredMonths = Object.entries(prevYearReport.months)
+          .filter(([month]) => Number(month) <= selectedMonth);
         const prevYearIncome = parseFloat(
-          Object.entries(prevYearReport.months)
-            .filter(([month]) => Number(month) <= selectedMonth)
-            .reduce((sum, [, m]) => sum + (m?.income ?? 0), 0)
-            .toFixed(2)
+          prevFilteredMonths.reduce((sum, [, m]) => sum + (m?.income ?? 0), 0).toFixed(2)
         );
         if (prevYearIncome !== 0) {
           percentChange = parseFloat(((totalIncome - prevYearIncome) / prevYearIncome * 100).toFixed(2));

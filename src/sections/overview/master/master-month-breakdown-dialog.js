@@ -54,10 +54,10 @@ export default function MasterMonthBreakdownDialog({
   const paddedMonth = month ? String(month).padStart(2, '0') : null;
 
   // Deriva le categorie dai dati già in memoria — zero fetch
-  const categories = useMemo(() => {
-    if (!owner?.report?.categoryReport || !year || !paddedMonth) return [];
+  const { categories, totalExpense } = useMemo(() => {
+    if (!owner?.report?.categoryReport || !year || !paddedMonth) return { categories: [], totalExpense: 0 };
     const catReport = owner.report.categoryReport[year] ?? {};
-    return Object.entries(catReport)
+    const cats = Object.entries(catReport)
       .map(([id, cat]) => ({
         id,
         name: cat.name,
@@ -65,9 +65,8 @@ export default function MasterMonthBreakdownDialog({
       }))
       .filter((c) => c.expense > 0)
       .sort((a, b) => b.expense - a.expense);
+    return { categories: cats, totalExpense: cats.reduce((sum, c) => sum + c.expense, 0) };
   }, [owner, year, paddedMonth]);
-
-  const totalExpense = categories.reduce((sum, c) => sum + c.expense, 0);
 
   const handleNavigateToCategory = (categoryId) => {
     const params = new URLSearchParams({

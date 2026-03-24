@@ -26,6 +26,8 @@ function deriveSelectedMonth(settingsYear, realYear, realMonth) {
   return resolvedYear >= realYear ? realMonth : 12;
 }
 
+const MONTHS_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
 export default function MasterAnalyticsView() {
   const [data, setData] = useState([]);
   const settings = useSettingsContext();
@@ -193,7 +195,6 @@ export default function MasterAnalyticsView() {
     () => deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth)
   );
 
-  const MONTHS_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
   const selectedMonthLabel = MONTHS_LABELS[selectedMonth - 1] ?? '';
 
   // Funzione per caricare i dati dal server
@@ -645,7 +646,7 @@ export default function MasterAnalyticsView() {
       ['#14B8A6', '#F43F5E'],
     ];
 
-    const categories = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    const categories = MONTHS_LABELS;
 
     const series = years.flatMap((year) => {
       const yearReport = globalReport[year];
@@ -702,10 +703,7 @@ export default function MasterAnalyticsView() {
     }
     
     // Create chartCategories array (months)
-    const chartCategories = [
-      'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
-      'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
-    ];
+    const chartCategories = MONTHS_LABELS;
     
     // Funzione per estrarre i dati mensili di un determinato anno (con filtro se attivo)
     const extractMonthlyData = (year) => {
@@ -1017,7 +1015,7 @@ export default function MasterAnalyticsView() {
                       subheader="Confronto uscite mensili per anno"
                       chartType="line"
                       series={multiYearExpenseData}
-                      categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+                      categories={MONTHS_LABELS}
                     />
                   </Grid>
                 </>
@@ -1029,7 +1027,7 @@ export default function MasterAnalyticsView() {
                 <Grid size={12}>
                   <CategoryChartToggle
                     barSeries={chartData || []}
-                    barCategories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+                    barCategories={MONTHS_LABELS}
                     areaChart={{
                       colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
                       categories: getYearlySalesData().chartCategories,
@@ -1042,7 +1040,7 @@ export default function MasterAnalyticsView() {
                     title="Andamento mensile uscite"
                     subheader={`Media spese mensili per l'anno ${settings.year}`}
                     series={monthlyExpenseTrendData}
-                    categories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
+                    categories={MONTHS_LABELS}
                   />
                 </Grid>
               </>

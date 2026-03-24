@@ -28,6 +28,14 @@ function deriveSelectedMonth(settingsYear, realYear, realMonth) {
 
 const MONTHS_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
+function formatYtdDescription(percentChange, monthLabel, year, isExpense) {
+  if (!monthLabel || year === 'all-years') return undefined;
+  const effectivePct = isExpense ? -percentChange : percentChange;
+  const arrow = effectivePct >= 0 ? '▲' : '▼';
+  const absPct = Math.abs(percentChange).toFixed(1).replace('.', ',');
+  return `${arrow} ${absPct}% YTD (Gen – ${monthLabel} ${year})`;
+}
+
 export default function MasterAnalyticsView() {
   const [data, setData] = useState([]);
   const settings = useSettingsContext();
@@ -967,7 +975,7 @@ export default function MasterAnalyticsView() {
                 icon="eva:diagonal-arrow-left-down-fill"
                 percent={globalIncomeData.percentChange || 0}
                 total={globalIncomeData.totalIncome || 0}
-                description={settings.year !== 'all-years' ? `Gen – ${selectedMonthLabel} ${settings.year}` : undefined}
+                description={formatYtdDescription(globalIncomeData.percentChange, selectedMonthLabel, settings.year, false)}
                 chart={{ series: globalIncomeData.incomeData || [] }}
               />
 
@@ -977,7 +985,7 @@ export default function MasterAnalyticsView() {
                 icon="eva:diagonal-arrow-right-up-fill"
                 percent={globalExpenseData.percentChange || 0}
                 total={globalExpenseData.totalExpense || 0}
-                description={settings.year !== 'all-years' ? `Gen – ${selectedMonthLabel} ${settings.year}` : undefined}
+                description={formatYtdDescription(globalExpenseData.percentChange, selectedMonthLabel, settings.year, true)}
                 chart={{ series: globalExpenseData.expenseData || [] }}
               />
             </Stack>

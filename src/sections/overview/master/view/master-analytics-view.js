@@ -18,6 +18,7 @@ import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import CategoryChartToggle from '../../category/category-chart-toggle';
 import MasterCategoryTable from '../master-category-table';
 import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
+import MonthCategoriesReadonlyDialog from '../month-categories-readonly-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -215,6 +216,8 @@ export default function MasterAnalyticsView() {
   );
 
   const [compareYears, setCompareYears] = useState([]);
+  const [monthCategoriesOpen, setMonthCategoriesOpen] = useState(false);
+  const [breakdownMonth, setBreakdownMonth] = useState(null);
 
   const selectedMonthLabel = MONTHS_LABELS[selectedMonth - 1] ?? '';
 
@@ -357,6 +360,11 @@ export default function MasterAnalyticsView() {
       setSelectedMonth(month);
     }
   }, []);
+
+  const handleMonthBarClick = (monthIndex) => {
+    setBreakdownMonth(monthIndex + 1);
+    setMonthCategoriesOpen(true);
+  };
 
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
@@ -810,6 +818,20 @@ export default function MasterAnalyticsView() {
     return [{ name: expenseSeries.name, data: expenseSeries.data }];
   }, [chartData, settings.year]);
 
+  const categoriesForMonth = useMemo(() => {
+    if (!breakdownMonth || !settings?.year || !settings?.owner) return [];
+    const categoryReport = settings.owner?.report?.categoryReport?.[settings.year];
+    if (!categoryReport) return [];
+    const monthKey = breakdownMonth.toString().padStart(2, '0');
+    return Object.values(categoryReport)
+      .map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        expense: parseFloat((cat.months?.[monthKey]?.expense || 0).toFixed(2)),
+      }))
+      .filter(cat => cat.expense > 0);
+  }, [breakdownMonth, settings?.year, settings?.owner]);
+
   const multiYearAreaData = useMemo(() => {
     if (!data || !settings.owner) return null;
     const isAllYears = settings.year === 'all-years';
@@ -975,8 +997,18 @@ export default function MasterAnalyticsView() {
                     readonly
                     series={monthlyExpenseTrendData}
                     categories={MONTHS_LABELS}
+                    onBarClick={handleMonthBarClick}
                   />
                 </Grid>
+                <MonthCategoriesReadonlyDialog
+                  open={monthCategoriesOpen}
+                  onClose={() => setMonthCategoriesOpen(false)}
+                  month={breakdownMonth}
+                  year={settings.year}
+                  categories={categoriesForMonth}
+                  db={settings.db}
+                  owner={settings.owner?.id}
+                />
                 <Grid size={12}>
                   <CategoryChartToggle
                     barSeries={chartData || []}

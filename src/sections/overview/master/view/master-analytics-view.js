@@ -949,7 +949,7 @@ export default function MasterAnalyticsView() {
           <Grid size={12}>
             <MasterCategoryTable
               data={data}
-              mainYear={settings.year === 'all-years' ? new Date().getFullYear() : Number(settings.year)}
+              mainYear={settings.year === 'all-years' ? currentRealYear : Number(settings.year)}
               owner={settings.owner}
               selectedMonth={selectedMonth}
               onMonthChange={handleMonthChange}
@@ -1003,7 +1003,7 @@ export default function MasterAnalyticsView() {
                     onBarClick={handleBreakdownBarClick}
                   />
                 </Grid>
-<Grid size={12}>
+                <Grid size={12}>
                   <CategoryChartToggle
                     barSeries={chartData || []}
                     barCategories={MONTHS_LABELS}

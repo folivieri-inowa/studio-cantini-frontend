@@ -470,7 +470,7 @@ export default function MasterAnalyticsView() {
         ([a], [b]) => Number(a) - Number(b)
       );
 
-      const filteredMonths = sortedMonths;
+      const filteredMonths = sortedMonths.filter(([month]) => Number(month) <= selectedMonth);
 
       const incomeData = filteredMonths.map(([month, date]) => ({
         x: `${settings.year}-${month.padStart(2, '0')}`,
@@ -486,7 +486,10 @@ export default function MasterAnalyticsView() {
       const prevYearReport = globalReport[parseInt(settings.year, 10) - 1];
       if (prevYearReport) {
         const prevYearIncome = parseFloat(
-          Object.values(prevYearReport.months).reduce((sum, m) => sum + (m?.income ?? 0), 0).toFixed(2)
+          Object.entries(prevYearReport.months)
+            .filter(([month]) => Number(month) <= selectedMonth)
+            .reduce((sum, [, m]) => sum + (m?.income ?? 0), 0)
+            .toFixed(2)
         );
         if (prevYearIncome !== 0) {
           percentChange = parseFloat(((totalIncome - prevYearIncome) / prevYearIncome * 100).toFixed(2));
@@ -848,7 +851,7 @@ export default function MasterAnalyticsView() {
   const globalIncomeData = useMemo(() => {
     if (!data || !settings.owner) return { incomeData: [], totalIncome: 0, percentChange: 0 };
     return getGlobalIncome();
-  }, [data, settings.owner, settings.year]);
+  }, [data, settings.owner, settings.year, selectedMonth]);
   
   const globalExpenseData = useMemo(() => {
     if (!data || !settings.owner) return { expenseData: [], totalExpense: 0, percentChange: 0 };

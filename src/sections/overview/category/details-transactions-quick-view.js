@@ -9,7 +9,6 @@ import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import Switch from '@mui/material/Switch';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import TableBody from '@mui/material/TableBody';
@@ -19,7 +18,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import TableContainer from '@mui/material/TableContainer';
 import InputAdornment from '@mui/material/InputAdornment';
-import FormControlLabel from '@mui/material/FormControlLabel';
 
 import axios, { endpoints } from '../../../utils/axios';
 import Scrollbar from '../../../components/scrollbar/scrollbar';
@@ -52,9 +50,6 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
   const [tableData, setTableData] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [descriptionFilter, setDescriptionFilter] = useState('');
-  const [showPrevYear, setShowPrevYear] = useState(false);
-
-  const effectiveYear = showPrevYear && data?.year ? data.year - 1 : data?.year;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,7 +57,7 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
       try {
         if (!data) { setTableData([]); setTransactionsLoading(false); return; }
 
-        const response = await axios.post(endpoints.prima_nota.filtered_list, { ...data, year: effectiveYear });
+        const response = await axios.post(endpoints.prima_nota.filtered_list, data);
         if (response.status === 200 && response.data?.data?.data && Array.isArray(response.data.data.data)) {
           const formattedData = response.data.data.data.map((item, index) => ({
             _id: `transaction-${index}`,
@@ -87,13 +82,12 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
     if (!open) {
       setTableData([]);
       setDescriptionFilter('');
-      setShowPrevYear(false);
     } else if (open && data) {
       fetchData();
       table.setRowsPerPage(rowsPerPage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, data, showPrevYear]);
+  }, [open, data]);
 
   // Filtro descrizione client-side
   const dataFiltered = tableData.filter(row => {
@@ -113,10 +107,11 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
 
   // Label periodo di riferimento
   const periodLabel = (() => {
-    if (!effectiveYear || effectiveYear === 'all-years') return '';
+    const y = data?.year;
+    if (!y || y === 'all-years') return '';
     const m = data?.month ? parseInt(data.month, 10) : null;
-    if (!m || m === 12) return `Anno ${effectiveYear}`;
-    return `Gen – ${MONTHS[m - 1]} ${effectiveYear}`;
+    if (!m || m === 12) return `Anno ${y}`;
+    return `Gen – ${MONTHS[m - 1]} ${y}`;
   })();
 
   return (
@@ -139,43 +134,27 @@ export default function DetailsTransactionsQuickView({ data, open, onClose }) {
       <DialogContent>
         <Stack spacing={2}>
           <Box sx={{ pt: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <TextField
-                size="small"
-                placeholder="Cerca per descrizione..."
-                value={descriptionFilter}
-                onChange={e => setDescriptionFilter(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: descriptionFilter ? (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setDescriptionFilter('')}>
-                        <Iconify icon="eva:close-fill" />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
-                }}
-                sx={{ width: 320 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={showPrevYear}
-                    onChange={(e) => setShowPrevYear(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    Anno precedente ({data?.year ? data.year - 1 : ''})
-                  </Typography>
-                }
-              />
-            </Stack>
+            <TextField
+              size="small"
+              placeholder="Cerca per descrizione..."
+              value={descriptionFilter}
+              onChange={e => setDescriptionFilter(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: descriptionFilter ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setDescriptionFilter('')}>
+                      <Iconify icon="eva:close-fill" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+              sx={{ width: 320 }}
+            />
           </Box>
 
           <TableContainer sx={{ position: 'relative', overflow: 'unset' }}>

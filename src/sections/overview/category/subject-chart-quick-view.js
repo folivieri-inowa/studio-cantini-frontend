@@ -64,12 +64,10 @@ function BarAvgChart({ currentYear, prevYear, currentData, prevData, selectedMon
   ];
 
   const chartOptions = useChart({
-    colors: ['#FF4842', '#FFA48D'],
+    colors: ['#FF4842', '#E67E22'],
     stroke: { show: true, width: 2, colors: ['transparent'] },
     xaxis: { categories: MONTHS },
-    yaxis: {
-      labels: { formatter: v => fCurrencyEur(v ?? 0) },
-    },
+    yaxis: { labels: { formatter: v => fCurrencyEur(v ?? 0) } },
     tooltip: { y: { formatter: v => fCurrencyEur(v ?? 0) } },
     plotOptions: { bar: { columnWidth: '40%' } },
     annotations: {
@@ -79,21 +77,43 @@ function BarAvgChart({ currentYear, prevYear, currentData, prevData, selectedMon
           borderColor: '#FF4842',
           borderWidth: 2,
           strokeDashArray: 6,
-          label: { text: `Media ${currentYear}: ${fCurrencyEur(avg)}`, style: { color: '#fff', background: '#FF4842' } },
+          label: { text: '' },
         } : null,
         prevAvg > 0 ? {
           y: prevAvg,
-          borderColor: '#FFA48D',
+          borderColor: '#E67E22',
           borderWidth: 2,
           strokeDashArray: 4,
-          label: { text: `Media ${prevYear}: ${fCurrencyEur(prevAvg)}`, style: { color: '#fff', background: '#FFA48D' } },
+          label: { text: '' },
         } : null,
       ].filter(Boolean),
     },
   });
 
   return (
-    <Chart dir="ltr" type="bar" series={series} options={chartOptions} width="100%" height={280} />
+    <>
+      <Chart dir="ltr" type="bar" series={series} options={chartOptions} width="100%" height={280} />
+      {(avg > 0 || prevAvg > 0) && (
+        <Stack direction="row" spacing={3} sx={{ mt: 0.5, px: 1 }}>
+          {avg > 0 && (
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Box sx={{ width: 24, height: 2, borderTop: '2px dashed #FF4842' }} />
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Media {currentYear}: <strong>{fCurrencyEur(avg)}</strong>
+              </Typography>
+            </Stack>
+          )}
+          {prevAvg > 0 && (
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Box sx={{ width: 24, height: 2, borderTop: '2px dashed #E67E22' }} />
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Media {prevYear}: <strong>{fCurrencyEur(prevAvg)}</strong>
+              </Typography>
+            </Stack>
+          )}
+        </Stack>
+      )}
+    </>
   );
 }
 
@@ -112,7 +132,7 @@ function LineChart({ currentYear, prevYear, currentData, prevData, selectedMonth
   ];
 
   const chartOptions = useChart({
-    colors: ['#FF4842', '#FFA48D'],
+    colors: ['#FF4842', '#E67E22'],
     stroke: { width: [3, 2], dashArray: [0, 4] },
     xaxis: { categories: MONTHS },
     yaxis: { labels: { formatter: v => fCurrencyEur(v ?? 0) } },

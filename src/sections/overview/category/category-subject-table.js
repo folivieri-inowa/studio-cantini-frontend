@@ -250,17 +250,27 @@ export default function CategorySubjectTable({
         id: 'actions',
         header: '',
         enableSorting: false,
-        size: 100,
+        size: showPrevYear ? 140 : 100,
         cell: ({ row }) => (
           <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
+            <Tooltip title={`Movimenti ${mainYear}`} placement="top" arrow>
               <IconButton
                 size="small"
-                onClick={() => handleViewTransactions({ subject: row.original.id })}
+                onClick={() => handleViewTransactions({ subject: row.original.id, year: mainYear })}
               >
                 <Iconify icon="solar:document-text-bold" />
               </IconButton>
             </Tooltip>
+            {showPrevYear && prevYear && (
+              <Tooltip title={`Movimenti ${prevYear}`} placement="top" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleViewTransactions({ subject: row.original.id, year: prevYear })}
+                >
+                  <Iconify icon="solar:document-text-linear" />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="Vedi grafici" placement="top" arrow>
               <IconButton
                 size="small"
@@ -426,11 +436,18 @@ export default function CategorySubjectTable({
                                     )}
                                     <TableCell align="right">
                                       <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                                        <Tooltip title="Vedi tutti i movimenti" placement="top" arrow>
-                                          <IconButton size="small" onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id })}>
+                                        <Tooltip title={`Movimenti ${mainYear}`} placement="top" arrow>
+                                          <IconButton size="small" onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id, year: mainYear })}>
                                             <Iconify icon="solar:document-text-bold" />
                                           </IconButton>
                                         </Tooltip>
+                                        {showPrevYear && prevYear && (
+                                          <Tooltip title={`Movimenti ${prevYear}`} placement="top" arrow>
+                                            <IconButton size="small" onClick={() => handleViewTransactions({ details: val.id, subject: row.original.id, year: prevYear })}>
+                                              <Iconify icon="solar:document-text-linear" />
+                                            </IconButton>
+                                          </Tooltip>
+                                        )}
                                         <Tooltip title="Vedi grafici" placement="top" arrow>
                                           <IconButton size="small" onClick={() => handleViewChart({ subject: row.original.id, subjectName: row.original.name })}>
                                             <Iconify icon="solar:chart-bold" />

@@ -971,13 +971,17 @@ export default function MasterAnalyticsView() {
                   <CategoryChartToggle
                     barSeries={chartData || []}
                     barCategories={MONTHS_LABELS}
+                    barColors={['#00C853', '#FF3D00', '#2196F3', '#FFEB3B']}
+                    barSubheader={singleYearSubheader}
+                    barTooltipInfo={`Confronto entrate e uscite mensili tra l'anno selezionato (${settings.year}) e gli anni di confronto selezionati.`}
                     areaChart={{
                       colors: multiYearAreaData?.colors || [],
                       categories: multiYearAreaData?.categories || [],
                       series: multiYearAreaData?.series || [],
                     }}
                     areaSubheader={singleYearSubheader}
-                    areaTooltipInfo={singleYearTooltipInfo}
+                    areaTooltipInfo={`Confronto entrate e uscite mensili tra l'anno selezionato (${settings.year}) e gli anni di confronto selezionati.`}
+                    cumulativeTooltipInfo={`Confronto andamento cumulativo entrate e uscite mensili tra l'anno selezionato (${settings.year}) e gli anni di confronto selezionati.`}
                   />
                 </Grid>
                 <Grid size={12}>

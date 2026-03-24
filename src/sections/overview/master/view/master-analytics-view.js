@@ -180,6 +180,16 @@ export default function MasterAnalyticsView() {
     severity: 'info'
   });
 
+  const currentRealYear = new Date().getFullYear();
+  const currentRealMonth = new Date().getMonth() + 1;
+
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const mainYear = settings.year === 'all-years'
+      ? currentRealYear
+      : Number(settings.year);
+    return mainYear >= currentRealYear ? currentRealMonth : 12;
+  });
+
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
     try {
@@ -222,9 +232,16 @@ export default function MasterAnalyticsView() {
   useEffect(() => {
     // Carica i dati all'avvio e quando cambia il database
     fetchData();
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.db]); // Riesegui quando cambia il database
+
+  useEffect(() => {
+    const mainYear = settings.year === 'all-years'
+      ? currentRealYear
+      : Number(settings.year);
+    setSelectedMonth(mainYear >= currentRealYear ? currentRealMonth : 12);
+  }, [settings.year, currentRealYear, currentRealMonth]);
 
   const handleYearChange = useCallback((event) => {
     const newYear = event.target.value;
@@ -956,6 +973,8 @@ export default function MasterAnalyticsView() {
               data={data}
               mainYear={settings.year === 'all-years' ? new Date().getFullYear() : Number(settings.year)}
               owner={settings.owner}
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
             />
           </Grid>
           {(() => {

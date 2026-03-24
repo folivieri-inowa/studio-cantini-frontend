@@ -21,7 +21,6 @@ import TableRow from '@mui/material/TableRow';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import { paths } from '../../../routes/paths';
 import { useRouter } from '../../../routes/hooks';
@@ -86,7 +85,7 @@ export default function MasterMonthBreakdownDialog({
 
   return (
     <>
-      <Dialog fullWidth maxWidth="sm" open={open} onClose={onClose}>
+      <Dialog fullWidth maxWidth="md" open={open} onClose={onClose}>
         <DialogTitle>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography variant="h5">
@@ -136,11 +135,6 @@ export default function MasterMonthBreakdownDialog({
                       </TableCell>
                       <TableCell align="center">
                         <Stack direction="row" justifyContent="center" spacing={0.5}>
-                          <Tooltip title="Vai alla pagina categoria" placement="top" arrow>
-                            <IconButton size="small" onClick={() => handleNavigateToCategory(cat.id)}>
-                              <OpenInNewIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                           <Tooltip title="Dettaglio soggetti" placement="top" arrow>
                             <IconButton size="small" onClick={() => handleOpenCategoryBreakdown(cat)}>
                               <ArrowForwardIosIcon fontSize="small" />

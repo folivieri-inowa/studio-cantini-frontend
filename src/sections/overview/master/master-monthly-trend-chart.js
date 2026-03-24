@@ -168,7 +168,7 @@ export default function MasterMonthlyTrendChart({
         }}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="body2" fontWeight={600}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
             Come leggere questo grafico
           </Typography>
         </AccordionSummary>
@@ -176,7 +176,7 @@ export default function MasterMonthlyTrendChart({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 
             <Box>
-              <Typography variant="body2" fontWeight={600} gutterBottom>
+              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
                 Il grafico
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -187,7 +187,7 @@ export default function MasterMonthlyTrendChart({
             </Box>
 
             <Box>
-              <Typography variant="body2" fontWeight={600} gutterBottom>
+              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
                 Clicca sulle barre
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -198,7 +198,7 @@ export default function MasterMonthlyTrendChart({
             </Box>
 
             <Box>
-              <Typography variant="body2" fontWeight={600} gutterBottom>
+              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
                 Escludere una voce
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -209,7 +209,7 @@ export default function MasterMonthlyTrendChart({
             </Box>
 
             <Box>
-              <Typography variant="body2" fontWeight={600} gutterBottom>
+              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
                 Ripristinare le voci escluse
               </Typography>
               <Typography variant="body2" color="text.secondary">

@@ -968,6 +968,16 @@ export default function MasterAnalyticsView() {
             return (
               <>
                 <Grid size={12}>
+                  <MasterMonthlyTrendChart
+                    title="Andamento mensile uscite"
+                    subheader={`Media spese mensili per l'anno ${settings.year}`}
+                    tooltipInfo={`Uscite mensili dell'anno ${settings.year} con indicazione della media.\nLa linea tratteggiata rappresenta la media mensile.`}
+                    readonly
+                    series={monthlyExpenseTrendData}
+                    categories={MONTHS_LABELS}
+                  />
+                </Grid>
+                <Grid size={12}>
                   <CategoryChartToggle
                     barSeries={chartData || []}
                     barCategories={MONTHS_LABELS}
@@ -982,15 +992,6 @@ export default function MasterAnalyticsView() {
                     areaSubheader={singleYearSubheader}
                     areaTooltipInfo={`Confronto entrate e uscite mensili tra l'anno selezionato (${settings.year}) e gli anni di confronto selezionati.`}
                     cumulativeTooltipInfo={`Confronto andamento cumulativo entrate e uscite mensili tra l'anno selezionato (${settings.year}) e gli anni di confronto selezionati.`}
-                  />
-                </Grid>
-                <Grid size={12}>
-                  <MasterMonthlyTrendChart
-                    title="Andamento mensile uscite"
-                    subheader={`Media spese mensili per l'anno ${settings.year}`}
-                    tooltipInfo={`Uscite mensili dell'anno ${settings.year} con indicazione della media.\nLa linea tratteggiata rappresenta la media mensile.`}
-                    series={monthlyExpenseTrendData}
-                    categories={MONTHS_LABELS}
                   />
                 </Grid>
               </>

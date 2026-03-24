@@ -26,6 +26,7 @@ export default function MasterMonthlyTrendChart({
   subheader,
   tooltipInfo,
   showGuide = false,
+  readonly = false,
   series = [],
   categories = [],
   colors,
@@ -191,34 +192,37 @@ export default function MasterMonthlyTrendChart({
                 Clicca sulle barre
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Cliccando su una barra si apre il dettaglio del mese: l'elenco dei soggetti e dei
-                dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo
-                superiore al doppio della media mensile (⚠); quelle in grigio sono state escluse
-                dal calcolo.
+                {readonly
+                  ? 'Cliccando su una barra si apre il dettaglio del mese: l\'elenco dei soggetti e dei dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo superiore al doppio della media mensile (⚠).'
+                  : 'Cliccando su una barra si apre il dettaglio del mese: l\'elenco dei soggetti e dei dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo superiore al doppio della media mensile (⚠); quelle in grigio sono state escluse dal calcolo.'}
               </Typography>
             </Box>
 
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
-                Escludere una voce
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Usa la casella di selezione (☐) per escludere un intero soggetto o dettaglio dal
-                calcolo. Per escludere una singola transazione, clicca sull'icona documento accanto
-                alla voce per aprire l'elenco movimenti, poi usa l'occhietto su ogni riga. Le
-                esclusioni attive appaiono come chip sotto il titolo del grafico.
-              </Typography>
-            </Box>
+            {!readonly && (
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
+                  Escludere una voce
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Usa la casella di selezione (☐) per escludere un intero soggetto o dettaglio dal
+                  calcolo. Per escludere una singola transazione, clicca sull'icona documento accanto
+                  alla voce per aprire l'elenco movimenti, poi usa l'occhietto su ogni riga. Le
+                  esclusioni attive appaiono come chip sotto il titolo del grafico.
+                </Typography>
+              </Box>
+            )}
 
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
-                Ripristinare le voci escluse
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Puoi rimuovere una singola esclusione cliccando la ✕ sul chip corrispondente, oppure
-                azzerare tutto con il chip "Reset tutto".
-              </Typography>
-            </Box>
+            {!readonly && (
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
+                  Ripristinare le voci escluse
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Puoi rimuovere una singola esclusione cliccando la ✕ sul chip corrispondente, oppure
+                  azzerare tutto con il chip "Reset tutto".
+                </Typography>
+              </Box>
+            )}
 
           </Box>
         </AccordionDetails>
@@ -299,6 +303,7 @@ MasterMonthlyTrendChart.propTypes = {
   subheader: PropTypes.string,
   tooltipInfo: PropTypes.string,
   showGuide: PropTypes.bool,
+  readonly: PropTypes.bool,
   series: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string,

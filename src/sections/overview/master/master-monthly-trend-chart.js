@@ -191,9 +191,10 @@ export default function MasterMonthlyTrendChart({
                 Clicca sulle barre
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Cliccando su una barra si apre il dettaglio del mese: l'elenco di tutte le voci che
-                compongono quella spesa. Le voci evidenziate sono incluse nel totale; quelle in grigio
-                sono state escluse.
+                Cliccando su una barra si apre il dettaglio del mese: l'elenco dei soggetti e dei
+                dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo
+                superiore al doppio della media mensile (⚠); quelle in grigio sono state escluse
+                dal calcolo.
               </Typography>
             </Box>
 
@@ -202,9 +203,10 @@ export default function MasterMonthlyTrendChart({
                 Escludere una voce
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Nel dettaglio del mese puoi escludere singole voci dal calcolo cliccando sulla riga.
-                La voce diventa grigia e la barra si aggiorna. Le esclusioni appaiono come chip sotto
-                il titolo del grafico.
+                Usa la casella di selezione (☐) per escludere un intero soggetto o dettaglio dal
+                calcolo. Per escludere una singola transazione, clicca sull'icona documento accanto
+                alla voce per aprire l'elenco movimenti, poi usa l'occhietto su ogni riga. Le
+                esclusioni attive appaiono come chip sotto il titolo del grafico.
               </Typography>
             </Box>
 

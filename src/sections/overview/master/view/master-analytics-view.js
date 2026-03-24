@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
+import { useBoolean } from '../../../../hooks/use-boolean';
+
 import Alert from '@mui/material/Alert';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2';
@@ -17,6 +19,7 @@ import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import CategoryChartToggle from '../../category/category-chart-toggle';
 import MasterCategoryTable from '../master-category-table';
+import MasterMonthBreakdownDialog from '../master-month-breakdown-dialog';
 import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
 import MonthCategoriesReadonlyDialog from '../month-categories-readonly-dialog';
 
@@ -218,6 +221,7 @@ export default function MasterAnalyticsView() {
   const [compareYears, setCompareYears] = useState([]);
   const [monthCategoriesOpen, setMonthCategoriesOpen] = useState(false);
   const [breakdownMonth, setBreakdownMonth] = useState(null);
+  const breakdownDialog = useBoolean();
 
   const selectedMonthLabel = MONTHS_LABELS[selectedMonth - 1] ?? '';
 
@@ -997,10 +1001,12 @@ export default function MasterAnalyticsView() {
                     title="Andamento mensile uscite"
                     subheader={`Media spese mensili per l'anno ${settings.year}`}
                     tooltipInfo={`Uscite mensili dell'anno ${settings.year} con indicazione della media.\nLa linea tratteggiata rappresenta la media mensile.`}
-                    readonly
                     series={monthlyExpenseTrendData}
                     categories={MONTHS_LABELS}
-                    onBarClick={handleMonthBarClick}
+                    onBarClick={(idx) => {
+                      setBreakdownMonth(idx + 1);
+                      breakdownDialog.onTrue();
+                    }}
                   />
                 </Grid>
                 <MonthCategoriesReadonlyDialog
@@ -1046,14 +1052,24 @@ export default function MasterAnalyticsView() {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           variant="filled"
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <MasterMonthBreakdownDialog
+        open={breakdownDialog.value}
+        onClose={breakdownDialog.onFalse}
+        month={breakdownMonth}
+        year={settings.year === 'all-years' ? new Date().getFullYear() : Number(settings.year)}
+        owner={settings.owner}
+        db={settings.db}
+        compareYears={compareYears}
+      />
     </Container>
   );
 }

@@ -16,8 +16,8 @@ import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import CategoryChartToggle from '../../category/category-chart-toggle';
-import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
 import MasterCategoryTable from '../master-category-table';
+import MasterMonthlyTrendChart from '../master-monthly-trend-chart';
 
 // ----------------------------------------------------------------------
 
@@ -213,6 +213,8 @@ export default function MasterAnalyticsView() {
   const [selectedMonth, setSelectedMonth] = useState(
     () => deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth)
   );
+
+  const [compareYears, setCompareYears] = useState([]);
 
   const selectedMonthLabel = MONTHS_LABELS[selectedMonth - 1] ?? '';
 
@@ -652,11 +654,15 @@ export default function MasterAnalyticsView() {
     };
   };
 
-  const getMultiYearAreaData = () => {
+  const getMultiYearAreaData = (yearsFilter = null) => {
     const globalReport = settings.owner?.report?.globalReport;
     if (!globalReport) return { categories: [], series: [], colors: [] };
 
-    const years = (settings.owner.report?.years || []).slice().sort();
+    const allYears = (settings.owner.report?.years || []).slice().sort();
+    // Se yearsFilter è fornito, mostra solo quegli anni (in ordine cronologico)
+    const years = yearsFilter && yearsFilter.length > 0
+      ? allYears.filter(y => yearsFilter.map(Number).includes(Number(y)))
+      : allYears;
 
     // Palette colori per anno: entrate, uscite
     const yearColors = [
@@ -669,7 +675,7 @@ export default function MasterAnalyticsView() {
 
     const categories = MONTHS_LABELS;
 
-    const series = years.flatMap((year) => {
+    const series = years.map((year) => {
       const yearReport = globalReport[year];
       const months = yearReport?.months || {};
       const monthlyData = Array.from({ length: 12 }, (_, i) => {
@@ -680,110 +686,22 @@ export default function MasterAnalyticsView() {
         };
       });
 
-      return [
-        { name: `Entrate ${year}`, data: monthlyData.map((m) => m.income) },
-        { name: `Uscite ${year}`, data: monthlyData.map((m) => m.expense) },
-      ];
+      return {
+        year: year.toString(),
+        data: [
+          { name: `Entrate ${year}`, data: monthlyData.map((m) => m.income) },
+          { name: `Uscite ${year}`, data: monthlyData.map((m) => m.expense) },
+        ],
+      };
     });
 
-    // Appiattisci i colori nell'ordine corretto
+    // Appiattisci i colori nell'ordine corretto (2 colori per anno)
     const colors = years.flatMap((_, idx) => yearColors[idx % yearColors.length]);
 
     return { categories, series, colors };
   };
 
-  const getMultiYearExpenseData = () => {
-    const globalReport = settings.owner?.report?.globalReport;
-    if (!globalReport) return [];
-
-    const years = (settings.owner.report?.years || []).slice().sort();
-
-    return years.map((year) => {
-      const yearReport = globalReport[year];
-      const months = yearReport?.months || {};
-      const data = Array.from({ length: 12 }, (_, i) => {
-        const monthKey = (i + 1).toString().padStart(2, '0');
-        return parseFloat((months[monthKey]?.expense || 0).toFixed(2));
-      });
-      return { name: `Uscite ${year}`, data };
-    });
-  };
-
-  const getYearlySalesData = () => {
-    // Check if we have data and settings
-    const globalReport = settings.owner?.report?.globalReport;
-    if (!globalReport) return { chartCategories: [], series: [] };
-
-    // Get current year and previous year
-    const currentYear = settings.year;
-    const previousYear = (parseInt(settings.year, 10) - 1).toString();
-    
-    // Verify if we have data for both years
-    if (!globalReport[currentYear]) {
-      return { chartCategories: [], series: [] };
-    }
-    
-    // Create chartCategories array (months)
-    const chartCategories = MONTHS_LABELS;
-    
-    // Funzione per estrarre i dati mensili di un determinato anno (con filtro se attivo)
-    const extractMonthlyData = (year) => {
-      const months = globalReport[year]?.months || {};
-      return Array.from({ length: 12 }, (_, i) => {
-        const monthKey = (i + 1).toString().padStart(2, '0');
-
-        return {
-          income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
-          expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
-        };
-      });
-    };
-    
-    // Estrai dati per l'anno corrente
-    const monthlyDataCurrentYear = extractMonthlyData(currentYear);
-    
-    // Estrai dati per l'anno precedente se disponibili
-    const monthlyDataPreviousYear = extractMonthlyData(previousYear);
-    
-    // Crea le serie per il grafico
-    const series = [];
-    
-    // Anno corrente
-    series.push({
-      year: currentYear,
-      data: [
-        {
-          name: `Entrate ${currentYear}`,
-          data: monthlyDataCurrentYear.map(m => m.income),
-        },
-        {
-          name: `Uscite ${currentYear}`,
-          data: monthlyDataCurrentYear.map(m => m.expense),
-        },
-      ],
-    });
-    
-    // Anno precedente (se disponibile)
-    if (globalReport[previousYear]) {
-      series.push({
-        year: previousYear,
-        data: [
-          {
-            name: `Entrate ${previousYear}`,
-            data: monthlyDataPreviousYear.map(m => m.income),
-          },
-          {
-            name: `Uscite ${previousYear}`,
-            data: monthlyDataPreviousYear.map(m => m.expense),
-          },
-        ],
-      });
-    }
-    
-    return { chartCategories, series };
-  };
-
-  const getChartData = () => {
+  const getChartData = (compareYearsFilter = []) => {
     if (!data || !settings.year || !settings.owner) {
       return [];
     }
@@ -808,18 +726,14 @@ export default function MasterAnalyticsView() {
     }
 
     const currentYear = settings.year; // Anno selezionato
-    
+
     // Per 'all-years' non mostriamo il grafico mensile (non ha senso mostrare tutti gli anni)
     if (currentYear === 'all-years') {
       return [];
     }
-    
-    const previousYear = (parseInt(settings.year, 10) - 1).toString(); // Anno precedente
 
     // Verifica se ci sono dati per l'anno corrente
     if (!globalReport[currentYear]) {
-      // Se non ci sono dati per l'anno corrente, mostriamo un messaggio all'utente
-      // se lo Snackbar non è già aperto
       if (!snackbar.open) {
         setSnackbar({
           open: true,
@@ -830,13 +744,11 @@ export default function MasterAnalyticsView() {
       return [];
     }
 
-    // Funzione per estrarre i dati mensili per un determinato anno (con filtro se attivo)
+    // Funzione per estrarre i dati mensili per un determinato anno
     const extractMonthlyData = (year) => {
       const months = globalReport[year]?.months || {};
       return Array.from({ length: 12 }, (_, i) => {
-        const monthKey = (i + 1).toString().padStart(2, '0'); // Formatta 01, 02, ..., 12
-
-        // Arrotondiamo a 2 decimali per maggiore precisione
+        const monthKey = (i + 1).toString().padStart(2, '0');
         return {
           income: parseFloat((months[monthKey]?.income || 0).toFixed(2)),
           expense: parseFloat((months[monthKey]?.expense || 0).toFixed(2)),
@@ -844,27 +756,30 @@ export default function MasterAnalyticsView() {
       });
     };
 
-    const monthlyDataCurrentYear = extractMonthlyData(currentYear);
-    const monthlyDataPreviousYear = extractMonthlyData(previousYear);
-
-    return [
+    // Anno principale
+    const currentYearData = extractMonthlyData(currentYear);
+    const result = [
       {
         name: `Entrate ${currentYear}`,
-        data: monthlyDataCurrentYear.map((m) => m.income),
+        data: currentYearData.map((m) => m.income),
       },
       {
         name: `Uscite ${currentYear}`,
-        data: monthlyDataCurrentYear.map((m) => m.expense),
-      },
-      {
-        name: `Entrate ${previousYear}`,
-        data: monthlyDataPreviousYear.map((m) => m.income),
-      },
-      {
-        name: `Uscite ${previousYear}`,
-        data: monthlyDataPreviousYear.map((m) => m.expense),
+        data: currentYearData.map((m) => m.expense),
       },
     ];
+
+    // Anni di confronto selezionati
+    compareYearsFilter.forEach((year) => {
+      const yearStr = year.toString();
+      const yearData = extractMonthlyData(yearStr);
+      result.push(
+        { name: `Entrate ${yearStr}`, data: yearData.map((m) => m.income) },
+        { name: `Uscite ${yearStr}`, data: yearData.map((m) => m.expense) }
+      );
+    });
+
+    return result;
   };
 
   // Memoize i risultati per evitare chiamate multiple durante il render
@@ -885,26 +800,26 @@ export default function MasterAnalyticsView() {
   
   const chartData = useMemo(() => {
     if (!data || !settings.owner) return [];
-    return getChartData();
-  }, [data, settings.owner, settings.year]);
+    return getChartData(compareYears);
+  }, [data, settings.owner, settings.year, compareYears]);
 
   const monthlyExpenseTrendData = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
-    // Use the "Uscite {currentYear}" series (index 1)
     const expenseSeries = chartData.find((s) => s.name && s.name.startsWith('Uscite') && !s.name.includes((parseInt(settings.year, 10) - 1).toString()));
     if (!expenseSeries) return [];
     return [{ name: expenseSeries.name, data: expenseSeries.data }];
   }, [chartData, settings.year]);
 
   const multiYearAreaData = useMemo(() => {
-    if (!data || !settings.owner || settings.year !== 'all-years') return null;
-    return getMultiYearAreaData();
-  }, [data, settings.owner, settings.year]);
-
-  const multiYearExpenseData = useMemo(() => {
-    if (!data || !settings.owner || settings.year !== 'all-years') return [];
-    return getMultiYearExpenseData();
-  }, [data, settings.owner, settings.year]);
+    if (!data || !settings.owner) return null;
+    const isAllYears = settings.year === 'all-years';
+    // In all-years mostriamo tutti gli anni, altrimenti filtriamo per mainYear + compareYears
+    const yearsFilter = isAllYears ? null : [
+      settings.year === 'all-years' ? null : Number(settings.year),
+      ...compareYears.map(Number),
+    ].filter(Boolean);
+    return getMultiYearAreaData(yearsFilter);
+  }, [data, settings.owner, settings.year, compareYears]);
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
@@ -990,7 +905,7 @@ export default function MasterAnalyticsView() {
                 total={globalIncomeData.totalIncome || 0}
                 description={formatYtdDescription(globalIncomeData.percentChange, selectedMonthLabel, settings.year)}
                 tooltipContent={settings.year !== 'all-years' ? buildTooltipContent('Entrate', globalIncomeData.totalIncome, globalIncomeData.prevYearTotal ?? 0, globalIncomeData.percentChange, selectedMonthLabel, settings.year) : undefined}
-                chart={{ series: globalIncomeData.incomeData || [] }}
+                chart={{ series: (globalIncomeData.incomeData || []).map((d) => (typeof d === 'object' ? d.y : d)) }}
               />
 
               <BankingWidgetSummary
@@ -1001,7 +916,7 @@ export default function MasterAnalyticsView() {
                 total={globalExpenseData.totalExpense || 0}
                 description={formatYtdDescription(globalExpenseData.percentChange, selectedMonthLabel, settings.year)}
                 tooltipContent={settings.year !== 'all-years' ? buildTooltipContent('Uscite', globalExpenseData.totalExpense, globalExpenseData.prevYearTotal ?? 0, globalExpenseData.percentChange, selectedMonthLabel, settings.year) : undefined}
-                chart={{ series: globalExpenseData.expenseData || [] }}
+                chart={{ series: (globalExpenseData.expenseData || []).map((d) => (typeof d === 'object' ? d.y : d)) }}
               />
             </Stack>
           </Grid>
@@ -1012,38 +927,43 @@ export default function MasterAnalyticsView() {
               owner={settings.owner}
               selectedMonth={selectedMonth}
               onMonthChange={handleMonthChange}
+              onCompareYearsChange={setCompareYears}
             />
           </Grid>
           {(() => {
             const isAllYears = settings.year === 'all-years';
 
             if (isAllYears) {
+              const allYearsSubheader = (() => {
+                const years = (settings.owner?.report?.years || []).slice().sort();
+                if (years.length === 0) return 'Tutti gli anni';
+                if (years.length === 1) return `Anno ${years[0]}`;
+                const sorted = [...years].sort((a, b) => b - a);
+                return `Anno ${sorted[0]} confrontato con ${sorted.slice(1).join(', ')}`;
+              })();
+
               return (
-                <>
-                  <Grid size={12}>
-                    <CategoryChartToggle
-                      barSeries={[]}
-                      barCategories={[]}
-                      hideToggle
-                      areaChart={{
-                        colors: multiYearAreaData?.colors || [],
-                        categories: multiYearAreaData?.categories || [],
-                        series: multiYearAreaData?.series || [],
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={12}>
-                    <MasterMonthlyTrendChart
-                      title="Andamento mensile uscite"
-                      subheader="Confronto uscite mensili per anno"
-                      chartType="line"
-                      series={multiYearExpenseData}
-                      categories={MONTHS_LABELS}
-                    />
-                  </Grid>
-                </>
+                <Grid size={12}>
+                  <CategoryChartToggle
+                    barSeries={[]}
+                    barCategories={[]}
+                    hideToggle
+                    areaChart={{
+                      colors: multiYearAreaData?.colors || [],
+                      categories: multiYearAreaData?.categories || [],
+                      series: multiYearAreaData?.series || [],
+                    }}
+                    areaSubheader={allYearsSubheader}
+                    areaTooltipInfo={`Confronto entrate e uscite mensili per tutti gli anni disponibili.\nOgni anno mostra due serie: entrate (colore chiaro) e uscite (colore acceso).\nPermette di confrontare l'andamento anno su anno mese per mese.`}
+                  />
+                </Grid>
               );
             }
+
+            const singleYearSubheader = compareYears.length > 0
+              ? `Anno ${settings.year} confrontato con ${compareYears.slice().sort((a, b) => b - a).join(', ')}`
+              : `Anno ${settings.year}`;
+            const singleYearTooltipInfo = `Confronto entrate e uscite mensili tra l'anno selezionato (${settings.year}) e gli anni di confronto selezionati.\nPermette di identificare mesi con variazioni significative rispetto agli anni precedenti.`;
 
             return (
               <>
@@ -1052,16 +972,19 @@ export default function MasterAnalyticsView() {
                     barSeries={chartData || []}
                     barCategories={MONTHS_LABELS}
                     areaChart={{
-                      colors: ['#4ADDDE', '#F45757', '#7E8F9E', '#DBA362'],
-                      categories: getYearlySalesData().chartCategories,
-                      series: getYearlySalesData().series,
+                      colors: multiYearAreaData?.colors || [],
+                      categories: multiYearAreaData?.categories || [],
+                      series: multiYearAreaData?.series || [],
                     }}
+                    areaSubheader={singleYearSubheader}
+                    areaTooltipInfo={singleYearTooltipInfo}
                   />
                 </Grid>
                 <Grid size={12}>
                   <MasterMonthlyTrendChart
                     title="Andamento mensile uscite"
                     subheader={`Media spese mensili per l'anno ${settings.year}`}
+                    tooltipInfo={`Uscite mensili dell'anno ${settings.year} con indicazione della media.\nLa linea tratteggiata rappresenta la media mensile.`}
                     series={monthlyExpenseTrendData}
                     categories={MONTHS_LABELS}
                   />

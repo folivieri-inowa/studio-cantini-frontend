@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 import Tooltip from '@mui/material/Tooltip';
@@ -16,11 +16,18 @@ import ChartColumnMultiple from '../../_examples/extra/chart-view/chart-column-m
 
 const STORAGE_KEY = 'category-chart-type';
 
-export default function CategoryChartToggle({ barSeries, barCategories, barColors, areaChart, hideToggle = false }) {
+export default function CategoryChartToggle({ barSeries, barCategories, barColors, areaChart, areaSubheader, areaTooltipInfo, hideToggle = false }) {
   const [chartType, setChartType] = useState(() => {
+    if (hideToggle) return 'area';
     if (typeof window === 'undefined') return 'bar';
     return localStorage.getItem(STORAGE_KEY) || 'area';
   });
+
+  // Quando hideToggle diventa true (es. passaggio a "tutti gli anni"),
+  // forziamo sempre il tipo 'area' perché il grafico a barre non ha dati.
+  useEffect(() => {
+    if (hideToggle) setChartType('area');
+  }, [hideToggle]);
 
   const handleToggle = (type) => {
     setChartType(type);
@@ -54,7 +61,8 @@ export default function CategoryChartToggle({ barSeries, barCategories, barColor
     return (
       <EcommerceMultiYearSales
         title="Andamento entrate/uscite"
-        subheader="Confronto anno corrente vs anno precedente"
+        subheader={areaSubheader}
+        tooltipInfo={areaTooltipInfo}
         chart={areaChart}
         action={toggleAction}
       />
@@ -77,5 +85,7 @@ CategoryChartToggle.propTypes = {
   barCategories: PropTypes.array,
   barColors: PropTypes.array,
   areaChart: PropTypes.object,
+  areaSubheader: PropTypes.string,
+  areaTooltipInfo: PropTypes.string,
   hideToggle: PropTypes.bool,
 };

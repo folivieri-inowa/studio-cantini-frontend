@@ -4,7 +4,9 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import CardHeader from '@mui/material/CardHeader';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import Chart, { useChart } from 'src/components/chart';
@@ -18,6 +20,7 @@ const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', '
 export default function MasterMonthlyTrendChart({
   title,
   subheader,
+  tooltipInfo,
   series = [],
   categories = [],
   colors,
@@ -119,9 +122,30 @@ export default function MasterMonthlyTrendChart({
   // --- Empty state ----------------------------------------------------
   const hasData = series.length > 0 && expenseData.length > 0;
 
+  const subheaderNode = (subheader || tooltipInfo) ? (
+    <Stack direction="row" alignItems="center" spacing={0.5}>
+      {subheader && (
+        <Typography variant="body2" color="text.secondary">
+          {subheader}
+        </Typography>
+      )}
+      {tooltipInfo && (
+        <Tooltip
+          title={<span style={{ whiteSpace: 'pre-line' }}>{tooltipInfo}</span>}
+          placement="bottom"
+          arrow
+        >
+          <IconButton size="small" sx={{ p: 0, opacity: 0.5 }}>
+            <span style={{ fontSize: '0.8rem' }}>ⓘ</span>
+          </IconButton>
+        </Tooltip>
+      )}
+    </Stack>
+  ) : undefined;
+
   return (
     <Card {...other}>
-      <CardHeader title={title} subheader={subheader} />
+      <CardHeader title={title} subheader={subheaderNode} />
 
       {exclusions.length > 0 && (
         <Stack direction="row" spacing={1} sx={{ mx: 3, mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
@@ -196,6 +220,7 @@ export default function MasterMonthlyTrendChart({
 MasterMonthlyTrendChart.propTypes = {
   title: PropTypes.string,
   subheader: PropTypes.string,
+  tooltipInfo: PropTypes.string,
   series: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string,

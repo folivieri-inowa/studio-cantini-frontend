@@ -94,7 +94,7 @@ DeltaCell.propTypes = {
 
 // ----------------------------------------------------------------------
 
-export default function MasterCategoryTable({ data, mainYear, owner, selectedMonth: selectedMonthProp, onMonthChange }) {
+export default function MasterCategoryTable({ data, mainYear, owner, selectedMonth: selectedMonthProp, onMonthChange, onCompareYearsChange }) {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -124,7 +124,9 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
   // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
   useEffect(() => {
     const prev = mainYear - 1;
-    setCompareYears(availableCompareYears.includes(prev) ? [prev] : availableCompareYears.slice(0, 1));
+    const newCompareYears = availableCompareYears.includes(prev) ? [prev] : availableCompareYears.slice(0, 1);
+    setCompareYears(newCompareYears);
+    onCompareYearsChange?.(newCompareYears);
   }, [mainYear, availableCompareYears]);
 
   const tableData = useMemo(() => {
@@ -336,6 +338,7 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
           onChange={e => {
             const val = e.target.value.slice(0, 2);
             setCompareYears(val);
+            onCompareYearsChange?.(val);
           }}
           renderValue={selected => selected.join(', ')}
           displayEmpty
@@ -488,4 +491,5 @@ MasterCategoryTable.propTypes = {
   owner: PropTypes.object,
   selectedMonth: PropTypes.number,
   onMonthChange: PropTypes.func,
+  onCompareYearsChange: PropTypes.func,
 };

@@ -11,12 +11,15 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Stack from '@mui/material/Stack';
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Tooltip from '@mui/material/Tooltip';
 import Divider from '@mui/material/Divider';
 import { styled } from '@mui/material/styles';
+import MenuItem from '@mui/material/MenuItem';
 import Container from '@mui/material/Container';
+import TextField from '@mui/material/TextField';
 import TableBody from '@mui/material/TableBody';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
@@ -29,7 +32,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
-import { RouterLink } from 'src/routes/components';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useBetaFeatures } from 'src/hooks/use-beta-features';
@@ -65,7 +67,7 @@ import { ConfirmDialog } from '../../../components/custom-dialog';
 import PrimaNotaTableFiltersResult from '../prima-nota-table-filters-result';
 import PrimaNotaMultipleQuickEditForm from '../prima-nota-multiple-quick-edit-form';
 import PrimaNotaPrintDialog from '../prima-nota-print-dialog';
-import FormProvider, { RHFUpload, RHFSelect, RHFTextField } from '../../../components/hook-form';
+import FormProvider, { RHFUpload, RHFSelect, RHFTextField, RHFAutocomplete } from '../../../components/hook-form';
 
 // ----------------------------------------------------------------------
 
@@ -122,6 +124,7 @@ export default function PrimaNotaListView() {
 
   const quickEdit = useBoolean();
   const importData = useBoolean();
+  const uploadFile = useBoolean();
   const confirm = useBoolean();
   const importHistory = useBoolean();
   const totalModal = useBoolean();
@@ -361,12 +364,11 @@ export default function PrimaNotaListView() {
                 Storico Importazioni
               </Button>
               <Button
-                component={RouterLink}
-                href={paths.dashboard.prima_nota.new}
+                onClick={uploadFile.onTrue}
                 variant="contained"
-                startIcon={<Iconify icon="mingcute:add-line" />}
+                startIcon={<Iconify icon="solar:upload-bold" />}
               >
-                Nuova voce
+                Carica file
               </Button>
             </Stack>
           }
@@ -575,6 +577,14 @@ export default function PrimaNotaListView() {
         onUpdate={() => {
           refetch();
         }}
+      />
+
+      <UploadFileDialog
+        open={uploadFile}
+        db={settings.db}
+        owners={owners}
+        categories={categories}
+        onUpdate={refetch}
       />
 
       <ImportHistoryDialog
@@ -911,6 +921,237 @@ UploadDialog.propTypes = {
   db: PropTypes.object,
 }
 
+
+// ----------------------------------------------------------------------
+
+const UploadFileDialog = ({ open, db, owners, categories, onUpdate }) => {
+  const [subjectList, setSubjectList] = useState([]);
+  const [detailsList, setDetailsList] = useState([]);
+
+  const loadingSend = useBoolean();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const defaultValues = useMemo(
+    () => ({ file: null, owner: '', category: '', subject: '', details: '' }),
+    []
+  );
+
+  const methods = useForm({ defaultValues });
+  const { setValue, watch, reset, handleSubmit } = methods;
+  const values = watch();
+
+  const handleDrop = useCallback(
+    (acceptedFiles) => {
+      const newFiles = acceptedFiles.map((file) =>
+        Object.assign(file, { preview: URL.createObjectURL(file) })
+      );
+      setValue('file', [...(values.file || []), ...newFiles], { shouldValidate: true });
+    },
+    [setValue, values.file]
+  );
+
+  const handleRemoveFile = useCallback(
+    (inputFile) => {
+      setValue('file', values.file?.filter((f) => f !== inputFile));
+    },
+    [setValue, values.file]
+  );
+
+  const handleRemoveAllFiles = useCallback(() => setValue('file', []), [setValue]);
+
+  const handleCategoryChange = async (newValue) => {
+    setValue('category', newValue?.id || '');
+    setValue('subject', null);
+    setValue('details', null);
+    setSubjectList([]);
+    setDetailsList([]);
+    if (newValue?.id) {
+      const response = await axios.post(endpoints.subject.list, { db, categoryId: newValue.id });
+      if (response.status === 200) {
+        setSubjectList((response.data.data || []).sort((a, b) => a.name.localeCompare(b.name)));
+      }
+    }
+  };
+
+  const handleSubjectChange = async (newValue) => {
+    setValue('subject', newValue?.id || '');
+    setValue('details', null);
+    setDetailsList([]);
+    if (newValue?.id) {
+      const response = await axios.post(endpoints.detail.list, { db, subjectId: newValue.id });
+      if (response.status === 200) {
+        setDetailsList((response.data.data || []).sort((a, b) => a.name.localeCompare(b.name)));
+      }
+    }
+  };
+
+  const handleCreateAndSend = handleSubmit(async (data) => {
+    if (!data.file?.[0]) {
+      enqueueSnackbar('Seleziona un file da caricare', { variant: 'error' });
+      return;
+    }
+    loadingSend.onTrue();
+    try {
+      const formData = new FormData();
+      formData.append('file', data.file[0]);
+      formData.append('metadata', JSON.stringify({
+        db,
+        owner: data.owner,
+        category: data.category,
+        subject: data.subject,
+        details: data.details || null,
+      }));
+      const response = await axios.post('/api/prima-nota/import', formData);
+      if (response.status === 200) {
+        open.onFalse();
+        reset();
+        setSubjectList([]);
+        setDetailsList([]);
+        onUpdate();
+        enqueueSnackbar('File importato con successo!');
+      } else {
+        enqueueSnackbar('Si è verificato un errore', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error(error);
+      enqueueSnackbar('Si è verificato un errore', { variant: 'error' });
+    }
+    loadingSend.onFalse();
+  });
+
+  return (
+    <Dialog open={open.value} onClose={open.onFalse} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ m: 0, p: 2 }}>
+        Importa dati da file
+      </DialogTitle>
+      <IconButton
+        aria-label="close"
+        onClick={open.onFalse}
+        sx={{ position: 'absolute', right: 8, top: 8 }}
+      >
+        <CloseIcon />
+      </IconButton>
+      <DialogContent sx={{ mb: 4 }}>
+        <FormProvider methods={methods}>
+          <Stack divider={<Divider flexItem sx={{ borderStyle: 'dashed' }} />} spacing={3}>
+
+            {/* Istruzioni formato file */}
+            <Alert severity="info" sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Formato richiesto per il file Excel
+              </Typography>
+              <Typography variant="body2" component="div">
+                Il foglio deve chiamarsi esattamente <strong>Lista Movimenti</strong> e avere le colonne in questo ordine:
+              </Typography>
+              <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
+                <li><strong>Colonna A</strong> — Data (es. 01/03/2026 oppure 1 marzo 2026)</li>
+                <li><strong>Colonna B</strong> — Descrizione del movimento</li>
+                <li><strong>Colonna C</strong> — Dare (uscite, importo negativo)</li>
+                <li><strong>Colonna D</strong> — Avere (entrate, importo positivo)</li>
+              </Box>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Sono supportati i formati <strong>.xls</strong> e <strong>.xlsx</strong>. Le righe senza importo valido vengono ignorate.
+              </Typography>
+            </Alert>
+
+            {/* Intestatario conto */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+              <RHFSelect
+                name="owner"
+                label="Intestatario Conto"
+                InputLabelProps={{ shrink: true }}
+                onChange={(e) => setValue('owner', e.target.value)}
+              >
+                {(owners || []).map((owner, index) => (
+                  <MenuItem key={`owner-${index}`} value={owner.id}>
+                    {owner.name} | {owner.cc} | {owner.iban}
+                  </MenuItem>
+                ))}
+              </RHFSelect>
+            </Stack>
+
+            {/* Categoria / Soggetto / Dettaglio */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <RHFAutocomplete
+                name="category"
+                label="Categoria"
+                options={categories || []}
+                value={(categories || []).find((c) => c.id === watch('category')) || null}
+                getOptionLabel={(option) => {
+                  if (typeof option === 'string') return option;
+                  return (categories || []).find((c) => c.id === option.id)?.name || '';
+                }}
+                isOptionEqualToValue={(option, val) => option.id === val?.id}
+                onChange={async (_, newValue) => handleCategoryChange(newValue)}
+                renderOption={(props, option) => <li {...props} key={option.id}>{option.name}</li>}
+                sx={{ minWidth: '33%' }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Categoria" placeholder="Seleziona una categoria" />
+                )}
+              />
+              <RHFAutocomplete
+                name="subject"
+                label="Soggetto"
+                options={subjectList}
+                value={subjectList.find((s) => s.id === watch('subject')) || null}
+                getOptionLabel={(option) => {
+                  if (typeof option === 'string') return option;
+                  return subjectList.find((s) => s.id === (option.id || option))?.name || '';
+                }}
+                isOptionEqualToValue={(option, val) => option?.id === (val?.id || val)}
+                onChange={async (_, newValue) => handleSubjectChange(newValue)}
+                disabled={subjectList.length === 0}
+                renderOption={(props, option) => <li {...props} key={option.id}>{option.name}</li>}
+                sx={{ minWidth: '33%' }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Soggetto" placeholder="Seleziona un soggetto" />
+                )}
+              />
+              <RHFAutocomplete
+                name="details"
+                label="Dettaglio"
+                options={detailsList}
+                value={detailsList.find((d) => d.id === watch('details')) || null}
+                getOptionLabel={(option) => {
+                  if (typeof option === 'string') return option;
+                  return detailsList.find((d) => d.id === (option.id || option))?.name || '';
+                }}
+                isOptionEqualToValue={(option, val) => option?.id === (val?.id || val)}
+                onChange={(_, newValue) => setValue('details', newValue?.id || '')}
+                disabled={detailsList.length === 0}
+                renderOption={(props, option) => <li {...props} key={option.id}>{option.name}</li>}
+                sx={{ minWidth: '32%' }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Dettaglio" placeholder="Seleziona un dettaglio" />
+                )}
+              />
+            </Stack>
+
+            {/* Upload file */}
+            <RHFUpload
+              multiple
+              accept="application/*"
+              name="file"
+              maxSize={10485760}
+              onDrop={handleDrop}
+              onRemove={handleRemoveFile}
+              onRemoveAll={handleRemoveAllFiles}
+              onUpload={handleCreateAndSend}
+            />
+          </Stack>
+        </FormProvider>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+UploadFileDialog.propTypes = {
+  open: PropTypes.object,
+  db: PropTypes.object,
+  owners: PropTypes.array,
+  categories: PropTypes.array,
+  onUpdate: PropTypes.func,
+};
 
 // ----------------------------------------------------------------------
 

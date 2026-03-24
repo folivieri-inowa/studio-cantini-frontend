@@ -394,14 +394,14 @@ export default function CategorySubjectTable({
                                     </TableCell>
                                     {showIncome && (
                                       <TableCell align="right">
-                                        <Typography variant="body2">{formatCurrency(parseFloat(val.totalIncome || 0))}</Typography>
+                                        <Typography variant="body2">{formatCurrency(parseFloat(val.ytdIncome ?? val.totalIncome ?? 0))}</Typography>
                                       </TableCell>
                                     )}
                                     {showIncome && showPrevYear && (
                                       <TableCell align="right">
                                         <DeltaCell
-                                          value={parseFloat(val.prevTotalIncome || 0)}
-                                          referenceValue={parseFloat(val.totalIncome || 0)}
+                                          value={parseFloat(val.prevYtdIncome ?? val.prevTotalIncome ?? 0)}
+                                          referenceValue={parseFloat(val.ytdIncome ?? val.totalIncome ?? 0)}
                                           referenceYear={mainYear}
                                           isExpense={false}
                                           month={selectedMonth}
@@ -410,14 +410,14 @@ export default function CategorySubjectTable({
                                     )}
                                     {showExpense && (
                                       <TableCell align="right">
-                                        <Typography variant="body2">{formatCurrency(parseFloat(val.totalExpense || 0))}</Typography>
+                                        <Typography variant="body2">{formatCurrency(parseFloat(val.ytdExpense ?? val.totalExpense ?? 0))}</Typography>
                                       </TableCell>
                                     )}
                                     {showExpense && showPrevYear && (
                                       <TableCell align="right">
                                         <DeltaCell
-                                          value={parseFloat(val.prevTotalExpense || 0)}
-                                          referenceValue={parseFloat(val.totalExpense || 0)}
+                                          value={parseFloat(val.prevYtdExpense ?? val.prevTotalExpense ?? 0)}
+                                          referenceValue={parseFloat(val.ytdExpense ?? val.totalExpense ?? 0)}
                                           referenceYear={mainYear}
                                           isExpense
                                           month={selectedMonth}

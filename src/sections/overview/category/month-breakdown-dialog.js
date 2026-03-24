@@ -57,7 +57,7 @@ export default function MonthBreakdownDialog({
   db,
   owner,
   exclusions = [],
-  onToggleExclusion,
+  onToggleExclusion = () => {},
   monthlyAvg,
   onReportRefresh,
   viewOnly = false,

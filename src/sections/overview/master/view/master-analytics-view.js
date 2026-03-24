@@ -5,10 +5,12 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import Alert from '@mui/material/Alert';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid2';
+import IconButton from '@mui/material/IconButton';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import { useAuthContext } from '../../../../auth/hooks';
@@ -33,6 +35,18 @@ function formatYtdDescription(percentChange, monthLabel, year) {
   const arrow = percentChange >= 0 ? '▲' : '▼';
   const absPct = Math.abs(percentChange).toFixed(1).replace('.', ',');
   return `${arrow} ${absPct}% YTD (Gen – ${monthLabel} ${year})`;
+}
+
+function buildTooltipContent(label, total, prevYearTotal, percentChange, monthLabel, year) {
+  const prevYear = year !== 'all-years' ? Number(year) - 1 : null;
+  const arrow = percentChange >= 0 ? '▲' : '▼';
+  const absPct = Math.abs(percentChange).toFixed(1).replace('.', ',');
+  return [
+    `${label} YTD Gen – ${monthLabel} ${year}`,
+    `Totale: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(total)}`,
+    prevYear ? `Stesso periodo ${prevYear}: ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(prevYearTotal)}` : null,
+    `Variazione: ${arrow} ${absPct}%`,
+  ].filter(Boolean).join('\n');
 }
 
 export default function MasterAnalyticsView() {
@@ -496,11 +510,12 @@ export default function MasterAnalyticsView() {
       );
 
       let percentChange = 0;
+      let prevYearIncome = 0;
       const prevYearReport = globalReport[parseInt(settings.year, 10) - 1];
       if (prevYearReport) {
         const prevFilteredMonths = Object.entries(prevYearReport.months)
           .filter(([month]) => Number(month) <= selectedMonth);
-        const prevYearIncome = parseFloat(
+        prevYearIncome = parseFloat(
           prevFilteredMonths.reduce((sum, [, m]) => sum + (m?.income ?? 0), 0).toFixed(2)
         );
         if (prevYearIncome !== 0) {
@@ -508,7 +523,7 @@ export default function MasterAnalyticsView() {
         }
       }
 
-      return { incomeData, totalIncome, percentChange };
+      return { incomeData, totalIncome, percentChange, prevYearTotal: prevYearIncome };
     }
 
     // Aggregazione multi-anno per 'all-years'
@@ -582,11 +597,12 @@ export default function MasterAnalyticsView() {
       );
 
       let percentChange = 0;
+      let prevYearExpense = 0;
       const prevYearReport = globalReport[parseInt(settings.year, 10) - 1];
       if (prevYearReport) {
         const prevFilteredMonths = Object.entries(prevYearReport.months)
           .filter(([month]) => Number(month) <= selectedMonth);
-        const prevYearExpense = parseFloat(
+        prevYearExpense = parseFloat(
           prevFilteredMonths.reduce((sum, [, m]) => sum + (m?.expense ?? 0), 0).toFixed(2)
         );
         if (prevYearExpense !== 0) {
@@ -594,7 +610,7 @@ export default function MasterAnalyticsView() {
         }
       }
 
-      return { expenseData, totalExpense, percentChange };
+      return { expenseData, totalExpense, percentChange, prevYearTotal: prevYearExpense };
     }
 
     // Aggregazione multi-anno per 'all-years'
@@ -977,6 +993,21 @@ export default function MasterAnalyticsView() {
                 description={formatYtdDescription(globalIncomeData.percentChange, selectedMonthLabel, settings.year)}
                 chart={{ series: globalIncomeData.incomeData || [] }}
               />
+              {settings.year !== 'all-years' && (
+                <Tooltip
+                  title={
+                    <span style={{ whiteSpace: 'pre-line' }}>
+                      {buildTooltipContent('Entrate', globalIncomeData.totalIncome, globalIncomeData.prevYearTotal ?? 0, globalIncomeData.percentChange, selectedMonthLabel, settings.year)}
+                    </span>
+                  }
+                  placement="bottom"
+                  arrow
+                >
+                  <IconButton size="small" sx={{ mt: -1, ml: 0.5, opacity: 0.6 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>ⓘ</span>
+                  </IconButton>
+                </Tooltip>
+              )}
 
               <BankingWidgetSummary
                 title="Uscite"
@@ -987,6 +1018,21 @@ export default function MasterAnalyticsView() {
                 description={formatYtdDescription(globalExpenseData.percentChange, selectedMonthLabel, settings.year)}
                 chart={{ series: globalExpenseData.expenseData || [] }}
               />
+              {settings.year !== 'all-years' && (
+                <Tooltip
+                  title={
+                    <span style={{ whiteSpace: 'pre-line' }}>
+                      {buildTooltipContent('Uscite', globalExpenseData.totalExpense, globalExpenseData.prevYearTotal ?? 0, globalExpenseData.percentChange, selectedMonthLabel, settings.year)}
+                    </span>
+                  }
+                  placement="bottom"
+                  arrow
+                >
+                  <IconButton size="small" sx={{ mt: -1, ml: 0.5, opacity: 0.6 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>ⓘ</span>
+                  </IconButton>
+                </Tooltip>
+              )}
             </Stack>
           </Grid>
           <Grid size={12}>

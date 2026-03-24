@@ -187,16 +187,19 @@ export default function MasterMonthlyTrendChart({
               </Typography>
             </Box>
 
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
-                Clicca sulle barre
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {readonly
-                  ? 'Cliccando su una barra si apre il dettaglio del mese: l\'elenco dei soggetti e dei dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo superiore al doppio della media mensile (⚠).'
-                  : 'Cliccando su una barra si apre il dettaglio del mese: l\'elenco dei soggetti e dei dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo superiore al doppio della media mensile (⚠); quelle in grigio sono state escluse dal calcolo.'}
-              </Typography>
-            </Box>
+            {!readonly && (
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }} gutterBottom>
+                  Clicca sulle barre
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Cliccando su una barra si apre il dettaglio del mese: l'elenco dei soggetti e dei
+                  dettagli che compongono quella spesa. Le righe evidenziate in rosso hanno un importo
+                  superiore al doppio della media mensile (⚠); quelle in grigio sono state escluse
+                  dal calcolo.
+                </Typography>
+              </Box>
+            )}
 
             {!readonly && (
               <Box>

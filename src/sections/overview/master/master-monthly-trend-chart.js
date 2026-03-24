@@ -8,6 +8,10 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import Chart, { useChart } from 'src/components/chart';
 
@@ -21,6 +25,7 @@ export default function MasterMonthlyTrendChart({
   title,
   subheader,
   tooltipInfo,
+  showGuide = false,
   series = [],
   categories = [],
   colors,
@@ -147,6 +152,76 @@ export default function MasterMonthlyTrendChart({
     <Card {...other}>
       <CardHeader title={title} subheader={subheaderNode} />
 
+      <Accordion
+        defaultExpanded={showGuide}
+        disableGutters
+        elevation={0}
+        square
+        sx={{
+          mx: 3,
+          mt: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          '&:before': { display: 'none' },
+          backgroundColor: 'background.neutral',
+        }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="body2" fontWeight={600}>
+            Come leggere questo grafico
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+
+            <Box>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Il grafico
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Mostra le uscite mensili della categoria per l'anno selezionato. Ogni barra rappresenta
+                la spesa totale di quel mese. La linea tratteggiata indica la media mensile calcolata
+                sui mesi con almeno una spesa.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Clicca sulle barre
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Cliccando su una barra si apre il dettaglio del mese: l'elenco di tutte le voci che
+                compongono quella spesa. Le voci evidenziate sono incluse nel totale; quelle in grigio
+                sono state escluse.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Escludere una voce
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Nel dettaglio del mese puoi escludere singole voci dal calcolo cliccando sulla riga.
+                La voce diventa grigia e la barra si aggiorna. Le esclusioni appaiono come chip sotto
+                il titolo del grafico.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Ripristinare le voci escluse
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Puoi rimuovere una singola esclusione cliccando la ✕ sul chip corrispondente, oppure
+                azzerare tutto con il chip "Reset tutto".
+              </Typography>
+            </Box>
+
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
       {exclusions.length > 0 && (
         <Stack direction="row" spacing={1} sx={{ mx: 3, mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
           {exclusions.map((exc) => {
@@ -221,6 +296,7 @@ MasterMonthlyTrendChart.propTypes = {
   title: PropTypes.string,
   subheader: PropTypes.string,
   tooltipInfo: PropTypes.string,
+  showGuide: PropTypes.bool,
   series: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string,

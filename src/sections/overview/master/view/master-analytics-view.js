@@ -915,24 +915,6 @@ export default function MasterAnalyticsView() {
         <Grid container spacing={3}>
           <Grid size={12}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-              {settings.owner.id !== 'all-accounts' && (
-                <BankingWidgetSummary
-                  title="Saldo corrente"
-                  icon="solar:wallet-money-bold"
-                  percent={currentBalanceData.percentChange || 0}
-                  total={currentBalanceData.balance || 0}
-                  description={currentBalanceData.description || ''}
-                  color="info"
-                  chart={{ series: [] }}
-                  sx={{
-                    '&::before, &::after': {
-                      backgroundColor: (theme) => theme.palette.info.lighter,
-                    },
-                    boxShadow: (theme) => `0 4px 12px ${theme.palette.info.lighter}`,
-                  }}
-                />
-              )}
-
               <BankingWidgetSummary
                 title="Entrate"
                 icon="eva:diagonal-arrow-left-down-fill"

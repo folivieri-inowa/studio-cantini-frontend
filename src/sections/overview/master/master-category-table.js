@@ -169,7 +169,7 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
   }, [data, owner, mainYear, compareYears, selectedMonth]);
 
   const columns = useMemo(() => {
-    const sortedCompareYears = [...compareYears].sort((a, b) => a - b);
+    const allYearsSorted = [...new Set([mainYear, ...compareYears])].sort((a, b) => b - a);
     const cols = [
       columnHelper.accessor('name', {
         id: 'name',
@@ -196,64 +196,82 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
     ];
 
     if (showIncome) {
-      cols.push(
-        columnHelper.accessor(row => row.income[mainYear] ?? 0, {
-          id: `income_${mainYear}`,
-          header: `Entrate ${mainYear}`,
-          cell: info => (
-            <Typography variant="body1" sx={{ textAlign: 'right' }}>
-              {formatCurrency(info.getValue())}
-            </Typography>
-          ),
-        })
-      );
-
-      sortedCompareYears.filter(year => year !== mainYear).forEach(year => {
+      allYearsSorted.forEach(year => {
+        const isMain = year === mainYear;
         cols.push(
           columnHelper.accessor(row => row.income[year] ?? 0, {
             id: `income_${year}`,
-            header: `Entrate ${year}`,
-            cell: info => (
-              <DeltaCell
-                value={info.getValue()}
-                referenceValue={info.row.original.income[mainYear] ?? 0}
-                referenceYear={mainYear}
-                isExpense={false}
-                month={selectedMonth}
-              />
+            header: () => (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: isMain ? 'bold' : 'regular',
+                  color: isMain ? 'primary.main' : 'text.primary',
+                  textAlign: 'right',
+                }}
+              >
+                Entrate {year}
+              </Typography>
             ),
+            cell: info => {
+              if (isMain) {
+                return (
+                  <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                    {formatCurrency(info.getValue())}
+                  </Typography>
+                );
+              }
+              return (
+                <DeltaCell
+                  value={info.getValue()}
+                  referenceValue={info.row.original.income[mainYear] ?? 0}
+                  referenceYear={mainYear}
+                  isExpense={false}
+                  month={selectedMonth}
+                />
+              );
+            },
           })
         );
       });
     }
 
     if (showExpense) {
-      cols.push(
-        columnHelper.accessor(row => row.expense[mainYear] ?? 0, {
-          id: `expense_${mainYear}`,
-          header: `Uscite ${mainYear}`,
-          cell: info => (
-            <Typography variant="body1" sx={{ textAlign: 'right' }}>
-              {formatCurrency(info.getValue())}
-            </Typography>
-          ),
-        })
-      );
-
-      sortedCompareYears.filter(year => year !== mainYear).forEach(year => {
+      allYearsSorted.forEach(year => {
+        const isMain = year === mainYear;
         cols.push(
           columnHelper.accessor(row => row.expense[year] ?? 0, {
             id: `expense_${year}`,
-            header: `Uscite ${year}`,
-            cell: info => (
-              <DeltaCell
-                value={info.getValue()}
-                referenceValue={info.row.original.expense[mainYear] ?? 0}
-                referenceYear={mainYear}
-                isExpense
-                month={selectedMonth}
-              />
+            header: () => (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: isMain ? 'bold' : 'regular',
+                  color: isMain ? 'primary.main' : 'text.primary',
+                  textAlign: 'right',
+                }}
+              >
+                Uscite {year}
+              </Typography>
             ),
+            cell: info => {
+              if (isMain) {
+                return (
+                  <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                    {formatCurrency(info.getValue())}
+                  </Typography>
+                );
+              }
+              return (
+                <DeltaCell
+                  value={info.getValue()}
+                  referenceValue={info.row.original.expense[mainYear] ?? 0}
+                  referenceYear={mainYear}
+                  isExpense
+                  month={selectedMonth}
+                />
+              );
+            },
           })
         );
       });

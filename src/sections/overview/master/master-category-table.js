@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+
 import PropTypes from 'prop-types';
 import {
   useReactTable,
@@ -93,13 +94,12 @@ DeltaCell.propTypes = {
 
 // ----------------------------------------------------------------------
 
-export default function MasterCategoryTable({ data, mainYear, owner }) {
+export default function MasterCategoryTable({ data, mainYear, owner, selectedMonth: selectedMonthProp, onMonthChange }) {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
-  const defaultMonth = mainYear >= currentYear ? currentMonth : 12;
-  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  const selectedMonth = selectedMonthProp ?? (mainYear >= currentYear ? currentMonth : 12);
 
   const availableCompareYears = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -120,11 +120,6 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
   const [showIncome, setShowIncome] = useState(true);
   const [showExpense, setShowExpense] = useState(true);
   const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
-
-  // Resetta selectedMonth quando cambia l'anno principale
-  useEffect(() => {
-    setSelectedMonth(mainYear >= currentYear ? currentMonth : 12);
-  }, [mainYear, currentYear, currentMonth]);
 
   // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
   useEffect(() => {
@@ -352,7 +347,7 @@ export default function MasterCategoryTable({ data, mainYear, owner }) {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
           value={selectedMonth - 1}
-          onChange={(_, newIndex) => setSelectedMonth(newIndex + 1)}
+          onChange={(_, newIndex) => onMonthChange?.(newIndex + 1)}
           variant="fullWidth"
         >
           {MONTHS.map((month) => (
@@ -473,4 +468,6 @@ MasterCategoryTable.propTypes = {
   data: PropTypes.array.isRequired,
   mainYear: PropTypes.number.isRequired,
   owner: PropTypes.object,
+  selectedMonth: PropTypes.number,
+  onMonthChange: PropTypes.func,
 };

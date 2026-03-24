@@ -60,6 +60,7 @@ export default function MonthBreakdownDialog({
   onToggleExclusion,
   monthlyAvg,
   onReportRefresh,
+  viewOnly = false,
 }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -197,7 +198,7 @@ export default function MonthBreakdownDialog({
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell padding="checkbox" />
+                    {!viewOnly && <TableCell padding="checkbox" />}
                     <TableCell />
                     <TableCell>Soggetto / Dettaglio</TableCell>
                     <TableCell align="right">Importo</TableCell>
@@ -224,20 +225,22 @@ export default function MonthBreakdownDialog({
                             ...(isAnomaly && !subjectExcluded && { bgcolor: 'error.lighter' }),
                           }}
                         >
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              size="small"
-                              checked={subjectExcluded || allTxExcluded}
-                              indeterminate={!subjectExcluded && !allTxExcluded && (someExcluded || someTxExcluded)}
-                              onChange={() => {
-                                if (allTxExcluded || someTxExcluded) {
-                                  handleResetSubjectExclusions(subject);
-                                } else {
-                                  handleToggleSubject(subject);
-                                }
-                              }}
-                            />
-                          </TableCell>
+                          {!viewOnly && (
+                            <TableCell padding="checkbox">
+                              <Checkbox
+                                size="small"
+                                checked={subjectExcluded || allTxExcluded}
+                                indeterminate={!subjectExcluded && !allTxExcluded && (someExcluded || someTxExcluded)}
+                                onChange={() => {
+                                  if (allTxExcluded || someTxExcluded) {
+                                    handleResetSubjectExclusions(subject);
+                                  } else {
+                                    handleToggleSubject(subject);
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                          )}
                           <TableCell sx={{ width: 40 }}>
                             {subject.details.length > 0 && (
                               <IconButton
@@ -270,7 +273,7 @@ export default function MonthBreakdownDialog({
                             {isAnomaly && (
                               <Chip label="⚠" size="small" color="error" variant="soft" />
                             )}
-                            {subjectExcluded && (
+                            {!viewOnly && subjectExcluded && (
                               <Chip label="Escluso" size="small" color="default" variant="soft" />
                             )}
                           </TableCell>
@@ -291,20 +294,22 @@ export default function MonthBreakdownDialog({
                                 ...(detailAnomaly && !detailExcluded && { bgcolor: 'error.lighter' }),
                               }}
                             >
-                              <TableCell padding="checkbox" sx={{ pl: 4 }}>
-                                <Checkbox
-                                  size="small"
-                                  checked={detailExcluded || allDetailTxExcluded}
-                                  indeterminate={!detailExcluded && !allDetailTxExcluded && someDetailTxExcluded}
-                                  onChange={() => {
-                                    if (allDetailTxExcluded || someDetailTxExcluded) {
-                                      handleResetDetailExclusions(subject, detail);
-                                    } else {
-                                      handleToggleDetail(subject, detail);
-                                    }
-                                  }}
-                                />
-                              </TableCell>
+                              {!viewOnly && (
+                                <TableCell padding="checkbox" sx={{ pl: 4 }}>
+                                  <Checkbox
+                                    size="small"
+                                    checked={detailExcluded || allDetailTxExcluded}
+                                    indeterminate={!detailExcluded && !allDetailTxExcluded && someDetailTxExcluded}
+                                    onChange={() => {
+                                      if (allDetailTxExcluded || someDetailTxExcluded) {
+                                        handleResetDetailExclusions(subject, detail);
+                                      } else {
+                                        handleToggleDetail(subject, detail);
+                                      }
+                                    }}
+                                  />
+                                </TableCell>
+                              )}
                               <TableCell />
                               <TableCell>
                                 <Typography variant="body2" sx={{ pl: 3 }}>
@@ -328,7 +333,7 @@ export default function MonthBreakdownDialog({
                                 {detailAnomaly && (
                                   <Chip label="⚠" size="small" color="error" variant="soft" />
                                 )}
-                                {detailExcluded && (
+                                {!viewOnly && detailExcluded && (
                                   <Chip label="Escluso" size="small" color="default" variant="soft" />
                                 )}
                               </TableCell>
@@ -378,4 +383,5 @@ MonthBreakdownDialog.propTypes = {
   onToggleExclusion: PropTypes.func,
   monthlyAvg: PropTypes.number,
   onReportRefresh: PropTypes.func,
+  viewOnly: PropTypes.bool,
 };

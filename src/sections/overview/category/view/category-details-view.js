@@ -310,6 +310,7 @@ export default function CategoryDetailsView({ categoryId }) {
             barCategories={['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']}
             barColors={['#00C853', '#FF3D00', '#2196F3', '#FFEB3B']}
             barSubheader={`Anno ${year} confrontato con ${compareYearsParam || year - 1}`}
+            areaSubheader={`Anno ${year} confrontato con ${compareYearsParam || year - 1}`}
             barTooltipInfo={`Confronto entrate e uscite mensili tra l'anno selezionato (${year}) e gli anni di confronto selezionati.`}
             areaTooltipInfo={`Confronto entrate e uscite mensili tra l'anno selezionato (${year}) e gli anni di confronto selezionati.`}
             cumulativeTooltipInfo={`Confronto andamento cumulativo entrate e uscite mensili tra l'anno selezionato (${year}) e gli anni di confronto selezionati.`}

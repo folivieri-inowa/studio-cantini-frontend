@@ -11,9 +11,10 @@ export async function GET( request ) {
   const id = searchParams.get('id')
   const owner = searchParams.get('owner')
   const year = searchParams.get('year')
+  const month = searchParams.get('month')
 
   try {
-    const response = await axios.get(`${BACKEND_API}/v1/report/category/details?owner=${owner}&category=${id}&year=${year}&db=${db}`);
+    const response = await axios.get(`${BACKEND_API}/v1/report/category/details?owner=${owner}&category=${id}&year=${year}&db=${db}&month=${month}`);
 
     const {data} = response;
 

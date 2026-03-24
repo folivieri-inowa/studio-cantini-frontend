@@ -193,6 +193,9 @@ export default function MasterAnalyticsView() {
     () => deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth)
   );
 
+  const MONTHS_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+  const selectedMonthLabel = MONTHS_LABELS[selectedMonth - 1] ?? '';
+
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
     try {
@@ -966,6 +969,7 @@ export default function MasterAnalyticsView() {
                 icon="eva:diagonal-arrow-left-down-fill"
                 percent={globalIncomeData.percentChange || 0}
                 total={globalIncomeData.totalIncome || 0}
+                description={settings.year !== 'all-years' ? `Gen – ${selectedMonthLabel} ${settings.year}` : undefined}
                 chart={{ series: globalIncomeData.incomeData || [] }}
               />
 
@@ -975,6 +979,7 @@ export default function MasterAnalyticsView() {
                 icon="eva:diagonal-arrow-right-up-fill"
                 percent={globalExpenseData.percentChange || 0}
                 total={globalExpenseData.totalExpense || 0}
+                description={settings.year !== 'all-years' ? `Gen – ${selectedMonthLabel} ${settings.year}` : undefined}
                 chart={{ series: globalExpenseData.expenseData || [] }}
               />
             </Stack>

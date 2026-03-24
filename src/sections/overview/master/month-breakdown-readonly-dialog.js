@@ -66,8 +66,9 @@ export default function MonthBreakdownReadonlyDialog({
       setData(res.data);
     } catch (err) {
       console.error('month-breakdown-readonly fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [open, month, year, category, db, owner]);
 
   useEffect(() => {

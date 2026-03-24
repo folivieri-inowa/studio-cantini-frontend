@@ -361,10 +361,10 @@ export default function MasterAnalyticsView() {
     }
   }, []);
 
-  const handleMonthBarClick = (monthIndex) => {
+  const handleMonthBarClick = useCallback((monthIndex) => {
     setBreakdownMonth(monthIndex + 1);
     setMonthCategoriesOpen(true);
-  };
+  }, []);
 
   const getCurrentBalance = () => {
     // Se non ci sono dati o non è selezionato un proprietario, restituisce valori di default
@@ -824,11 +824,14 @@ export default function MasterAnalyticsView() {
     if (!categoryReport) return [];
     const monthKey = breakdownMonth.toString().padStart(2, '0');
     return Object.values(categoryReport)
-      .map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        expense: parseFloat((cat.months?.[monthKey]?.expense || 0).toFixed(2)),
-      }))
+      .map(cat => {
+        const expense = parseFloat((cat.months?.[monthKey]?.expense || 0).toFixed(2));
+        const nonZeroMonths = Object.values(cat.months || {}).filter(m => m.expense > 0);
+        const monthlyAvg = nonZeroMonths.length > 0
+          ? parseFloat((nonZeroMonths.reduce((sum, m) => sum + m.expense, 0) / nonZeroMonths.length).toFixed(2))
+          : 0;
+        return { id: cat.id, name: cat.name, expense, monthlyAvg };
+      })
       .filter(cat => cat.expense > 0);
   }, [breakdownMonth, settings?.year, settings?.owner]);
 

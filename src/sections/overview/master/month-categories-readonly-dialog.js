@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '../../../routes/hooks';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -142,6 +142,7 @@ export default function MonthCategoriesReadonlyDialog({
           categoryName={selectedCategory.name}
           db={db}
           owner={owner}
+          monthlyAvg={selectedCategory.monthlyAvg}
         />
       )}
     </>
@@ -157,6 +158,7 @@ MonthCategoriesReadonlyDialog.propTypes = {
     id: PropTypes.string,
     name: PropTypes.string,
     expense: PropTypes.number,
+    monthlyAvg: PropTypes.number,
   })),
   db: PropTypes.string,
   owner: PropTypes.string,

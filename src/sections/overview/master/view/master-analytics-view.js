@@ -21,6 +21,11 @@ import MasterCategoryTable from '../master-category-table';
 
 // ----------------------------------------------------------------------
 
+function deriveSelectedMonth(settingsYear, realYear, realMonth) {
+  const resolvedYear = settingsYear === 'all-years' ? realYear : Number(settingsYear);
+  return resolvedYear >= realYear ? realMonth : 12;
+}
+
 export default function MasterAnalyticsView() {
   const [data, setData] = useState([]);
   const settings = useSettingsContext();
@@ -180,15 +185,13 @@ export default function MasterAnalyticsView() {
     severity: 'info'
   });
 
-  const currentRealYear = new Date().getFullYear();
-  const currentRealMonth = new Date().getMonth() + 1;
+  const _now = new Date();
+  const currentRealYear = _now.getFullYear();
+  const currentRealMonth = _now.getMonth() + 1;
 
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const mainYear = settings.year === 'all-years'
-      ? currentRealYear
-      : Number(settings.year);
-    return mainYear >= currentRealYear ? currentRealMonth : 12;
-  });
+  const [selectedMonth, setSelectedMonth] = useState(
+    () => deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth)
+  );
 
   // Funzione per caricare i dati dal server
   const fetchData = async () => {
@@ -236,11 +239,9 @@ export default function MasterAnalyticsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.db]); // Riesegui quando cambia il database
 
+  // currentRealYear e currentRealMonth sono primitivi numerici costanti per la sessione
   useEffect(() => {
-    const mainYear = settings.year === 'all-years'
-      ? currentRealYear
-      : Number(settings.year);
-    setSelectedMonth(mainYear >= currentRealYear ? currentRealMonth : 12);
+    setSelectedMonth(deriveSelectedMonth(settings.year, currentRealYear, currentRealMonth));
   }, [settings.year, currentRealYear, currentRealMonth]);
 
   const handleYearChange = useCallback((event) => {
@@ -324,6 +325,10 @@ export default function MasterAnalyticsView() {
   // Funzione per chiudere lo Snackbar
   const handleCloseSnackbar = useCallback(() => {
     setSnackbar(prev => ({ ...prev, open: false }));
+  }, []);
+
+  const handleMonthChange = useCallback((month) => {
+    setSelectedMonth(month);
   }, []);
 
   const getCurrentBalance = () => {
@@ -974,7 +979,7 @@ export default function MasterAnalyticsView() {
               mainYear={settings.year === 'all-years' ? new Date().getFullYear() : Number(settings.year)}
               owner={settings.owner}
               selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
+              onMonthChange={handleMonthChange}
             />
           </Grid>
           {(() => {

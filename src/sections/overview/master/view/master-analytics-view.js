@@ -936,7 +936,7 @@ export default function MasterAnalyticsView() {
               <BankingWidgetSummary
                 title="Entrate"
                 icon="eva:diagonal-arrow-left-down-fill"
-                percent={globalIncomeData.percentChange || 0}
+                percent={settings.year !== 'all-years' ? (globalIncomeData.percentChange || 0) : 0}
                 total={globalIncomeData.totalIncome || 0}
                 description={formatYtdDescription(globalIncomeData.percentChange, selectedMonthLabel, settings.year)}
                 tooltipContent={settings.year !== 'all-years' ? buildTooltipContent('Entrate', globalIncomeData.totalIncome, globalIncomeData.prevYearTotal ?? 0, globalIncomeData.percentChange, selectedMonthLabel, settings.year) : undefined}
@@ -947,7 +947,7 @@ export default function MasterAnalyticsView() {
                 title="Uscite"
                 color="warning"
                 icon="eva:diagonal-arrow-right-up-fill"
-                percent={globalExpenseData.percentChange || 0}
+                percent={settings.year !== 'all-years' ? (globalExpenseData.percentChange || 0) : 0}
                 total={globalExpenseData.totalExpense || 0}
                 description={formatYtdDescription(globalExpenseData.percentChange, selectedMonthLabel, settings.year)}
                 tooltipContent={settings.year !== 'all-years' ? buildTooltipContent('Uscite', globalExpenseData.totalExpense, globalExpenseData.prevYearTotal ?? 0, globalExpenseData.percentChange, selectedMonthLabel, settings.year) : undefined}

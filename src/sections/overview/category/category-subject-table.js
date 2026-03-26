@@ -169,7 +169,7 @@ export default function CategorySubjectTable({
       columnHelper.accessor('name', {
         id: 'name',
         header: 'Soggetto',
-        size: 300,
+        size: 180,
         cell: info => (
           <Typography variant="subtitle1" noWrap>
             {capitalizeCase(info.getValue())}

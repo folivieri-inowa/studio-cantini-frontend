@@ -56,14 +56,26 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) 
 
   const handleOcrExtracted = useCallback(
     (data) => {
+      // Normalizza stringhe data in formato DD/MM/YYYY o YYYY-MM-DD → Date object
+      const parseDate = (str) => {
+        if (!str) return null;
+        // DD/MM/YYYY o DD-MM-YYYY
+        const dmyMatch = str.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+        if (dmyMatch) return new Date(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`);
+        const d = new Date(str);
+        return Number.isNaN(d.getTime()) ? null : d;
+      };
+
       if (data.invoice_number) setValue('invoice_number', data.invoice_number);
-      if (data.invoice_date)   setValue('invoice_date', new Date(data.invoice_date));
       if (data.amount)         setValue('amount', data.amount);
       if (data.company_name)   setValue('company_name', data.company_name);
       if (data.vat_number)     setValue('vat_number', data.vat_number);
       if (data.iban)           setValue('iban', data.iban);
       if (data.payment_terms)  setValue('payment_terms_type', data.payment_terms);
-      if (data.due_date)       setValue('date', new Date(data.due_date));
+      const invoiceDate = parseDate(data.invoice_date);
+      if (invoiceDate) setValue('invoice_date', invoiceDate);
+      const dueDate = parseDate(data.due_date);
+      if (dueDate) setValue('date', dueDate);
     },
     [setValue]
   );

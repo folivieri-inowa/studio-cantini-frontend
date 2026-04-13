@@ -87,7 +87,7 @@ export async function GET(request) {
     if (searchParams.has('ownerId')) filters.ownerId = searchParams.get('ownerId');
     
     // Chiama l'endpoint del backend
-    const headersList = headers();
+    const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     
     const response = await backendApi.post('/v1/scadenziario/list', 
@@ -154,7 +154,7 @@ export async function POST(request) {
     }
     
     // Recupera l'header di autorizzazione
-    const headersList = headers();
+    const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     
     // Chiama l'endpoint del backend

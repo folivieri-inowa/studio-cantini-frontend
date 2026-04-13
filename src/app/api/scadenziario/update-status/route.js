@@ -13,7 +13,7 @@ export async function POST(request) {
   console.log('Ricevuta richiesta POST a /api/scadenziario/update-status');
   try {
     // Recupera l'header di autorizzazione
-    const headersList = headers();
+    const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     
     console.log('Chiamando backend:', '/v1/scadenziario/update-status');

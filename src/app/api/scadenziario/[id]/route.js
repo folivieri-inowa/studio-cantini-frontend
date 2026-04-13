@@ -52,7 +52,7 @@ export async function GET(request, { params }) {
 
   try {
     // Recupera l'header di autorizzazione
-    const headersList = headers();
+    const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     
     // Chiama l'endpoint del backend
@@ -83,7 +83,7 @@ export async function PUT(request, { params }) {
     const scadenza = body;
 
     // Recupera l'header di autorizzazione
-    const headersList = headers();
+    const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     
     // Chiama l'endpoint del backend
@@ -146,7 +146,7 @@ export async function DELETE(request, { params }) {
   
   try {
     // Recupera l'header di autorizzazione
-    const headersList = headers();
+    const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     
     // Chiama l'endpoint del backend

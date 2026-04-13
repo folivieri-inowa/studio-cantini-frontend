@@ -8,9 +8,15 @@ const API_URLS = {
   list: '/api/scadenziario/list',
   details: '/api/scadenziario/details',
   create: '/api/scadenziario/create',
+  createGroup: '/api/scadenziario/create-group',
+  groups: '/api/scadenziario/groups',
   update: '/api/scadenziario/update',
   delete: '/api/scadenziario/delete',
-  updatePayment: '/api/scadenziario/update-payment'
+  deleteGroup: '/api/scadenziario/delete-group',
+  updatePayment: '/api/scadenziario/update-payment',
+  deleteMultiple: '/api/scadenziario/delete-multiple',
+  ocrExtract: '/api/scadenziario/ocr-extract',
+  uploadAttachment: '/api/scadenziario/upload-attachment',
 };
 
 // ----------------------------------------------------------------------
@@ -180,6 +186,86 @@ export async function updateAllStatus() {
     return response.data;
   } catch (error) {
     console.error('Errore nell\'aggiornamento automatico degli stati:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea un gruppo rate con N scadenze in una transazione
+ * @param {Object} group - Dati del gruppo
+ * @param {Array} installments - Lista rate [{subject, date, amount, status}]
+ */
+export async function createGroup(group, installments) {
+  try {
+    const response = await axios.post(API_URLS.createGroup, { group, installments });
+    return response.data;
+  } catch (error) {
+    console.error('Errore nella creazione del gruppo:', error);
+    throw error;
+  }
+}
+
+/**
+ * Elimina un gruppo (solo rate non pagate)
+ * @param {string} groupId - ID del gruppo
+ */
+export async function deleteGroup(groupId) {
+  try {
+    const response = await axios.post(API_URLS.deleteGroup, { group_id: groupId });
+    return response.data;
+  } catch (error) {
+    console.error('Errore nell\'eliminazione del gruppo:', error);
+    throw error;
+  }
+}
+
+/**
+ * Ottiene i gruppi rate di un owner
+ * @param {string} ownerId
+ */
+export async function getGroups(ownerId) {
+  try {
+    const response = await axios.post(API_URLS.groups, { owner_id: ownerId });
+    return response.data;
+  } catch (error) {
+    console.error('Errore nel recupero dei gruppi:', error);
+    throw error;
+  }
+}
+
+/**
+ * Estrae dati da un file fattura via OCR (Docling)
+ * @param {File} file
+ */
+export async function ocrExtract(file) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axios.post(API_URLS.ocrExtract, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Errore OCR extract:', error);
+    throw error;
+  }
+}
+
+/**
+ * Carica un allegato su MinIO
+ * @param {File} file
+ * @param {string} ownerId
+ */
+export async function uploadAttachment(file, ownerId) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axios.post(`${API_URLS.uploadAttachment}?owner_id=${ownerId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Errore upload allegato:', error);
     throw error;
   }
 }

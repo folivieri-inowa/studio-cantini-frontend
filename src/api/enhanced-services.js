@@ -63,8 +63,17 @@ export function useEnhancedGetScadenziario(filters = {}) {
           .filter(item => item != null)
           .map(item => ({
             ...item,
-            // Converti payment_date in paymentDate per consistenza frontend
+            // Normalizzazione campi snake_case → camelCase
             paymentDate: item.payment_date || item.paymentDate,
+            invoiceDate: item.invoice_date || null,
+            invoiceNumber: item.invoice_number || null,
+            companyName: item.company_name || null,
+            vatNumber: item.vat_number || null,
+            paymentTerms: item.payment_terms || null,
+            attachmentUrl: item.attachment_url || null,
+            groupId: item.group_id || null,
+            alertDays: item.alert_days ?? 15,
+            amount: typeof item.amount === 'string' ? parseFloat(item.amount) : (item.amount || 0),
           }));
           
         if (scadenziario.length < data.data.length) {

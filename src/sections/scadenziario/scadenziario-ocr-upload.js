@@ -26,6 +26,9 @@ export default function ScadenziarioOcrUpload({ onExtracted, onFileUploaded }) {
           ocrExtract(file),
           uploadAttachment(file, 'temp'),
         ]);
+        console.log('[OCR] Risultato grezzo Docling:', ocrResult);
+        console.log('[OCR] Dati estratti:', ocrResult?.data);
+        console.log('[OCR] Upload allegato:', uploadResult?.data);
         if (ocrResult?.data) onExtracted?.(ocrResult.data);
         if (uploadResult?.data?.url) onFileUploaded?.(uploadResult.data.url);
       } catch (err) {

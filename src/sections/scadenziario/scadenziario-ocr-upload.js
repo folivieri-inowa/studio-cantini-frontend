@@ -22,17 +22,22 @@ export default function ScadenziarioOcrUpload({ onExtracted, onFileUploaded }) {
       setLoading(true);
       try {
         const { ocrExtract, uploadAttachment } = await import('../../api/scadenziario-services');
-        const [ocrResult, uploadResult] = await Promise.all([
-          ocrExtract(file),
-          uploadAttachment(file, 'temp'),
-        ]);
-        console.log('[OCR] Risultato grezzo Docling:', ocrResult);
+
+        // OCR prima — popola i campi indipendentemente dall'upload
+        const ocrResult = await ocrExtract(file);
+        console.log('[OCR] Risultato grezzo:', ocrResult);
         console.log('[OCR] Dati estratti:', ocrResult?.data);
-        console.log('[OCR] Upload allegato:', uploadResult?.data);
         if (ocrResult?.data) onExtracted?.(ocrResult.data);
-        if (uploadResult?.data?.url) onFileUploaded?.(uploadResult.data.url);
+
+        // Upload in secondo piano — errore non blocca il form
+        uploadAttachment(file, 'temp')
+          .then((uploadResult) => {
+            console.log('[OCR] Upload allegato:', uploadResult?.data);
+            if (uploadResult?.data?.url) onFileUploaded?.(uploadResult.data.url);
+          })
+          .catch((err) => console.error('[OCR] Errore upload allegato (non bloccante):', err));
       } catch (err) {
-        console.error('OCR/upload error', err);
+        console.error('OCR error', err);
       } finally {
         setLoading(false);
       }

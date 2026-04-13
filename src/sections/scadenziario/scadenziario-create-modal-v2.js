@@ -61,6 +61,9 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) 
       if (data.amount)         setValue('amount', data.amount);
       if (data.company_name)   setValue('company_name', data.company_name);
       if (data.vat_number)     setValue('vat_number', data.vat_number);
+      if (data.iban)           setValue('iban', data.iban);
+      if (data.payment_terms)  setValue('payment_terms_type', data.payment_terms);
+      if (data.due_date)       setValue('date', new Date(data.due_date));
     },
     [setValue]
   );

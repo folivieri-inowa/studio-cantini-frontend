@@ -80,13 +80,13 @@ export function useNavData() {
               { title: t('File'), path: paths.dashboard.archive.root },
               { title: t('Assistente AI'), path: paths.dashboard.archive.chat },
             ],
-          },
+          }, */
           {
             title: t('Scadenziario'),
             path: paths.dashboard.scadenziario.root,
             icon: ICONS.calendar,
             roles: ['admin', 'manager'],
-          }, */
+          },
           /* {
             title: t('ecommerce'),
             path: paths.dashboard.general.ecommerce,

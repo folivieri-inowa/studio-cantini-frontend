@@ -80,9 +80,18 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
 
   useEffect(() => {
     if (scadenziarioItem) {
-      reset(defaultValues);
+      reset({
+        subject: scadenziarioItem.subject || '',
+        description: scadenziarioItem.description || '',
+        causale: scadenziarioItem.causale || '',
+        date: scadenziarioItem.date ? new Date(scadenziarioItem.date) : new Date(),
+        amount: scadenziarioItem.amount || 0,
+        paymentDate: scadenziarioItem.paymentDate ? new Date(scadenziarioItem.paymentDate) : null,
+        status: scadenziarioItem.status || 'future',
+      });
     }
-  }, [scadenziarioItem, defaultValues, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scadenziarioItem]);
 
   const handleClose = useCallback(() => {
     onClose();

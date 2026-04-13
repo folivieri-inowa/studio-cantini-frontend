@@ -96,6 +96,9 @@ export const paths = {
     anomalie: {
       root: `${ROOTS.DASHBOARD}/anomalie`,
     },
+    consolidated: {
+      root: `${ROOTS.DASHBOARD}/consolidated`,
+    },
     prima_nota: {
       root: `${ROOTS.DASHBOARD}/prima-nota`,
       new: `${ROOTS.DASHBOARD}/prima-nota/new`,

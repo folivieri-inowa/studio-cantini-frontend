@@ -4,6 +4,7 @@ import { paths } from 'src/routes/paths';
 
 import { useTranslate } from 'src/locales';
 
+import { useAuthContext } from 'src/auth/hooks';
 import SvgColor from 'src/components/svg-color';
 
 // ----------------------------------------------------------------------
@@ -47,6 +48,8 @@ const ICONS = {
 
 export function useNavData() {
   const { t } = useTranslate();
+  const { user } = useAuthContext();
+  const hasMultipleDbs = user?.allDbs?.length > 1;
 
   const data = useMemo(
     () => [
@@ -87,6 +90,11 @@ export function useNavData() {
             icon: ICONS.calendar,
             roles: ['admin', 'manager'],
           },
+          ...(hasMultipleDbs ? [{
+            title: t('Vista Consolidata'),
+            path: paths.dashboard.consolidated.root,
+            icon: ICONS.analytics,
+          }] : []),
           /* {
             title: t('ecommerce'),
             path: paths.dashboard.general.ecommerce,
@@ -191,7 +199,7 @@ export function useNavData() {
         ],
       },
     ],
-    [t]
+    [t, hasMultipleDbs]
   );
 
   return data;

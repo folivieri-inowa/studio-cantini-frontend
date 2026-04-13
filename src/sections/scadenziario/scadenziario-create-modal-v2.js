@@ -1,0 +1,514 @@
+'use client';
+
+import * as Yup from 'yup';
+import { format } from 'date-fns';
+import { useMemo, useState, useCallback } from 'react';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { useForm, Controller } from 'react-hook-form';
+
+import Box from '@mui/material/Box';
+import Step from '@mui/material/Step';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import Divider from '@mui/material/Divider';
+import Stepper from '@mui/material/Stepper';
+import MenuItem from '@mui/material/MenuItem';
+import StepLabel from '@mui/material/StepLabel';
+import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import LoadingButton from '@mui/lab/LoadingButton';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+
+import Iconify from 'src/components/iconify';
+import { useSnackbar } from 'src/components/snackbar';
+import FormProvider, { RHFSelect, RHFTextField } from 'src/components/hook-form';
+import { useSettingsContext } from 'src/components/settings';
+
+import {
+  PAYMENT_TERMS_OPTIONS,
+  FREQUENCY_OPTIONS,
+  TYPE_OPTIONS,
+  calculateDueDate,
+  generateInstallments,
+} from './utils/payment-terms';
+import ScadenziarioOcrUpload from './scadenziario-ocr-upload';
+import ScadenziarioInstallmentPreview from './scadenziario-installment-preview';
+
+// ----------------------------------------------------------------------
+
+const STEPS = ['Dati', 'Conferma'];
+
+// ----------------------------------------------------------------------
+
+function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) {
+  const watchedType = watch('type');
+
+  const isFattura = watchedType === 'fattura';
+  const isRata = watchedType === 'rata';
+  const hasFixedDate = !isFattura && !isRata;
+
+  const handleOcrExtracted = useCallback(
+    (data) => {
+      if (data.invoice_number) setValue('invoice_number', data.invoice_number);
+      if (data.invoice_date)   setValue('invoice_date', new Date(data.invoice_date));
+      if (data.amount)         setValue('amount', data.amount);
+      if (data.company_name)   setValue('company_name', data.company_name);
+      if (data.vat_number)     setValue('vat_number', data.vat_number);
+    },
+    [setValue]
+  );
+
+  const handleFileUploaded = useCallback(
+    (url) => { setValue('attachment_url', url); },
+    [setValue]
+  );
+
+  return (
+    <Stack spacing={3}>
+      {/* Tipo scadenza */}
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary' }}>
+          Tipo scadenza
+        </Typography>
+        <Stack direction="row" flexWrap="wrap" gap={1}>
+          {TYPE_OPTIONS.map((opt) => {
+            const selected = watch('type') === opt.value;
+            return (
+              <Chip
+                key={opt.value}
+                label={opt.label}
+                icon={<Iconify icon={opt.icon} sx={{ width: 16, height: 16 }} />}
+                onClick={() => setValue('type', opt.value)}
+                color={selected ? 'primary' : 'default'}
+                variant={selected ? 'filled' : 'outlined'}
+                sx={{ cursor: 'pointer', fontWeight: selected ? 'bold' : 'normal' }}
+              />
+            );
+          })}
+        </Stack>
+      </Box>
+
+      <Divider sx={{ borderStyle: 'dashed' }} />
+
+      {/* Campi per piano rate */}
+      {isRata && (
+        <Box
+          rowGap={3}
+          columnGap={2}
+          display="grid"
+          gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }}
+        >
+          <RHFTextField name="group_name" label="Nome piano rate" />
+
+          <RHFTextField name="rata_amount" label="Importo per rata (€)" type="number"
+            inputProps={{ min: 0, step: 0.01 }} />
+
+          <RHFTextField name="installments" label="Numero rate" type="number"
+            inputProps={{ min: 1, max: 120, step: 1 }} />
+
+          <RHFSelect name="frequency" label="Frequenza">
+            {FREQUENCY_OPTIONS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>
+            ))}
+          </RHFSelect>
+
+          <Controller
+            name="start_date"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <DatePicker
+                label="Data prima rata"
+                value={field.value ? new Date(field.value) : null}
+                onChange={field.onChange}
+                slotProps={{
+                  textField: { fullWidth: true, error: !!error, helperText: error?.message },
+                }}
+              />
+            )}
+          />
+
+          <RHFTextField name="description" label="Descrizione (opzionale)" />
+        </Box>
+      )}
+
+      {/* Campi per fattura */}
+      {isFattura && (
+        <Stack spacing={3}>
+          <ScadenziarioOcrUpload onExtracted={handleOcrExtracted} onFileUploaded={handleFileUploaded} />
+
+          <Box
+            rowGap={3}
+            columnGap={2}
+            display="grid"
+            gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }}
+          >
+            <RHFTextField name="subject" label="Soggetto *" />
+            <RHFTextField name="company_name" label="Fornitore / Azienda" />
+            <RHFTextField name="invoice_number" label="N. Fattura" />
+
+            <Controller
+              name="invoice_date"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <DatePicker
+                  label="Data fattura"
+                  value={field.value ? new Date(field.value) : null}
+                  onChange={field.onChange}
+                  slotProps={{
+                    textField: { fullWidth: true, error: !!error, helperText: error?.message },
+                  }}
+                />
+              )}
+            />
+
+            <RHFSelect name="payment_terms_type" label="Condizione di pagamento">
+              {PAYMENT_TERMS_OPTIONS.map((t) => (
+                <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+              ))}
+            </RHFSelect>
+
+            {calculatedDueDate ? (
+              <Alert severity="info" sx={{ alignSelf: 'center' }}>
+                <strong>Scadenza calcolata:</strong>{' '}
+                {format(calculatedDueDate, 'dd/MM/yyyy')}
+              </Alert>
+            ) : (
+              <Controller
+                name="date"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <DatePicker
+                    label="Data scadenza"
+                    value={field.value ? new Date(field.value) : null}
+                    onChange={field.onChange}
+                    slotProps={{
+                      textField: { fullWidth: true, error: !!error, helperText: error?.message },
+                    }}
+                  />
+                )}
+              />
+            )}
+
+            <RHFTextField name="amount" label="Importo (€) *" type="number"
+              inputProps={{ min: 0, step: 0.01 }} />
+            <RHFTextField name="vat_number" label="Partita IVA" />
+            <RHFTextField name="iban" label="IBAN" />
+            <RHFTextField name="bank_name" label="Banca" />
+            <RHFTextField name="description" label="Descrizione" />
+            <RHFTextField name="causale" label="Causale" />
+          </Box>
+        </Stack>
+      )}
+
+      {/* Campi generici (fiscale, ricorrente, altro) */}
+      {hasFixedDate && (
+        <Box
+          rowGap={3}
+          columnGap={2}
+          display="grid"
+          gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }}
+        >
+          <RHFTextField name="subject" label="Soggetto *" />
+          <RHFTextField name="description" label="Descrizione" />
+          <RHFTextField name="causale" label="Causale" />
+
+          <Controller
+            name="date"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <DatePicker
+                label="Data scadenza *"
+                value={field.value ? new Date(field.value) : null}
+                onChange={field.onChange}
+                slotProps={{
+                  textField: { fullWidth: true, error: !!error, helperText: error?.message },
+                }}
+              />
+            )}
+          />
+
+          <RHFTextField name="amount" label="Importo (€) *" type="number"
+            inputProps={{ min: 0, step: 0.01 }} />
+
+          <RHFSelect name="status" label="Stato">
+            <MenuItem value="future">Da pagare</MenuItem>
+            <MenuItem value="upcoming">In scadenza</MenuItem>
+            <MenuItem value="overdue">Scaduto</MenuItem>
+            <MenuItem value="completed">Pagato</MenuItem>
+          </RHFSelect>
+        </Box>
+      )}
+    </Stack>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+function ScadenziarioConfirmStep({ methods, calculatedDueDate }) {
+  const data = methods.getValues();
+
+  const rows = [
+    { label: 'Tipo',         value: TYPE_OPTIONS.find(t => t.value === data.type)?.label || data.type },
+    { label: 'Soggetto',     value: data.subject },
+    { label: 'Fornitore',    value: data.company_name },
+    { label: 'N. Fattura',   value: data.invoice_number },
+    { label: 'Importo',      value: data.amount ? `€ ${parseFloat(data.amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : null },
+    { label: 'Scadenza',     value: calculatedDueDate ? format(calculatedDueDate, 'dd/MM/yyyy') : (data.date ? format(new Date(data.date), 'dd/MM/yyyy') : null) },
+    { label: 'Descrizione',  value: data.description },
+    { label: 'Causale',      value: data.causale },
+  ].filter(r => r.value);
+
+  return (
+    <Stack spacing={2}>
+      <Typography variant="subtitle1">Riepilogo scadenza</Typography>
+      <Box
+        sx={{
+          borderRadius: 1.5,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          overflow: 'hidden',
+        }}
+      >
+        {rows.map(({ label, value }, i) => (
+          <Stack
+            key={label}
+            direction="row"
+            sx={{
+              px: 2,
+              py: 1.25,
+              bgcolor: i % 2 === 0 ? 'background.neutral' : 'background.paper',
+            }}
+          >
+            <Typography variant="body2" sx={{ width: 140, color: 'text.secondary', flexShrink: 0 }}>
+              {label}
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{value}</Typography>
+          </Stack>
+        ))}
+      </Box>
+    </Stack>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const { enqueueSnackbar } = useSnackbar();
+  const settings = useSettingsContext();
+
+  const [step, setStep] = useState(0);
+  const [installmentPreview, setInstallmentPreview] = useState([]);
+
+  const methods = useForm({
+    defaultValues: {
+      type: 'fattura',
+      subject: '',
+      description: '',
+      causale: '',
+      date: null,
+      amount: '',
+      status: 'future',
+      owner_id: settings.owner,
+      // fattura
+      invoice_number: '',
+      invoice_date: null,
+      company_name: '',
+      vat_number: '',
+      iban: '',
+      bank_name: '',
+      payment_terms_type: '30ggfm',
+      attachment_url: '',
+      // rata
+      group_name: '',
+      installments: 12,
+      frequency: 'mensile',
+      start_date: new Date(),
+      rata_amount: '',
+    },
+  });
+
+  const { reset, watch, setValue, handleSubmit, control, formState: { isSubmitting } } = methods;
+
+  const watchedType = watch('type');
+  const watchedInvoiceDate = watch('invoice_date');
+  const watchedPaymentTerms = watch('payment_terms_type');
+
+  const calculatedDueDate = useMemo(() => {
+    if (watchedType !== 'fattura' || !watchedInvoiceDate || !watchedPaymentTerms) return null;
+    return calculateDueDate(watchedInvoiceDate, watchedPaymentTerms);
+  }, [watchedType, watchedInvoiceDate, watchedPaymentTerms]);
+
+  const handleNext = useCallback(() => {
+    const data = methods.getValues();
+    if (data.type === 'rata') {
+      const preview = generateInstallments({
+        startDate: data.start_date,
+        installments: parseInt(data.installments, 10),
+        frequency: data.frequency,
+        amount: parseFloat(data.rata_amount) || 0,
+        groupName: data.group_name || 'Piano rate',
+      });
+      setInstallmentPreview(preview);
+    }
+    setStep(1);
+  }, [methods]);
+
+  const handleClose = useCallback(() => {
+    reset();
+    setStep(0);
+    setInstallmentPreview([]);
+    onClose();
+  }, [onClose, reset]);
+
+  const onSubmit = useCallback(async () => {
+    const data = methods.getValues();
+    try {
+      if (data.type === 'rata') {
+        const { createGroup } = await import('../../api/scadenziario-services');
+        await createGroup(
+          {
+            name: data.group_name,
+            type: 'rata',
+            total_amount: (parseFloat(data.rata_amount) || 0) * parseInt(data.installments, 10),
+            installments: parseInt(data.installments, 10),
+            frequency: data.frequency,
+            start_date: data.start_date,
+            owner_id: data.owner_id,
+          },
+          installmentPreview.map((inst) => ({
+            ...inst,
+            date: format(new Date(inst.date), 'yyyy-MM-dd'),
+            status: 'future',
+          }))
+        );
+      } else {
+        const { createScadenziario } = await import('../../api/scadenziario-services');
+        const terms = PAYMENT_TERMS_OPTIONS.find((t) => t.value === data.payment_terms_type);
+        const dueDate = data.type === 'fattura' && calculatedDueDate
+          ? format(calculatedDueDate, 'yyyy-MM-dd')
+          : data.date ? format(new Date(data.date), 'yyyy-MM-dd') : null;
+
+        await createScadenziario({
+          subject: data.subject,
+          description: data.description || null,
+          causale: data.causale || null,
+          date: dueDate,
+          amount: parseFloat(data.amount) || 0,
+          status: data.status || 'future',
+          owner_id: data.owner_id,
+          type: data.type,
+          alert_days: 15,
+          invoice_number: data.invoice_number || null,
+          invoice_date: data.invoice_date ? format(new Date(data.invoice_date), 'yyyy-MM-dd') : null,
+          company_name: data.company_name || null,
+          vat_number: data.vat_number || null,
+          iban: data.iban || null,
+          bank_name: data.bank_name || null,
+          payment_terms: terms ? { type: terms.value, days: terms.days, end_of_month: terms.end_of_month } : null,
+          attachment_url: data.attachment_url || null,
+        });
+      }
+
+      enqueueSnackbar('Scadenza creata con successo!');
+      onCreated?.();
+      handleClose();
+    } catch (err) {
+      console.error(err);
+      enqueueSnackbar('Errore durante il salvataggio', { variant: 'error' });
+    }
+  }, [methods, installmentPreview, calculatedDueDate, enqueueSnackbar, onCreated, handleClose]);
+
+  return (
+    <Dialog
+      fullScreen={fullScreen}
+      fullWidth
+      maxWidth="md"
+      open={open}
+      onClose={handleClose}
+      PaperProps={{ sx: { borderRadius: 2, maxHeight: 'calc(100% - 64px)' } }}
+    >
+      <DialogTitle sx={{ p: 3 }}>
+        <Typography variant="h5" component="div" sx={{ display: 'flex', alignItems: 'center' }}>
+          <Iconify icon="solar:add-circle-bold" sx={{ mr: 1, width: 24, height: 24, color: 'primary.main' }} />
+          Nuova scadenza
+        </Typography>
+
+        <Stepper activeStep={step} sx={{ mt: 2 }}>
+          {STEPS.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </DialogTitle>
+
+      <Divider sx={{ borderStyle: 'dashed' }} />
+
+      <FormProvider methods={methods}>
+        <DialogContent sx={{ p: 3 }}>
+          {step === 0 && (
+            <ScadenziarioFormStep1
+              control={control}
+              watch={watch}
+              setValue={setValue}
+              calculatedDueDate={calculatedDueDate}
+            />
+          )}
+
+          {step === 1 && (
+            watchedType === 'rata'
+              ? (
+                <ScadenziarioInstallmentPreview
+                  installments={installmentPreview}
+                  onChange={setInstallmentPreview}
+                />
+              ) : (
+                <ScadenziarioConfirmStep
+                  methods={methods}
+                  calculatedDueDate={calculatedDueDate}
+                />
+              )
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={step === 0 ? handleClose : () => setStep(0)}
+            startIcon={<Iconify icon={step === 0 ? 'eva:close-fill' : 'eva:arrow-back-fill'} />}
+          >
+            {step === 0 ? 'Annulla' : 'Indietro'}
+          </Button>
+
+          {step === 0 ? (
+            <Button
+              variant="contained"
+              onClick={handleNext}
+              endIcon={<Iconify icon="eva:arrow-forward-fill" />}
+            >
+              Avanti
+            </Button>
+          ) : (
+            <LoadingButton
+              variant="contained"
+              loading={isSubmitting}
+              onClick={onSubmit}
+              startIcon={<Iconify icon="eva:checkmark-fill" />}
+            >
+              Salva
+            </LoadingButton>
+          )}
+        </DialogActions>
+      </FormProvider>
+    </Dialog>
+  );
+}

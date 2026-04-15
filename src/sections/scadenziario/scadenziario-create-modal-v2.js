@@ -66,18 +66,20 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) 
         return Number.isNaN(d.getTime()) ? null : d;
       };
 
-      if (data.invoice_number) setValue('invoice_number', data.invoice_number);
-      if (data.amount)         setValue('amount', data.amount);
-      if (data.company_name)   setValue('company_name', data.company_name);
-      if (data.subject)        setValue('subject', data.subject);
-      if (data.vat_number)     setValue('vat_number', data.vat_number);
-      if (data.iban)           setValue('iban', data.iban);
-      if (data.bank_name)      setValue('bank_name', data.bank_name);
-      if (data.payment_terms)  setValue('payment_terms_type', data.payment_terms);
+      const set = (name, value) => setValue(name, value, { shouldDirty: true, shouldTouch: true });
+
+      if (data.invoice_number) set('invoice_number', data.invoice_number);
+      if (data.amount)         set('amount', data.amount);
+      if (data.company_name)   set('company_name', data.company_name);
+      if (data.subject)        set('subject', data.subject);
+      if (data.vat_number)     set('vat_number', data.vat_number);
+      if (data.iban)           set('iban', data.iban);
+      if (data.bank_name)      set('bank_name', data.bank_name);
+      if (data.payment_terms)  set('payment_terms_type', data.payment_terms);
       const invoiceDate = parseDate(data.invoice_date);
-      if (invoiceDate) setValue('invoice_date', invoiceDate);
+      if (invoiceDate) set('invoice_date', invoiceDate);
       const dueDate = parseDate(data.due_date);
-      if (dueDate) setValue('date', dueDate);
+      if (dueDate) set('date', dueDate);
     },
     [setValue]
   );

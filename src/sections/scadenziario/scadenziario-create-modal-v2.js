@@ -336,7 +336,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
       date: null,
       amount: '',
       status: 'future',
-      owner_id: settings.owner,
+      owner_id: settings.owner?.id ?? settings.owner,
       // fattura
       invoice_number: '',
       invoice_date: null,

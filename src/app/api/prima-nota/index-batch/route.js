@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_HOST_BACKEND || 
+const BACKEND_API_URL = process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || 
                         process.env.NEXT_PUBLIC_BACKEND_API || 
                         'http://localhost:9000';
 

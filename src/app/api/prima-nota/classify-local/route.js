@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
  */
 
 // Backend locale su porta 9000
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_HOST_BACKEND || process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:9000';
+const BACKEND_API_URL = process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:9000';
 
 export async function POST(request) {
   try {

@@ -5,9 +5,9 @@ import { NextResponse } from 'next/server';
 
 // Configurazione del client Axios per il backend
 const backendApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000',
+  baseURL: process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000',
 });
-console.log('Backend API URL configurato come:', process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000');
+console.log('Backend API URL configurato come:', process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000');
 
 // POST: Gestisce le richieste di elenco scadenziario
 export async function POST(request) {

@@ -16,7 +16,7 @@ export async function GET(request) {
     const authorization = headersList.get('authorization') || '';
 
     // Costruisci l'URL del backend
-    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+    const backendUrl = process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
     const url = `${backendUrl}/v1/anomalie/stats?db=${db}&mesi=${mesi}`;
 
     // Chiama l'endpoint del backend

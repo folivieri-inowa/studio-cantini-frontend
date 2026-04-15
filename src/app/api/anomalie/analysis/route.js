@@ -52,7 +52,7 @@ export async function GET(request) {
     if (importo_massimo) params.append('importo_massimo', importo_massimo);
 
     // Costruisci l'URL del backend
-    const backendUrl = process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
+    const backendUrl = process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000';
     const url = `${backendUrl}/v1/anomalie/analysis?${params}`;
 
     // Chiama l'endpoint del backend

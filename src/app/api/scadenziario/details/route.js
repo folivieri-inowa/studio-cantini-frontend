@@ -1,53 +1,22 @@
-// route.js per gestire specificamente le richieste all'endpoint /api/scadenziario/details
-import axios from 'axios';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-// Configurazione del client Axios per il backend
-const backendApi = axios.create({
-  baseURL: process.env.BACKEND_API_INTERNAL || process.env.NEXT_PUBLIC_HOST_BACKEND || 'http://localhost:9000',
-});
-
-// POST: Gestisce le richieste di dettagli di una specifica scadenza
 export async function POST(request) {
-  console.log('Ricevuta richiesta POST a /api/scadenziario/details');
+  const BACKEND = process.env.BACKEND_API_INTERNAL || 'http://localhost:9001';
   try {
-    // Parse della richiesta JSON
     const body = await request.json();
-    console.log('Body della richiesta:', body);
-    
-    // Estrai l'ID della scadenza
     const { id } = body;
-    
-    if (!id) {
-      return NextResponse.json({ error: 'ID della scadenza non specificato' }, { status: 400 });
-    }
-    
-    // Recupera l'header di autorizzazione
     const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
-    
-    console.log('Chiamando backend:', '/v1/scadenziario/details');
-    
-    // Chiama l'endpoint del backend
-    const response = await backendApi.post('/v1/scadenziario/details', { id }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authorization,
-      },
+    const res = await fetch(`${BACKEND}/v1/scadenziario/details`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: authorization },
+      body: JSON.stringify({ id }),
     });
-    
-    console.log('Risposta dal backend ricevuta');
-    
-    // Restituisci i dati al client
-    return NextResponse.json(response.data);
-    
+    const data = await res.json();
+    if (!res.ok) return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Errore nella richiesta POST a scadenziario/details:', error);
-    
-    return NextResponse.json({ 
-      error: 'Errore durante il recupero dei dettagli della scadenza', 
-      message: error.message 
-    }, { status: error.response?.status || 500 });
+    return NextResponse.json({ error: 'Errore dettagli', message: error.message }, { status: 500 });
   }
 }

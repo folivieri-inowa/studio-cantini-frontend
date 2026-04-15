@@ -36,8 +36,8 @@ module.exports = {
   },
   async rewrites() {
     const backendUrl =
-      process.env.NEXT_PUBLIC_HOST_BACKEND ||
       process.env.BACKEND_API_INTERNAL ||
+      process.env.NEXT_PUBLIC_HOST_BACKEND ||
       'http://localhost:9002';
     return [
       {

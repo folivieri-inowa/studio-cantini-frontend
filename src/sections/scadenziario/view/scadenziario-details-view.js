@@ -237,7 +237,80 @@ export function ScadenziarioDetailsView() {
                 </Grid>
                 
                 <Divider sx={{ borderStyle: 'dashed' }} />
-                
+
+                {/* Estremi pagamento — visibili se presenti */}
+                {(scadenziarioItem?.company_name || scadenziarioItem?.invoice_number || scadenziarioItem?.iban) && (
+                  <>
+                    <Stack spacing={2}>
+                      <Typography variant="subtitle2">Estremi pagamento</Typography>
+                      <Stack spacing={2}>
+                        {scadenziarioItem?.company_name && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Fornitore</Typography>
+                            <Typography variant="body2">{scadenziarioItem.company_name}</Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.invoice_number && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>N. Fattura</Typography>
+                            <Typography variant="body2">{scadenziarioItem.invoice_number}</Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.invoice_date && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Data fattura</Typography>
+                            <Typography variant="body2">
+                              {format(new Date(scadenziarioItem.invoice_date), 'dd MMMM yyyy', { locale: it })}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.vat_number && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Partita IVA</Typography>
+                            <Typography variant="body2">{scadenziarioItem.vat_number}</Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.iban && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>IBAN</Typography>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', letterSpacing: 0.5 }}>
+                              {scadenziarioItem.iban}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.bank_name && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Banca</Typography>
+                            <Typography variant="body2">{scadenziarioItem.bank_name}</Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.payment_terms?.type && (
+                          <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Condizioni pagamento</Typography>
+                            <Typography variant="body2">{scadenziarioItem.payment_terms.type}</Typography>
+                          </Stack>
+                        )}
+                        {scadenziarioItem?.attachment_url && (
+                          <Stack direction="row" justifyContent="space-between" alignItems="center">
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Allegato</Typography>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              href={scadenziarioItem.attachment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              startIcon={<Iconify icon="eva:file-text-fill" />}
+                            >
+                              Visualizza
+                            </Button>
+                          </Stack>
+                        )}
+                      </Stack>
+                    </Stack>
+                    <Divider sx={{ borderStyle: 'dashed' }} />
+                  </>
+                )}
+
                 <Stack spacing={2}>
                   <Typography variant="subtitle2">Gestione pagamento</Typography>
                   

@@ -5,6 +5,7 @@ import { it } from 'date-fns/locale';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid2';
 import Stack from '@mui/material/Stack';
@@ -12,6 +13,7 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { paths } from 'src/routes/paths';
@@ -20,6 +22,7 @@ import { RouterLink } from 'src/routes/components';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
+import axios from 'src/utils/axios';
 import { useGetScadenziarioItem } from 'src/api/scadenziario-services';
 
 import Label from 'src/components/label';
@@ -30,6 +33,82 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import CustomBreadcrumbs from 'src/components/custom-breadcrumbs';
 
 import { calculateScadenziarioStatus } from '../scadenziario-utils';
+
+// ----------------------------------------------------------------------
+
+function AttachmentPreview({ url }) {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url || '');
+
+  const load = useCallback(async () => {
+    if (!url || blobUrl) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const response = await axios.get(url, { responseType: 'blob' });
+      setBlobUrl(URL.createObjectURL(response.data));
+    } catch (err) {
+      console.error('[attachment] Errore caricamento:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [url, blobUrl]);
+
+  useEffect(() => {
+    load();
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
+
+  const handleOpen = useCallback(() => {
+    if (blobUrl) window.open(blobUrl, '_blank');
+  }, [blobUrl]);
+
+  return (
+    <Stack spacing={1.5}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography variant="subtitle2">Allegato</Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={handleOpen}
+          disabled={loading || error || !blobUrl}
+          startIcon={<Iconify icon="eva:external-link-fill" />}
+        >
+          Apri
+        </Button>
+      </Stack>
+      {loading && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 2 }}>
+          <CircularProgress size={20} />
+          <Typography variant="body2" color="text.secondary">Caricamento allegato…</Typography>
+        </Box>
+      )}
+      {error && (
+        <Typography variant="body2" color="error.main">Impossibile caricare l&apos;allegato.</Typography>
+      )}
+      {blobUrl && !loading && (
+        isImage ? (
+          <img
+            src={blobUrl}
+            alt="Allegato"
+            style={{ width: '100%', maxHeight: 400, objectFit: 'contain', borderRadius: 8, border: '1px solid rgba(0,0,0,0.12)' }}
+          />
+        ) : (
+          <Box
+            component="iframe"
+            src={blobUrl}
+            title="Anteprima allegato"
+            sx={{ width: '100%', height: 480, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+          />
+        )
+      )}
+    </Stack>
+  );
+}
 
 // ----------------------------------------------------------------------
 
@@ -238,78 +317,73 @@ export function ScadenziarioDetailsView() {
                 
                 <Divider sx={{ borderStyle: 'dashed' }} />
 
-                {/* Estremi pagamento — visibili se presenti */}
-                {(scadenziarioItem?.company_name || scadenziarioItem?.invoice_number || scadenziarioItem?.iban) && (
-                  <>
+                {/* Estremi pagamento */}
+                <Stack spacing={2}>
+                  <Typography variant="subtitle2">Estremi pagamento</Typography>
+                  {!(scadenziarioItem?.company_name || scadenziarioItem?.invoice_number || scadenziarioItem?.iban || scadenziarioItem?.attachment_url) ? (
+                    <Typography variant="body2" sx={{ color: 'text.disabled', fontStyle: 'italic' }}>
+                      Nessun dato fattura disponibile
+                    </Typography>
+                  ) : (
                     <Stack spacing={2}>
-                      <Typography variant="subtitle2">Estremi pagamento</Typography>
-                      <Stack spacing={2}>
-                        {scadenziarioItem?.company_name && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Fornitore</Typography>
-                            <Typography variant="body2">{scadenziarioItem.company_name}</Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.invoice_number && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>N. Fattura</Typography>
-                            <Typography variant="body2">{scadenziarioItem.invoice_number}</Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.invoice_date && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Data fattura</Typography>
-                            <Typography variant="body2">
-                              {format(new Date(scadenziarioItem.invoice_date), 'dd MMMM yyyy', { locale: it })}
-                            </Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.vat_number && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Partita IVA</Typography>
-                            <Typography variant="body2">{scadenziarioItem.vat_number}</Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.iban && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>IBAN</Typography>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', letterSpacing: 0.5 }}>
-                              {scadenziarioItem.iban}
-                            </Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.bank_name && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Banca</Typography>
-                            <Typography variant="body2">{scadenziarioItem.bank_name}</Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.payment_terms?.type && (
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Condizioni pagamento</Typography>
-                            <Typography variant="body2">{scadenziarioItem.payment_terms.type}</Typography>
-                          </Stack>
-                        )}
-                        {scadenziarioItem?.attachment_url && (
-                          <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Allegato</Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              href={scadenziarioItem.attachment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              startIcon={<Iconify icon="eva:file-text-fill" />}
-                            >
-                              Visualizza
-                            </Button>
-                          </Stack>
-                        )}
-                      </Stack>
+                      {scadenziarioItem?.company_name && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>Fornitore</Typography>
+                          <Typography variant="body2">{scadenziarioItem.company_name}</Typography>
+                        </Stack>
+                      )}
+                      {scadenziarioItem?.invoice_number && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>N. Fattura</Typography>
+                          <Typography variant="body2">{scadenziarioItem.invoice_number}</Typography>
+                        </Stack>
+                      )}
+                      {scadenziarioItem?.invoice_date && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>Data fattura</Typography>
+                          <Typography variant="body2">
+                            {format(new Date(scadenziarioItem.invoice_date), 'dd MMMM yyyy', { locale: it })}
+                          </Typography>
+                        </Stack>
+                      )}
+                      {scadenziarioItem?.vat_number && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>Partita IVA</Typography>
+                          <Typography variant="body2">{scadenziarioItem.vat_number}</Typography>
+                        </Stack>
+                      )}
+                      {scadenziarioItem?.iban && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>IBAN</Typography>
+                          <Typography variant="body2" sx={{ fontFamily: 'monospace', letterSpacing: 0.5 }}>
+                            {scadenziarioItem.iban}
+                          </Typography>
+                        </Stack>
+                      )}
+                      {scadenziarioItem?.bank_name && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>Banca</Typography>
+                          <Typography variant="body2">{scadenziarioItem.bank_name}</Typography>
+                        </Stack>
+                      )}
+                      {scadenziarioItem?.payment_terms?.type && (
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>Condizioni pagamento</Typography>
+                          <Typography variant="body2">{scadenziarioItem.payment_terms.type}</Typography>
+                        </Stack>
+                      )}
                     </Stack>
+                  )}
+                </Stack>
+
+                {scadenziarioItem?.attachment_url && (
+                  <>
                     <Divider sx={{ borderStyle: 'dashed' }} />
+                    <AttachmentPreview url={scadenziarioItem.attachment_url} />
                   </>
                 )}
+
+                <Divider sx={{ borderStyle: 'dashed' }} />
 
                 <Stack spacing={2}>
                   <Typography variant="subtitle2">Gestione pagamento</Typography>

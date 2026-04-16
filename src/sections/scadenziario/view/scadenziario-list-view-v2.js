@@ -24,6 +24,7 @@ import ScadenziarioDetailsModal from '../scadenziario-details-modal';
 
 export function ScadenziarioListViewV2() {
   const settings = useSettingsContext();
+  const ownerId = settings.owner?.id ?? settings.owner ?? null;
 
   const [openCreate, setOpenCreate]   = useState(false);
   const [openEdit, setOpenEdit]       = useState(false);
@@ -31,7 +32,7 @@ export function ScadenziarioListViewV2() {
   const [selectedId, setSelectedId]   = useState(null);
 
   const { scadenziario, scadenziarioLoading, scadenziarioMutate } =
-    useEnhancedGetScadenziario();
+    useEnhancedGetScadenziario(ownerId ? { ownerId } : {});
 
   const handleCreated = useCallback(() => scadenziarioMutate(), [scadenziarioMutate]);
 

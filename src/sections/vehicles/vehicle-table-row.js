@@ -10,7 +10,7 @@ import Chip from '@mui/material/Chip';
 import { useBoolean } from 'src/hooks/use-boolean';
 
 import Iconify from 'src/components/iconify';
-import { usePopover, CustomPopover } from 'src/components/custom-popover';
+import CustomPopover, { usePopover } from 'src/components/custom-popover';
 import { useSnackbar } from 'src/components/snackbar';
 
 import { deleteVehicle } from 'src/api/vehicles';

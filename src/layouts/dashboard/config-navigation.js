@@ -90,6 +90,12 @@ export function useNavData() {
             icon: ICONS.calendar,
             roles: ['admin', 'manager'],
           },
+          {
+            title: t('Gestione Auto'),
+            path: paths.dashboard.vehicles.root,
+            icon: ICONS.booking,
+            roles: ['admin', 'manager'],
+          },
           ...(hasMultipleDbs ? [{
             title: t('Vista Consolidata'),
             path: paths.dashboard.consolidated.root,

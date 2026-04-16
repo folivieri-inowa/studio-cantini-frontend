@@ -129,6 +129,11 @@ export const paths = {
       details: (id) => `${ROOTS.DASHBOARD}/scadenziario/${id}`,
       edit: (id) => `${ROOTS.DASHBOARD}/scadenziario/${id}/edit`,
     },
+    vehicles: {
+      root: `${ROOTS.DASHBOARD}/vehicles`,
+      new: `${ROOTS.DASHBOARD}/vehicles/new`,
+      details: (id) => `${ROOTS.DASHBOARD}/vehicles/${id}`,
+    },
     archive: {
       root: `${ROOTS.DASHBOARD}/archive`,
       details: (id) => `${ROOTS.DASHBOARD}/archive/${id}`,

@@ -14,7 +14,7 @@ import Stack from '@mui/material/Stack';
 
 import FormProvider from 'src/components/hook-form/form-provider';
 import RHFTextField from 'src/components/hook-form/rhf-text-field';
-import RHFSelect from 'src/components/hook-form/rhf-select';
+import { RHFSelect } from 'src/components/hook-form';
 import { useSnackbar } from 'src/components/snackbar';
 
 import { uploadVehicleDocument, createVehicleDocument } from 'src/api/vehicles';

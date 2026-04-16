@@ -13,7 +13,7 @@ import Grid from '@mui/material/Grid2';
 
 import FormProvider from 'src/components/hook-form/form-provider';
 import RHFTextField from 'src/components/hook-form/rhf-text-field';
-import RHFSelect from 'src/components/hook-form/rhf-select';
+import { RHFSelect } from 'src/components/hook-form';
 import { useSnackbar } from 'src/components/snackbar';
 
 import { createVehicleIncident, updateVehicleIncident } from 'src/api/vehicles';

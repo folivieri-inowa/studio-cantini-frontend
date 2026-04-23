@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { alpha } from '@mui/material/styles';
+import Collapse from '@mui/material/Collapse';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
@@ -18,6 +19,7 @@ import Iconify from '../../components/iconify';
 import { useBoolean } from '../../hooks/use-boolean';
 import { ConfirmDialog } from '../../components/custom-dialog';
 import CustomPopover, { usePopover } from '../../components/custom-popover';
+import ScadenziarioTranchesPanel from './scadenziario-tranches-panel';
 
 // ----------------------------------------------------------------------
 
@@ -28,12 +30,16 @@ export default function ScadenziarioTableRow({
   onEditRow,
   onSelectRow,
   onDeleteRow,
+  onUpdated,
 }) {
-  const { id, subject, date, description, causale, amount, paymentDate, status } = row;
+  const { id, subject, date, description, causale, amount, paymentDate, status,
+          tranches_count, paid_amount, owner_id } = row;
 
   const confirm = useBoolean();
-
+  const expand  = useBoolean();
   const popover = usePopover();
+
+  const hasTranches = parseInt(tranches_count || 0, 10) > 0;
 
   const getStatusColor = (statusValue) => {
     switch (statusValue) {
@@ -45,6 +51,8 @@ export default function ScadenziarioTableRow({
         return 'warning';
       case 'future':
         return 'info';
+      case 'partial':
+        return 'warning';
       default:
         return 'default';
     }
@@ -60,6 +68,8 @@ export default function ScadenziarioTableRow({
         return 'In scadenza';
       case 'future':
         return 'Da pagare';
+      case 'partial':
+        return 'Parz. pagato';
       default:
         return statusValue;
     }
@@ -131,15 +141,22 @@ export default function ScadenziarioTableRow({
         </TableCell>
 
         <TableCell align="right">
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              fontWeight: 'bold', 
-              color: parseFloat(amount) > 1000 ? 'error.main' : 'text.primary' 
-            }}
-          >
-            {amount ? parseFloat(amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }) : '€ 0,00'}
-          </Typography>
+          <Stack alignItems="flex-end" spacing={0.3}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 'bold',
+                color: parseFloat(amount) > 1000 ? 'error.main' : 'text.primary'
+              }}
+            >
+              {amount ? parseFloat(amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }) : '€ 0,00'}
+            </Typography>
+            {hasTranches && (
+              <Typography variant="caption" color="text.secondary">
+                pag. {parseFloat(paid_amount || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+              </Typography>
+            )}
+          </Stack>
         </TableCell>
 
         <TableCell>
@@ -206,20 +223,48 @@ export default function ScadenziarioTableRow({
               <Iconify icon="eva:edit-fill" width={18} height={18} />
             </IconButton>
             
-            <IconButton 
-              size="small" 
-              color="error" 
+            <IconButton
+              size="small"
+              color="error"
               onClick={confirm.onTrue}
-              sx={{ 
+              sx={{
                 bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
                 '&:hover': { bgcolor: (theme) => alpha(theme.palette.error.main, 0.16) },
               }}
             >
               <Iconify icon="eva:trash-2-fill" width={18} height={18} />
             </IconButton>
+
+            {hasTranches && (
+              <IconButton
+                size="small"
+                onClick={expand.onToggle}
+                sx={{
+                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
+                  '&:hover': { bgcolor: (theme) => alpha(theme.palette.success.main, 0.16) },
+                }}
+              >
+                <Iconify icon={expand.value ? 'eva:arrow-up-fill' : 'eva:arrow-down-fill'} width={18} />
+              </IconButton>
+            )}
           </Stack>
         </TableCell>
       </TableRow>
+
+      {hasTranches && (
+        <TableRow>
+          <TableCell colSpan={9} sx={{ p: 0, border: 0 }}>
+            <Collapse in={expand.value} unmountOnExit>
+              <ScadenziarioTranchesPanel
+                parentId={id}
+                parentAmount={amount}
+                ownerId={owner_id}
+                onUpdated={onUpdated}
+              />
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      )}
 
       <CustomPopover
         open={popover.open}
@@ -278,6 +323,7 @@ ScadenziarioTableRow.propTypes = {
   onDeleteRow: PropTypes.func,
   onEditRow: PropTypes.func,
   onSelectRow: PropTypes.func,
+  onUpdated: PropTypes.func,
   onViewRow: PropTypes.func,
   row: PropTypes.object,
   selected: PropTypes.bool,

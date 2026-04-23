@@ -35,7 +35,7 @@ export default function VehicleOverviewTab({ vehicle }) {
   return (
     <Grid container spacing={3}>
       {/* Dati principali */}
-      <Grid xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardHeader title="Dati veicolo" />
           <CardContent>
@@ -58,12 +58,19 @@ export default function VehicleOverviewTab({ vehicle }) {
             <InfoRow label="Cilindrata" value={vehicle.engine_cc ? `${vehicle.engine_cc} cc` : null} />
             <InfoRow label="Posti" value={vehicle.seats} />
             <InfoRow label="Uso" value={vehicle.vehicle_usage} />
+            {vehicle.telepass_serial && (
+              <>
+                <Divider sx={{ my: 1.5 }} />
+                <InfoRow label="Telepass (matricola)" value={vehicle.telepass_serial} />
+                {vehicle.telepass_notes && <InfoRow label="Note Telepass" value={vehicle.telepass_notes} />}
+              </>
+            )}
           </CardContent>
         </Card>
       </Grid>
 
       {/* Titolarità e assegnazione */}
-      <Grid xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardHeader title="Titolarità e assegnazione" />
           <CardContent>
@@ -86,7 +93,7 @@ export default function VehicleOverviewTab({ vehicle }) {
 
       {/* Note */}
       {vehicle.notes && (
-        <Grid xs={12}>
+        <Grid size={12}>
           <Card>
             <CardHeader title="Note" />
             <CardContent>

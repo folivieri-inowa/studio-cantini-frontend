@@ -391,6 +391,7 @@ export function ScadenziarioListView() {
                                 onDeleteRow={() => handleDeleteRow(row.id)}
                                 onViewRow={() => handleViewRow(row.id)}
                                 onEditRow={() => handleEditRow(row.id)}
+                                onUpdated={() => scadenziarioMutate?.()}
                               />
                             ))}
                           </>

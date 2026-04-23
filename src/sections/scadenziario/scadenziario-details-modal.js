@@ -25,6 +25,7 @@ import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
 
 import { formatCurrency } from './scadenziario-utils';
+import ScadenziarioTranchesPanel from './scadenziario-tranches-panel';
 
 // ----------------------------------------------------------------------
 
@@ -254,6 +255,20 @@ export default function ScadenziarioDetailsModal({ id, open, onClose }) {
               <>
                 <Divider sx={{ borderStyle: 'dashed' }} />
                 <AttachmentPreview url={scadenziarioItem.attachment_url} />
+              </>
+            )}
+
+            {/* Piano di pagamento — solo per fatture */}
+            {scadenziarioItem?.type === 'fattura' && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="subtitle2" gutterBottom>Piano di pagamento</Typography>
+                <ScadenziarioTranchesPanel
+                  parentId={scadenziarioItem.id}
+                  parentAmount={scadenziarioItem.amount}
+                  ownerId={scadenziarioItem.owner_id}
+                  onUpdated={onClose}
+                />
               </>
             )}
           </Stack>

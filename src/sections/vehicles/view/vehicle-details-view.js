@@ -17,7 +17,7 @@ import { useRouter } from 'src/routes/hooks';
 import Iconify from 'src/components/iconify';
 import CustomBreadcrumbs from 'src/components/custom-breadcrumbs';
 
-import { useGetVehicleDetails } from 'src/api/vehicles';
+import { useGetVehicleDetails, useGetVehiclePolicies, useGetVehicleTaxes, useGetVehicleZtl, useGetVehicleMaintenance } from 'src/api/vehicles';
 
 import VehicleOverviewTab from '../vehicle-overview-tab';
 import VehicleDocumentsTab from '../vehicle-documents-tab';
@@ -27,6 +27,7 @@ import VehicleTiresTab from '../vehicle-tires-tab';
 import VehicleIncidentsTab from '../vehicle-incidents-tab';
 import VehicleInsuranceTab from '../vehicle-insurance-tab';
 import VehicleAdminTab from '../vehicle-admin-tab';
+import { exportVehiclePdf } from '../vehicle-pdf-export';
 import VehicleSalePurchaseTab from '../vehicle-sale-purchase-tab';
 import VehicleTimelineTab from '../vehicle-timeline-tab';
 
@@ -53,6 +54,10 @@ export default function VehicleDetailsView() {
   const [currentTab, setCurrentTab] = useState('overview');
 
   const { vehicle, vehicleLoading, vehicleMutate } = useGetVehicleDetails(id);
+  const { policies } = useGetVehiclePolicies(id);
+  const { taxes } = useGetVehicleTaxes(id);
+  const { ztlList } = useGetVehicleZtl(id);
+  const { maintenance } = useGetVehicleMaintenance(id);
 
   if (vehicleLoading) {
     return (
@@ -83,13 +88,22 @@ export default function VehicleDetailsView() {
           { name: vehicle.plate },
         ]}
         action={
-          <Button
-            variant="outlined"
-            startIcon={<Iconify icon="solar:pen-bold" />}
-            onClick={() => {}}
-          >
-            Modifica
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<Iconify icon="solar:file-download-bold" />}
+              onClick={() => exportVehiclePdf({ vehicle, policies, taxes, ztlList, maintenance })}
+            >
+              Esporta PDF
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Iconify icon="solar:pen-bold" />}
+              onClick={() => {}}
+            >
+              Modifica
+            </Button>
+          </Stack>
         }
         sx={{ mb: 3 }}
       />

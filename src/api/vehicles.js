@@ -33,14 +33,14 @@ export function useGetVehicleDetails(id) {
     const res = await axios.post(`${BASE}/details`, { id });
     return res.data;
   };
-  const { data, isLoading, error, mutate } = useSWR(
+  const { data, isLoading, isValidating, error, mutate } = useSWR(
     id ? `vehicle-details-${id}` : null,
     fetcher,
     { revalidateOnFocus: false }
   );
   return {
     vehicle: data?.data || null,
-    vehicleLoading: isLoading,
+    vehicleLoading: isLoading || isValidating,
     vehicleError: error,
     vehicleMutate: mutate,
   };
@@ -266,3 +266,40 @@ export async function getVehicleTimeline(vehicleId) {
   const res = await axios.post(`${BASE}/timeline`, { vehicle_id: vehicleId });
   return res.data;
 }
+
+// ─── POLIZZE ──────────────────────────────────────────────────────────────────
+
+export function useGetVehiclePolicies(vehicleId) {
+  const fetcher = () => axios.post(`${BASE}/policies/list`, { vehicleId }).then(r => r.data);
+  const { data, isLoading, mutate } = useSWR(vehicleId ? `vehicle-policies-${vehicleId}` : null, fetcher, { revalidateOnFocus: false });
+  return { policies: data?.data || [], policiesLoading: isLoading, policiesMutate: mutate };
+}
+
+export const createVehiclePolicy = (policy) => axios.post(`${BASE}/policies/create`, { policy }).then(r => r.data);
+export const updateVehiclePolicy = (id, policy) => axios.post(`${BASE}/policies/update`, { id, policy }).then(r => r.data);
+export const deleteVehiclePolicy = (id) => axios.post(`${BASE}/policies/delete`, { id }).then(r => r.data);
+
+// ─── TASSE ────────────────────────────────────────────────────────────────────
+
+export function useGetVehicleTaxes(vehicleId) {
+  const fetcher = () => axios.post(`${BASE}/taxes/list`, { vehicleId }).then(r => r.data);
+  const { data, isLoading, mutate } = useSWR(vehicleId ? `vehicle-taxes-${vehicleId}` : null, fetcher, { revalidateOnFocus: false });
+  return { taxes: data?.data || [], taxesLoading: isLoading, taxesMutate: mutate };
+}
+
+export const calculateVehicleBollo = (kw, region) => axios.post(`${BASE}/taxes/calculate`, { kw, region }).then(r => r.data);
+export const createVehicleTax = (tax) => axios.post(`${BASE}/taxes/create`, { tax }).then(r => r.data);
+export const updateVehicleTax = (id, tax) => axios.post(`${BASE}/taxes/update`, { id, tax }).then(r => r.data);
+export const deleteVehicleTax = (id) => axios.post(`${BASE}/taxes/delete`, { id }).then(r => r.data);
+
+// ─── ZTL ──────────────────────────────────────────────────────────────────────
+
+export function useGetVehicleZtl(vehicleId) {
+  const fetcher = () => axios.post(`${BASE}/ztl/list`, { vehicleId }).then(r => r.data);
+  const { data, isLoading, mutate } = useSWR(vehicleId ? `vehicle-ztl-${vehicleId}` : null, fetcher, { revalidateOnFocus: false });
+  return { ztlList: data?.data || [], ztlLoading: isLoading, ztlMutate: mutate };
+}
+
+export const createVehicleZtl = (ztl) => axios.post(`${BASE}/ztl/create`, { ztl }).then(r => r.data);
+export const updateVehicleZtl = (id, ztl) => axios.post(`${BASE}/ztl/update`, { id, ztl }).then(r => r.data);
+export const deleteVehicleZtl = (id) => axios.post(`${BASE}/ztl/delete`, { id }).then(r => r.data);

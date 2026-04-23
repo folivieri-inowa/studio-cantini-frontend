@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -24,6 +25,8 @@ import VehicleScadenzeTab from '../vehicle-scadenze-tab';
 import VehicleMaintenanceTab from '../vehicle-maintenance-tab';
 import VehicleTiresTab from '../vehicle-tires-tab';
 import VehicleIncidentsTab from '../vehicle-incidents-tab';
+import VehicleInsuranceTab from '../vehicle-insurance-tab';
+import VehicleAdminTab from '../vehicle-admin-tab';
 import VehicleSalePurchaseTab from '../vehicle-sale-purchase-tab';
 import VehicleTimelineTab from '../vehicle-timeline-tab';
 
@@ -36,13 +39,16 @@ const TABS = [
   { value: 'maintenance', label: 'Manutenzioni', icon: 'solar:wrench-bold' },
   { value: 'tires', label: 'Pneumatici', icon: 'solar:wheel-bold' },
   { value: 'incidents', label: 'Sinistri', icon: 'solar:danger-bold' },
+  { value: 'insurance', label: 'Assicurazione & Sinistri', icon: 'solar:shield-check-bold' },
+  { value: 'admin', label: 'Amministrativo', icon: 'solar:document-text-bold' },
   { value: 'sale_purchase', label: 'Acquisto/Vendita', icon: 'solar:tag-price-bold' },
   { value: 'timeline', label: 'Timeline', icon: 'solar:clock-circle-bold' },
 ];
 
 // ----------------------------------------------------------------------
 
-export default function VehicleDetailsView({ id }) {
+export default function VehicleDetailsView() {
+  const { id } = useParams();
   const router = useRouter();
   const [currentTab, setCurrentTab] = useState('overview');
 
@@ -112,6 +118,8 @@ export default function VehicleDetailsView({ id }) {
       {currentTab === 'maintenance' && <VehicleMaintenanceTab vehicleId={id} />}
       {currentTab === 'tires' && <VehicleTiresTab vehicleId={id} />}
       {currentTab === 'incidents' && <VehicleIncidentsTab vehicleId={id} />}
+      {currentTab === 'insurance' && <VehicleInsuranceTab vehicleId={id} />}
+      {currentTab === 'admin' && <VehicleAdminTab vehicle={vehicle} onVehicleUpdate={vehicleMutate} />}
       {currentTab === 'sale_purchase' && <VehicleSalePurchaseTab vehicle={vehicle} onMutate={vehicleMutate} />}
       {currentTab === 'timeline' && <VehicleTimelineTab vehicleId={id} />}
     </Container>

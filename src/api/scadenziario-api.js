@@ -201,3 +201,33 @@ export function useGetScadenziarioItem(id) {
     scadenziarioItemMutate: mutate,
   };
 }
+
+// ----------------------------------------------------------------------
+
+export async function getInvoiceChildren(parentId) {
+  const response = await axios.post(`${BACKEND_URL}/children`, { parent_id: parentId });
+  return response.data;
+}
+
+export async function createTranche(tranche) {
+  const response = await axios.post(`${BACKEND_URL}/create-tranche`, { tranche });
+  return response.data;
+}
+
+export function useGetInvoiceChildren(parentId) {
+  const fetcher = () =>
+    axios.post(`${BACKEND_URL}/children`, { parent_id: parentId }).then((r) => r.data);
+
+  const { data, isLoading, mutate } = useSWR(
+    parentId ? `scadenziario-children-${parentId}` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  return {
+    children: data?.data || [],
+    childrenLoading: isLoading,
+    childrenMutate: mutate,
+  };
+}
+}

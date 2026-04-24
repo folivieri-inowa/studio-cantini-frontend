@@ -11,13 +11,21 @@ import Step from '@mui/material/Step';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
+import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 import Stepper from '@mui/material/Stepper';
+import Collapse from '@mui/material/Collapse';
 import MenuItem from '@mui/material/MenuItem';
 import StepLabel from '@mui/material/StepLabel';
+import TableRow from '@mui/material/TableRow';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TextField from '@mui/material/TextField';
 import { useTheme } from '@mui/material/styles';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -40,6 +48,7 @@ import {
 } from './utils/payment-terms';
 import ScadenziarioOcrUpload from './scadenziario-ocr-upload';
 import ScadenziarioInstallmentPreview from './scadenziario-installment-preview';
+import { createTranche } from '../../api/scadenziario-api';
 
 // ----------------------------------------------------------------------
 
@@ -47,12 +56,39 @@ const STEPS = ['Dati', 'Conferma'];
 
 // ----------------------------------------------------------------------
 
-function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) {
+function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate, tranches, setTranches }) {
   const watchedType = watch('type');
 
   const isFattura = watchedType === 'fattura';
   const isRata = watchedType === 'rata';
   const hasFixedDate = !isFattura && !isRata;
+
+  const [trancheDate, setTrancheDate] = useState(null);
+  const [trancheAmount, setTrancheAmount] = useState('');
+  const [trancheNote, setTrancheNote] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+
+  const handleAddTranche = () => {
+    if (!trancheDate || !trancheAmount) return;
+    setTranches((prev) => [
+      ...prev,
+      {
+        date: format(trancheDate, 'yyyy-MM-dd'),
+        amount: parseFloat(trancheAmount),
+        description: trancheNote || null,
+        type: 'acconto',
+        status: 'future',
+      },
+    ]);
+    setTrancheDate(null);
+    setTrancheAmount('');
+    setTrancheNote('');
+    setAddOpen(false);
+  };
+
+  const handleRemoveTranche = (index) => {
+    setTranches((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleOcrExtracted = useCallback(
     (data) => {
@@ -224,6 +260,95 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) 
             <RHFTextField name="description" label="Descrizione" />
             <RHFTextField name="causale" label="Causale" />
           </Box>
+
+          {/* Piano di pagamento */}
+          <Box sx={{ mt: 1 }}>
+            <Divider sx={{ mb: 2 }} />
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+              <Typography variant="subtitle2">Piano di pagamento (opzionale)</Typography>
+              {tranches.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  {tranches.length} tranche · {tranches.reduce((a, t) => a + t.amount, 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                </Typography>
+              )}
+            </Stack>
+
+            {tranches.length > 0 && (
+              <Table size="small" sx={{ mb: 1 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Data</TableCell>
+                    <TableCell>Nota</TableCell>
+                    <TableCell align="right">Importo</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tranches.map((t, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{t.date}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">{t.description || '—'}</Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {t.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton size="small" color="error" onClick={() => handleRemoveTranche(i)}>
+                          <Iconify icon="eva:trash-2-fill" width={16} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            <Button
+              size="small"
+              startIcon={<Iconify icon="eva:plus-fill" />}
+              onClick={() => setAddOpen((v) => !v)}
+              sx={{ mb: 1 }}
+            >
+              Aggiungi tranche
+            </Button>
+
+            <Collapse in={addOpen}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="flex-start" sx={{ mt: 1 }}>
+                <DatePicker
+                  label="Data"
+                  value={trancheDate}
+                  onChange={setTrancheDate}
+                  slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}
+                />
+                <TextField
+                  label="Importo €"
+                  size="small"
+                  type="number"
+                  value={trancheAmount}
+                  onChange={(e) => setTrancheAmount(e.target.value)}
+                  sx={{ maxWidth: 130 }}
+                />
+                <TextField
+                  label="Nota (opz.)"
+                  size="small"
+                  value={trancheNote}
+                  onChange={(e) => setTrancheNote(e.target.value)}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  disabled={!trancheDate || !trancheAmount}
+                  onClick={handleAddTranche}
+                >
+                  Aggiungi
+                </Button>
+              </Stack>
+            </Collapse>
+          </Box>
         </Stack>
       )}
 
@@ -271,7 +396,7 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate }) 
 
 // ----------------------------------------------------------------------
 
-function ScadenziarioConfirmStep({ methods, calculatedDueDate }) {
+function ScadenziarioConfirmStep({ methods, calculatedDueDate, tranches }) {
   const data = methods.getValues();
 
   const rows = [
@@ -312,6 +437,36 @@ function ScadenziarioConfirmStep({ methods, calculatedDueDate }) {
           </Stack>
         ))}
       </Box>
+
+      {tranches?.length > 0 && (
+        <>
+          <Typography variant="subtitle2" sx={{ mt: 1 }}>Piano di pagamento</Typography>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data</TableCell>
+                <TableCell>Nota</TableCell>
+                <TableCell align="right">Importo</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {tranches.map((t, i) => (
+                <TableRow key={i}>
+                  <TableCell>{t.date}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">{t.description || '—'}</Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      {t.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
+      )}
     </Stack>
   );
 }
@@ -326,6 +481,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
 
   const [step, setStep] = useState(0);
   const [installmentPreview, setInstallmentPreview] = useState([]);
+  const [tranches, setTranches] = useState([]);
 
   const methods = useForm({
     defaultValues: {
@@ -385,6 +541,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
     reset();
     setStep(0);
     setInstallmentPreview([]);
+    setTranches([]);
     onClose();
   }, [onClose, reset]);
 
@@ -416,7 +573,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
           ? format(calculatedDueDate, 'yyyy-MM-dd')
           : data.date ? format(new Date(data.date), 'yyyy-MM-dd') : null;
 
-        await createScadenziario({
+        const result = await createScadenziario({
           subject: data.subject,
           description: data.description || null,
           causale: data.causale || null,
@@ -435,6 +592,18 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
           payment_terms: terms ? { type: terms.value, days: terms.days, end_of_month: terms.end_of_month } : null,
           attachment_url: data.attachment_url || null,
         });
+
+        // Crea le tranches se la fattura madre è stata creata con successo
+        if (data.type === 'fattura' && tranches.length > 0) {
+          const parentId = result?.data?.id;
+          if (parentId) {
+            await Promise.all(
+              tranches.map((t) =>
+                createTranche({ ...t, parent_id: parentId, owner_id: data.owner_id || null })
+              )
+            );
+          }
+        }
       }
 
       enqueueSnackbar('Scadenza creata con successo!');
@@ -444,7 +613,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
       console.error(err);
       enqueueSnackbar('Errore durante il salvataggio', { variant: 'error' });
     }
-  }, [methods, installmentPreview, calculatedDueDate, enqueueSnackbar, onCreated, handleClose]);
+  }, [methods, installmentPreview, tranches, calculatedDueDate, enqueueSnackbar, onCreated, handleClose]);
 
   return (
     <Dialog
@@ -480,6 +649,8 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
               watch={watch}
               setValue={setValue}
               calculatedDueDate={calculatedDueDate}
+              tranches={tranches}
+              setTranches={setTranches}
             />
           )}
 
@@ -494,6 +665,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
                 <ScadenziarioConfirmStep
                   methods={methods}
                   calculatedDueDate={calculatedDueDate}
+                  tranches={tranches}
                 />
               )
           )}

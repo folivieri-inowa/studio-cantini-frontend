@@ -21,8 +21,6 @@ export const FREQUENCY_OPTIONS = [
 
 export const TYPE_OPTIONS = [
   { value: 'fattura',    label: 'Fattura',             icon: 'solar:document-bold'  },
-  { value: 'acconto',    label: 'Acconto',             icon: 'solar:money-bag-bold'  },
-  { value: 'saldo',      label: 'Saldo',               icon: 'solar:check-circle-bold' },
   { value: 'rata',       label: 'Piano rate',           icon: 'solar:calendar-bold'  },
   { value: 'fiscale',    label: 'Scadenza fiscale',     icon: 'solar:bill-bold'      },
   { value: 'ricorrente', label: 'Pagamento ricorrente', icon: 'solar:refresh-bold'   },

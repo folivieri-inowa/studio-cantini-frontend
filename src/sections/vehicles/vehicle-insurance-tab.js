@@ -20,27 +20,22 @@ import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
 import { useSnackbar } from 'src/components/snackbar';
 
-import { useGetVehiclePolicies, deleteVehiclePolicy, useGetVehicleIncidents, deleteVehicleIncident, useGetVehicleFines, deleteVehicleFine } from 'src/api/vehicles';
+import { useGetVehiclePolicies, deleteVehiclePolicy, useGetVehicleFines, deleteVehicleFine } from 'src/api/vehicles';
 
 import VehiclePolicyDialog from './vehicle-policy-dialog';
-import VehicleIncidentDialog from './vehicle-incident-dialog';
 import VehicleFineDialog from './vehicle-fine-dialog';
 
 const POLICY_STATUS_COLORS = { attiva: 'success', scaduta: 'default', disdetta: 'error' };
-const INCIDENT_STATUS_COLORS = { aperto: 'error', in_lavorazione: 'warning', chiuso: 'success' };
 const FINE_STATUS_COLORS = { da_pagare: 'warning', pagato: 'success', ricorsato: 'info', annullato: 'default' };
 
 export default function VehicleInsuranceTab({ vehicleId }) {
   const { enqueueSnackbar } = useSnackbar();
   const [openPolicyDialog, setOpenPolicyDialog] = useState(false);
   const [editPolicy, setEditPolicy] = useState(null);
-  const [openIncidentDialog, setOpenIncidentDialog] = useState(false);
-  const [editIncident, setEditIncident] = useState(null);
   const [openFineDialog, setOpenFineDialog] = useState(false);
   const [editFine, setEditFine] = useState(null);
 
   const { policies, policiesLoading, policiesMutate } = useGetVehiclePolicies(vehicleId);
-  const { incidents, incidentsLoading, incidentsMutate } = useGetVehicleIncidents(vehicleId);
   const { fines, finesLoading, finesMutate } = useGetVehicleFines(vehicleId);
 
   const handleDeletePolicy = useCallback(async (id) => {
@@ -50,14 +45,6 @@ export default function VehicleInsuranceTab({ vehicleId }) {
       enqueueSnackbar('Polizza eliminata', { variant: 'success' });
     } catch { enqueueSnackbar('Errore eliminazione', { variant: 'error' }); }
   }, [policiesMutate, enqueueSnackbar]);
-
-  const handleDeleteIncident = useCallback(async (id) => {
-    try {
-      await deleteVehicleIncident(id);
-      incidentsMutate();
-      enqueueSnackbar('Sinistro eliminato', { variant: 'success' });
-    } catch { enqueueSnackbar('Errore eliminazione', { variant: 'error' }); }
-  }, [incidentsMutate, enqueueSnackbar]);
 
   const handleDeleteFine = useCallback(async (id) => {
     try {
@@ -124,55 +111,6 @@ export default function VehicleInsuranceTab({ vehicleId }) {
 
       <Divider />
 
-      {/* SINISTRI */}
-      <Card>
-        <CardHeader
-          title="Sinistri"
-          action={
-            <Button size="small" startIcon={<Iconify icon="solar:add-circle-bold" />}
-              onClick={() => { setEditIncident(null); setOpenIncidentDialog(true); }}>
-              Nuovo sinistro
-            </Button>
-          }
-        />
-        <Scrollbar>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Titolo</TableCell>
-                  <TableCell>Tipo</TableCell>
-                  <TableCell>Data</TableCell>
-                  <TableCell>Danno</TableCell>
-                  <TableCell>Stato</TableCell>
-                  <TableCell align="right" />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!incidentsLoading && incidents.length === 0 && (
-                  <TableRow><TableCell colSpan={6}><Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>Nessun sinistro registrato</Typography></TableCell></TableRow>
-                )}
-                {incidents.map((inc) => (
-                  <TableRow key={inc.id} hover>
-                    <TableCell>{inc.title}</TableCell>
-                    <TableCell>{inc.incident_type}</TableCell>
-                    <TableCell>{inc.incident_date}</TableCell>
-                    <TableCell>{inc.damage_amount ? `€ ${Number(inc.damage_amount).toLocaleString('it-IT')}` : '—'}</TableCell>
-                    <TableCell><Chip size="small" label={inc.status} color={INCIDENT_STATUS_COLORS[inc.status] || 'default'} variant="soft" /></TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" onClick={() => { setEditIncident(inc); setOpenIncidentDialog(true); }}><Iconify icon="solar:pen-bold" /></IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDeleteIncident(inc.id)}><Iconify icon="solar:trash-bin-trash-bold" /></IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Scrollbar>
-      </Card>
-
-      <Divider />
-
       {/* CONTRAVVENZIONI */}
       <Card>
         <CardHeader
@@ -226,8 +164,6 @@ export default function VehicleInsuranceTab({ vehicleId }) {
 
       <VehiclePolicyDialog open={openPolicyDialog} onClose={() => setOpenPolicyDialog(false)}
         vehicleId={vehicleId} editItem={editPolicy} onSuccess={policiesMutate} />
-      <VehicleIncidentDialog open={openIncidentDialog} onClose={() => setOpenIncidentDialog(false)}
-        vehicleId={vehicleId} editItem={editIncident} onSuccess={incidentsMutate} />
       <VehicleFineDialog open={openFineDialog} onClose={() => setOpenFineDialog(false)}
         vehicleId={vehicleId} editItem={editFine} onSuccess={finesMutate} />
     </Stack>

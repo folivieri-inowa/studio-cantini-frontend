@@ -237,14 +237,21 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
                     </Stack>
                   </TableCell>
                   <TableCell align="right">
-                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                      {child.status !== 'completed' && (
-                        <IconButton
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center">
+                      {(uploadedUrls[child.id] || child.attachment_url) && (
+                        <Button
                           size="small"
-                          color="success"
-                          onClick={() => handleMarkPaid(child)}
-                          title="Segna come pagato"
+                          variant="outlined"
+                          href={uploadedUrls[child.id] || child.attachment_url}
+                          target="_blank"
+                          startIcon={<Iconify icon="eva:file-text-fill" width={14} />}
+                          sx={{ fontSize: '0.7rem', py: 0.3, px: 1 }}
                         >
+                          Contabile
+                        </Button>
+                      )}
+                      {child.status !== 'completed' && (
+                        <IconButton size="small" color="success" onClick={() => handleMarkPaid(child)} title="Segna come pagato">
                           <Iconify icon="eva:checkmark-circle-2-fill" width={18} />
                         </IconButton>
                       )}
@@ -252,7 +259,7 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
                         size="small"
                         color={child.attachment_url ? 'success' : 'default'}
                         onClick={() => setReceiptOpen(receiptOpen === child.id ? null : child.id)}
-                        title={child.attachment_url ? 'Visualizza/sostituisci ricevuta' : 'Allega ricevuta'}
+                        title={child.attachment_url ? 'Sostituisci ricevuta' : 'Allega ricevuta'}
                       >
                         <Iconify icon="eva:attach-2-fill" width={18} />
                       </IconButton>

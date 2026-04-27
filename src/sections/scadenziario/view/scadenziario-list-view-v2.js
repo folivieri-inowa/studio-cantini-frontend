@@ -3,6 +3,8 @@
 import { useState, useCallback, useMemo } from 'react';
 
 import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -20,6 +22,7 @@ import ScadenziarioTableV2 from '../scadenziario-table-v2';
 import ScadenziarioCreateModal from '../scadenziario-create-modal-v2';
 import ScadenziarioEditModal from '../scadenziario-edit-modal';
 import ScadenziarioDetailsModal from '../scadenziario-details-modal';
+import ScadenziarioSuppliersView from '../scadenziario-suppliers-view';
 
 // ----------------------------------------------------------------------
 
@@ -31,6 +34,7 @@ export function ScadenziarioListViewV2() {
   const [openEdit, setOpenEdit]       = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedId, setSelectedId]   = useState(null);
+  const [activeTab, setActiveTab]     = useState('scadenze');
 
   const { scadenziario, scadenziarioLoading, scadenziarioMutate } =
     useEnhancedGetScadenziario(ownerId ? { ownerId } : {});
@@ -123,40 +127,54 @@ export function ScadenziarioListViewV2() {
         {/* KPI */}
         <ScadenziarioKpiCards scadenze={scadenziario} />
 
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab value="scadenze" label="Scadenze" icon={<Iconify icon="eva:calendar-fill" />} iconPosition="start" />
+          <Tab value="fornitori" label="Fornitori" icon={<Iconify icon="solar:buildings-bold" />} iconPosition="start" />
+        </Tabs>
+
         {/* Tabella */}
-        <ScadenziarioFiltersToolbar filters={filters} onFiltersChange={setFilters} />
-        <ScadenziarioTableV2
-          scadenze={filteredScadenziario}
-          loading={scadenziarioLoading}
-          onMutate={scadenziarioMutate}
-          onViewRow={handleViewRow}
-          onEditRow={handleEditRow}
-        />
+        {activeTab === 'fornitori' ? (
+          <ScadenziarioSuppliersView scadenze={scadenziario} />
+        ) : (
+          <>
+            <ScadenziarioFiltersToolbar filters={filters} onFiltersChange={setFilters} />
+            <ScadenziarioTableV2
+              scadenze={filteredScadenziario}
+              loading={scadenziarioLoading}
+              onMutate={scadenziarioMutate}
+              onViewRow={handleViewRow}
+              onEditRow={handleEditRow}
+            />
+
+            <ScadenziarioCreateModal
+              open={openCreate}
+              onClose={() => setOpenCreate(false)}
+              onCreated={handleCreated}
+            />
+
+            {selectedId && (
+              <ScadenziarioEditModal
+                id={selectedId}
+                open={openEdit}
+                onClose={() => setOpenEdit(false)}
+                onEdited={scadenziarioMutate}
+              />
+            )}
+
+            {selectedId && (
+              <ScadenziarioDetailsModal
+                id={selectedId}
+                open={openDetails}
+                onClose={() => setOpenDetails(false)}
+              />
+            )}
+          </>
+        )}
       </Container>
-
-      {/* Modali */}
-      <ScadenziarioCreateModal
-        open={openCreate}
-        onClose={() => setOpenCreate(false)}
-        onCreated={handleCreated}
-      />
-
-      {selectedId && (
-        <ScadenziarioEditModal
-          id={selectedId}
-          open={openEdit}
-          onClose={() => setOpenEdit(false)}
-          onEdited={scadenziarioMutate}
-        />
-      )}
-
-      {selectedId && (
-        <ScadenziarioDetailsModal
-          id={selectedId}
-          open={openDetails}
-          onClose={() => setOpenDetails(false)}
-        />
-      )}
     </>
   );
 }

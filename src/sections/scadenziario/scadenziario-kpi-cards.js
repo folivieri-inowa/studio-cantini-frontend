@@ -46,6 +46,18 @@ const KPI_CONFIG = [
       return d >= monthStart && d <= monthEnd;
     },
   },
+  {
+    key: 'dueThisMonth',
+    label: 'In scad. questo mese',
+    color: 'warning',
+    icon: 'solar:calendar-mark-bold',
+    filter: (s, monthStart, monthEnd) => {
+      if (s.status === 'completed') return false;
+      if (!s.date) return false;
+      const d = new Date(s.date);
+      return d >= monthStart && d <= monthEnd;
+    },
+  },
 ];
 
 // ----------------------------------------------------------------------
@@ -74,7 +86,7 @@ export default function ScadenziarioKpiCards({ scadenze = [] }) {
   return (
     <Box
       display="grid"
-      gridTemplateColumns={{ xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
+      gridTemplateColumns={{ xs: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }}
       gap={2}
       mb={3}
     >

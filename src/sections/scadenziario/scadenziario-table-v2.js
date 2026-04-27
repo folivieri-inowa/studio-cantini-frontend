@@ -152,9 +152,6 @@ function ScadenziarioRow({ row, onDeleteRow, onEditRow, onViewRow, onPayRow }) {
               return (
                 <Stack alignItems="flex-end" spacing={0.3} sx={{ width: '100%' }}>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="caption" color="success.main">
-                      {paid.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} pag.
-                    </Typography>
                     {!isFullyPaid && (
                       <Typography variant="caption" color="warning.main" fontWeight="bold">
                         {remaining.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} res.

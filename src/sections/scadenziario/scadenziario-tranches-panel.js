@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
 import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
@@ -45,6 +47,69 @@ const STATUS_LABEL = {
 
 // ----------------------------------------------------------------------
 
+function AmountSummaryCard({ total, paid, remaining }) {
+  const progress = total > 0 ? (paid / total) * 100 : 0;
+  const isFullyPaid = remaining <= 0;
+
+  return (
+    <Card variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.neutral' }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={1.5}>
+        <Stack flex={1} spacing={0.5} alignItems="center">
+          <Typography variant="caption" color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+            Totale fattura
+          </Typography>
+          <Typography variant="h6" fontWeight="bold">
+            {total.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+          </Typography>
+        </Stack>
+
+        <Stack flex={1} spacing={0.5} alignItems="center">
+          <Typography variant="caption" color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+            Pagato
+          </Typography>
+          <Typography variant="h6" fontWeight="bold" color="success.main">
+            {paid.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+          </Typography>
+        </Stack>
+
+        <Stack flex={1} spacing={0.5} alignItems="center">
+          <Typography variant="caption" color="text.secondary" textTransform="uppercase" letterSpacing={0.5}>
+            Da pagare
+          </Typography>
+          <Typography variant="h6" fontWeight="bold" color={isFullyPaid ? 'success.main' : 'warning.main'}>
+            {remaining.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+          </Typography>
+        </Stack>
+      </Stack>
+
+      <Stack spacing={0.5}>
+        <LinearProgress
+          variant="determinate"
+          value={Math.min(progress, 100)}
+          color={isFullyPaid ? 'success' : 'primary'}
+          sx={{ height: 8, borderRadius: 4 }}
+        />
+        <Stack direction="row" justifyContent="space-between">
+          <Typography variant="caption" color="text.secondary">
+            {Math.round(progress)}% pagato
+          </Typography>
+          {isFullyPaid && (
+            <Chip
+              label="Saldato"
+              size="small"
+              color="success"
+              icon={<Iconify icon="eva:checkmark-circle-2-fill" width={14} />}
+              sx={{ height: 20, fontSize: '0.7rem' }}
+            />
+          )}
+        </Stack>
+      </Stack>
+    </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+
 export default function ScadenziarioTranchesPanel({ parentId, parentAmount, ownerId, onUpdated }) {
   const { enqueueSnackbar } = useSnackbar();
   const { children, childrenLoading, childrenMutate } = useGetInvoiceChildren(parentId);
@@ -55,17 +120,16 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
   const [newNote, setNewNote]     = useState('');
   const [saving, setSaving]       = useState(false);
 
-  const scheduled = children.reduce((acc, c) => acc + parseFloat(c.amount || 0), 0);
+  const total     = parseFloat(parentAmount || 0);
   const paid      = children.filter(c => c.status === 'completed').reduce((acc, c) => acc + parseFloat(c.amount || 0), 0);
-  const residual  = parseFloat(parentAmount || 0) - scheduled;
-  const progress  = parentAmount > 0 ? (paid / parseFloat(parentAmount)) * 100 : 0;
+  const remaining = total - paid;
 
   const handleMarkPaid = async (child) => {
     try {
       await updatePaymentStatus(child.id, new Date().toISOString().substring(0, 10), 'completed');
       childrenMutate();
       onUpdated?.();
-      enqueueSnackbar('Tranche segnata come pagata', { variant: 'success' });
+      enqueueSnackbar('Acconto segnato come pagato', { variant: 'success' });
     } catch {
       enqueueSnackbar('Errore aggiornamento', { variant: 'error' });
     }
@@ -76,13 +140,13 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
     setSaving(true);
     try {
       await createTranche({
-        parent_id: parentId,
-        date:      format(newDate, 'yyyy-MM-dd'),
-        amount:    parseFloat(newAmount),
+        parent_id:   parentId,
+        date:        format(newDate, 'yyyy-MM-dd'),
+        amount:      parseFloat(newAmount),
         description: newNote || null,
-        owner_id:  ownerId,
-        type:      'acconto',
-        status:    'future',
+        owner_id:    ownerId,
+        type:        'acconto',
+        status:      'future',
       });
       setNewDate(null);
       setNewAmount('');
@@ -90,9 +154,9 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
       setAddOpen(false);
       childrenMutate();
       onUpdated?.();
-      enqueueSnackbar('Tranche aggiunta', { variant: 'success' });
+      enqueueSnackbar('Acconto aggiunto', { variant: 'success' });
     } catch {
-      enqueueSnackbar('Errore creazione tranche', { variant: 'error' });
+      enqueueSnackbar('Errore creazione acconto', { variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -100,24 +164,14 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
 
   return (
     <Box sx={{ px: 2, pb: 2 }}>
-      <Stack spacing={0.5} mb={2}>
-        <Stack direction="row" justifyContent="space-between">
-          <Typography variant="caption" color="text.secondary">
-            Pagato: {paid.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
-            {' / '}
-            {parseFloat(parentAmount || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
-          </Typography>
-          <Typography variant="caption" color={residual > 0 ? 'warning.main' : 'success.main'}>
-            Residuo programmato: {residual.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
-          </Typography>
-        </Stack>
-        <LinearProgress variant="determinate" value={Math.min(progress, 100)} color={progress >= 100 ? 'success' : 'primary'} sx={{ height: 6, borderRadius: 3 }} />
-      </Stack>
+      <AmountSummaryCard total={total} paid={paid} remaining={remaining} />
 
-      {childrenLoading && <Typography variant="caption">Caricamento tranches…</Typography>}
+      {childrenLoading && (
+        <Typography variant="caption" color="text.secondary">Caricamento acconti…</Typography>
+      )}
 
       {children.length > 0 && (
-        <Table size="small" sx={{ mb: 1 }}>
+        <Table size="small" sx={{ mb: 1.5 }}>
           <TableHead>
             <TableRow>
               <TableCell>Data</TableCell>
@@ -152,7 +206,12 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
                 </TableCell>
                 <TableCell align="right">
                   {child.status !== 'completed' && (
-                    <IconButton size="small" color="success" onClick={() => handleMarkPaid(child)} title="Segna come pagato">
+                    <IconButton
+                      size="small"
+                      color="success"
+                      onClick={() => handleMarkPaid(child)}
+                      title="Segna come pagato"
+                    >
                       <Iconify icon="eva:checkmark-circle-2-fill" width={18} />
                     </IconButton>
                   )}
@@ -169,13 +228,13 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
         onClick={() => setAddOpen((v) => !v)}
         sx={{ mb: 1 }}
       >
-        Aggiungi tranche
+        Aggiungi acconto
       </Button>
 
       <Collapse in={addOpen}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="flex-start" sx={{ mt: 1 }}>
           <DatePicker
-            label="Data"
+            label="Data bonifico"
             value={newDate}
             onChange={setNewDate}
             slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}

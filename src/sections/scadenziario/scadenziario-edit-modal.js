@@ -31,6 +31,7 @@ import FormProvider, {
 } from 'src/components/hook-form';
 
 import ScadenziarioOcrUpload from './scadenziario-ocr-upload';
+import ScadenziarioAttachmentUpload from './scadenziario-attachment-upload';
 
 import { PAYMENT_TERMS_OPTIONS } from './utils/payment-terms';
 import { calculateScadenziarioStatus } from './scadenziario-utils';
@@ -251,9 +252,22 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
               </RHFSelect>
             </Box>
 
+            {!isFattura && (
+              <Controller
+                name="attachment_url"
+                control={control}
+                render={({ field }) => (
+                  <ScadenziarioAttachmentUpload
+                    ownerId={scadenziarioItem?.owner_id}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            )}
+
             {/* Campi fattura */}
-            {isFattura && (
-              <>
+            {isFattura && (              <>
                 <Divider sx={{ borderStyle: 'dashed', mb: 3 }} />
                 <Typography variant="subtitle2" sx={{ mb: 2 }}>Estremi pagamento</Typography>
                 <Box

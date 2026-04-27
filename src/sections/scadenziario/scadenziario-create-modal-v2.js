@@ -47,6 +47,7 @@ import {
   generateInstallments,
 } from './utils/payment-terms';
 import ScadenziarioOcrUpload from './scadenziario-ocr-upload';
+import ScadenziarioAttachmentUpload from './scadenziario-attachment-upload';
 import ScadenziarioInstallmentPreview from './scadenziario-installment-preview';
 import { createTranche } from '../../api/scadenziario-api';
 
@@ -56,7 +57,7 @@ const STEPS = ['Dati', 'Conferma'];
 
 // ----------------------------------------------------------------------
 
-function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate, tranches, setTranches }) {
+function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate, tranches, setTranches, ownerId }) {
   const watchedType = watch('type');
 
   const isFattura = watchedType === 'fattura';
@@ -389,6 +390,18 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate, tr
             <MenuItem value="completed">Pagato</MenuItem>
           </RHFSelect>
         </Box>
+
+        <Controller
+          name="attachment_url"
+          control={control}
+          render={({ field }) => (
+            <ScadenziarioAttachmentUpload
+              ownerId={ownerId}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          )}
+        />
       )}
     </Stack>
   );
@@ -651,6 +664,7 @@ export default function ScadenziarioCreateModal({ open, onClose, onCreated }) {
               calculatedDueDate={calculatedDueDate}
               tranches={tranches}
               setTranches={setTranches}
+              ownerId={settings.owner?.id ?? settings.owner}
             />
           )}
 

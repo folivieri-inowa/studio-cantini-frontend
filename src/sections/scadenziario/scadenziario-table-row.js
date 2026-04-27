@@ -142,13 +142,7 @@ export default function ScadenziarioTableRow({
 
         <TableCell align="right">
           <Stack alignItems="flex-end" spacing={0.5}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 'bold',
-                color: parseFloat(amount) > 1000 ? 'error.main' : 'text.primary'
-              }}
-            >
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
               {amount ? parseFloat(amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }) : '€ 0,00'}
             </Typography>
             {hasTranches && (() => {
@@ -159,14 +153,22 @@ export default function ScadenziarioTableRow({
               const isFullyPaid = remaining <= 0;
               return (
                 <Stack alignItems="flex-end" spacing={0.3} sx={{ width: '100%' }}>
-                  <Box sx={{ width: 80, height: 4, borderRadius: 2, bgcolor: 'divider', overflow: 'hidden' }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Typography variant="caption" color="success.main">
+                      {paid.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} pag.
+                    </Typography>
+                    {!isFullyPaid && (
+                      <Typography variant="caption" color="warning.main" fontWeight="bold">
+                        {remaining.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} res.
+                      </Typography>
+                    )}
+                  </Stack>
+                  <Box sx={{ width: 90, height: 4, borderRadius: 2, bgcolor: 'divider', overflow: 'hidden' }}>
                     <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: isFullyPaid ? 'success.main' : 'warning.main', borderRadius: 2 }} />
                   </Box>
-                  <Typography variant="caption" color={isFullyPaid ? 'success.main' : 'warning.main'} fontWeight="bold">
-                    {isFullyPaid
-                      ? 'Saldato'
-                      : `${remaining.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} residuo`}
-                  </Typography>
+                  {isFullyPaid && (
+                    <Typography variant="caption" color="success.main" fontWeight="bold">Saldato</Typography>
+                  )}
                 </Stack>
               );
             })()}

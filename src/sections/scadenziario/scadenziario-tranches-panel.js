@@ -25,7 +25,7 @@ import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
 import { useSnackbar } from 'src/components/snackbar';
 
-import { createTranche, updatePaymentStatus, useGetInvoiceChildren } from 'src/api/scadenziario-api';
+import { createTranche, updatePaymentStatus, useGetInvoiceChildren, updateScadenziario } from 'src/api/scadenziario-api';
 
 import ScadenziarioAttachmentUpload from './scadenziario-attachment-upload';
 
@@ -140,7 +140,7 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
 
   const handleUploadReceipt = async (child, url) => {
     try {
-      await updatePaymentStatus(child.id, child.payment_date || new Date().toISOString().substring(0, 10), child.status, url);
+      await updateScadenziario(child.id, { attachment_url: url });
       childrenMutate();
       setReceiptOpen(null);
       enqueueSnackbar('Ricevuta caricata', { variant: 'success' });

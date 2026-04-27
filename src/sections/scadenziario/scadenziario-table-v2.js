@@ -139,15 +139,40 @@ function ScadenziarioRow({ row, onDeleteRow, onEditRow, onViewRow, onPayRow }) {
         </TableCell>
 
         <TableCell align="right">
-          <Typography
-            variant="subtitle2"
-            fontWeight="bold"
-            sx={{ color: parseFloat(row.amount) > 1000 ? 'error.main' : 'text.primary' }}
-          >
-            {row.amount
-              ? parseFloat(row.amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
-              : '€ 0,00'}
-          </Typography>
+          <Stack alignItems="flex-end" spacing={0.5}>
+            <Typography variant="subtitle2" fontWeight="bold">
+              {row.amount
+                ? parseFloat(row.amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
+                : '€ 0,00'}
+            </Typography>
+            {row.tranches_count > 0 && (() => {
+              const paid = parseFloat(row.paid_amount || 0);
+              const total = parseFloat(row.amount || 0);
+              const remaining = total - paid;
+              const pct = total > 0 ? Math.min((paid / total) * 100, 100) : 0;
+              const isFullyPaid = remaining <= 0;
+              return (
+                <Stack alignItems="flex-end" spacing={0.3} sx={{ width: '100%' }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="caption" color="success.main">
+                      {paid.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} pag.
+                    </Typography>
+                    {!isFullyPaid && (
+                      <Typography variant="caption" color="warning.main" fontWeight="bold">
+                        {remaining.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} res.
+                      </Typography>
+                    )}
+                  </Stack>
+                  <Box sx={{ width: 90, height: 4, borderRadius: 2, bgcolor: 'divider', overflow: 'hidden' }}>
+                    <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: isFullyPaid ? 'success.main' : 'warning.main', borderRadius: 2 }} />
+                  </Box>
+                  {isFullyPaid && (
+                    <Typography variant="caption" color="success.main" fontWeight="bold">Saldato</Typography>
+                  )}
+                </Stack>
+              );
+            })()}
+          </Stack>
         </TableCell>
 
         <TableCell>

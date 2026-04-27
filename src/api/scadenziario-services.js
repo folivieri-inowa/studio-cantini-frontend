@@ -53,7 +53,9 @@ export async function getScadenziarioList(filters = {}) {
           if (!item) return item;
           return {
             ...item,
-            amount: item.amount ? parseFloat(item.amount) : 0
+            amount:          item.amount ? parseFloat(item.amount) : 0,
+            paid_amount:     item.paid_amount ? parseFloat(item.paid_amount) : 0,
+            tranches_count:  item.tranches_count ? parseInt(item.tranches_count, 10) : 0,
           };
         });
       }

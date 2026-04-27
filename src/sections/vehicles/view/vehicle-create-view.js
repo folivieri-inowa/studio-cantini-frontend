@@ -14,7 +14,7 @@ import VehicleCreateForm from '../vehicle-create-form';
 
 export default function VehicleCreateView() {
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <CustomBreadcrumbs
         heading="Nuovo Veicolo"
         links={[

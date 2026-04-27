@@ -98,57 +98,57 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
           <Grid container spacing={2} sx={{ pt: 1 }}>
             {mode === 'tires' ? (
               <>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFSelect name="tire_type" label="Tipo">
                     {TIRE_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </RHFSelect>
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="size" label="Misura (es. 205/55R16)" />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="brand" label="Marca" />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="model" label="Modello" />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="install_date" label="Data montaggio" type="date" InputLabelProps={{ shrink: true }} />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="mileage_at_install" label="Km al montaggio" type="number" />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="storage_location" label="Deposito" />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFSelect name="condition" label="Condizione">
                     <MenuItem value="">—</MenuItem>
                     {CONDITION_OPTIONS.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
                   </RHFSelect>
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="notes" label="Note" multiline rows={2} />
                 </Grid>
               </>
             ) : (
               <>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFSelect name="assignee_type" label="Tipo assegnatario">
                     <MenuItem value="">—</MenuItem>
                     {ASSIGNEE_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </RHFSelect>
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="assignee_name" label="Assegnatario" />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFSelect name="availability_type" label="Disponibilità">
                     <MenuItem value="">—</MenuItem>
                     {AVAILABILITY_OPTIONS.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
                   </RHFSelect>
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="assignment_notes" label="Note assegnazione" multiline rows={2} />
                 </Grid>
               </>

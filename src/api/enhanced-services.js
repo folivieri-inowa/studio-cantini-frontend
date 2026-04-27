@@ -3,6 +3,19 @@ import useSWR from 'swr';
 
 import { getScadenziarioList } from './scadenziario-services';
 
+function computeStatus(date, paymentDate, alertDays = 15) {
+  if (paymentDate) return 'completed';
+  if (!date) return 'future';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(date);
+  due.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return 'overdue';
+  if (diffDays <= alertDays) return 'upcoming';
+  return 'future';
+}
+
 /**
  * Hook migliorato per recuperare l'elenco delle scadenze con gestione robusta degli errori
  * @param {Object} filters - Filtri da applicare alla query
@@ -61,20 +74,24 @@ export function useEnhancedGetScadenziario(filters = {}) {
         // Se è già un array, filtriamo elementi nulli e trasformiamo i campi
         scadenziario = data.data
           .filter(item => item != null)
-          .map(item => ({
-            ...item,
-            // Normalizzazione campi snake_case → camelCase
-            paymentDate: item.payment_date || item.paymentDate,
-            invoiceDate: item.invoice_date || null,
-            invoiceNumber: item.invoice_number || null,
-            companyName: item.company_name || null,
-            vatNumber: item.vat_number || null,
-            paymentTerms: item.payment_terms || null,
-            attachmentUrl: item.attachment_url || null,
-            groupId: item.group_id || null,
-            alertDays: item.alert_days ?? 15,
-            amount: typeof item.amount === 'string' ? parseFloat(item.amount) : (item.amount || 0),
-          }));
+          .map(item => {
+            const paymentDate = item.payment_date || item.paymentDate || null;
+            const alertDays = item.alert_days ?? 15;
+            return {
+              ...item,
+              paymentDate,
+              invoiceDate: item.invoice_date || null,
+              invoiceNumber: item.invoice_number || null,
+              companyName: item.company_name || null,
+              vatNumber: item.vat_number || null,
+              paymentTerms: item.payment_terms || null,
+              attachmentUrl: item.attachment_url || null,
+              groupId: item.group_id || null,
+              alertDays,
+              amount: typeof item.amount === 'string' ? parseFloat(item.amount) : (item.amount || 0),
+              status: computeStatus(item.date, paymentDate, alertDays),
+            };
+          });
           
         if (scadenziario.length < data.data.length) {
           console.warn(`Filtrati ${data.data.length - scadenziario.length} elementi nulli`);

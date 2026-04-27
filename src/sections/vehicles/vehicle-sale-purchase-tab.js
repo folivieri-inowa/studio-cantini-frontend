@@ -51,21 +51,21 @@ export default function VehicleSalePurchaseTab({ vehicle, onMutate }) {
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
       <Grid container spacing={3}>
-        <Grid xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardHeader title="Acquisto" />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="purchase_date" label="Data acquisto" type="date" InputLabelProps={{ shrink: true }} />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="purchase_amount" label="Importo (€)" type="number" />
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="purchase_vendor" label="Venditore" />
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="purchase_notes" label="Note acquisto" multiline rows={2} />
                 </Grid>
               </Grid>
@@ -73,24 +73,24 @@ export default function VehicleSalePurchaseTab({ vehicle, onMutate }) {
           </Card>
         </Grid>
 
-        <Grid xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardHeader title="Dismissione / Vendita" />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="disposal_date" label="Data dismissione" type="date" InputLabelProps={{ shrink: true }} />
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="disposal_amount" label="Importo (€)" type="number" />
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="disposal_buyer" label="Acquirente" />
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="disposal_reason" label="Motivo dismissione" />
                 </Grid>
-                <Grid xs={12}>
+                <Grid size={12}>
                   <RHFTextField name="disposal_notes" label="Note dismissione" multiline rows={2} />
                 </Grid>
               </Grid>
@@ -98,7 +98,7 @@ export default function VehicleSalePurchaseTab({ vehicle, onMutate }) {
           </Card>
         </Grid>
 
-        <Grid xs={12}>
+        <Grid size={12}>
           <Stack direction="row" justifyContent="flex-end">
             <Button type="submit" variant="contained" disabled={isSubmitting || !isDirty}>
               {isSubmitting ? 'Salvataggio...' : 'Salva modifiche'}

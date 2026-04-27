@@ -230,4 +230,3 @@ export function useGetInvoiceChildren(parentId) {
     childrenMutate: mutate,
   };
 }
-}

@@ -231,6 +231,8 @@ export default function PrimaNotaListView() {
     table.page * table.rowsPerPage + table.rowsPerPage
   );
 
+  const selectedTransactions = dataFiltered.filter((row) => table.selected.includes(row.id));
+
   const denseHeight = table.dense ? 60 : 80;
 
   const canReset = !isEqual(defaultFilters, filters) || (!!filters.startDate && !!filters.endDate);
@@ -408,7 +410,7 @@ export default function PrimaNotaListView() {
           <TableContainer sx={{ position: 'relative', overflow: 'unset' }}>
             <TableSelectedAction
               dense={table.dense}
-              numSelected={table.selected.length}
+              numSelected={selectedTransactions.length}
               rowCount={dataFiltered.slice(
                 table.page * table.rowsPerPage,
                 table.page * table.rowsPerPage + table.rowsPerPage
@@ -477,7 +479,7 @@ export default function PrimaNotaListView() {
                     table.page * table.rowsPerPage,
                     table.page * table.rowsPerPage + table.rowsPerPage
                   ).length}
-                  numSelected={table.selected.length}
+                  numSelected={selectedTransactions.length}
                   onSort={table.onSort}
                   onSelectAllRows={(checked) => {
                     const currentPageData = dataFiltered.slice(
@@ -596,13 +598,13 @@ export default function PrimaNotaListView() {
       <PrimaNotaTotalModal
         open={totalModal.value}
         onClose={totalModal.onFalse}
-        transactions={dataFiltered.filter((row) => table.selected.includes(row.id))}
+        transactions={selectedTransactions}
       />
 
       <PrimaNotaPrintDialog
         open={printDialog.value}
         onClose={printDialog.onFalse}
-        transactions={dataFiltered.filter((row) => table.selected.includes(row.id))}
+        transactions={selectedTransactions}
         db={settings.db}
       />
     </>

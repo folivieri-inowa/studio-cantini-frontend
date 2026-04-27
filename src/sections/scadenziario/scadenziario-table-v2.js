@@ -38,14 +38,13 @@ import {
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'subject',     label: 'Soggetto' },
-  { id: 'type',        label: 'Tipo' },
-  { id: 'company_name',label: 'Fornitore' },
-  { id: 'date',        label: 'Scadenza' },
-  { id: 'amount',      label: 'Importo', align: 'right' },
-  { id: 'paymentDate', label: 'Pagato il' },
-  { id: 'status',      label: 'Stato' },
-  { id: '',            width: 88 },
+  { id: 'company_name',   label: 'Fornitore' },
+  { id: 'invoice_number', label: 'N. Fattura' },
+  { id: 'date',           label: 'Scadenza' },
+  { id: 'amount',         label: 'Importo', align: 'right' },
+  { id: 'paymentDate',    label: 'Pagato il' },
+  { id: 'status',         label: 'Stato' },
+  { id: '',               width: 88 },
 ];
 
 const STATUS_COLOR = {
@@ -108,25 +107,24 @@ function ScadenziarioRow({ row, onDeleteRow, onEditRow, onViewRow, onPayRow }) {
       >
         <TableCell>
           <Typography variant="body2" fontWeight="bold" noWrap>
-            {row.subject}
+            {row.company_name || row.companyName || row.subject || '—'}
           </Typography>
-          {row.companyName && (
+          {row.description && (
             <Typography variant="caption" color="text.secondary" noWrap>
-              {row.companyName}
+              {row.description}
             </Typography>
           )}
         </TableCell>
 
         <TableCell>
-          <Typography variant="caption" color="text.secondary">
-            {TYPE_LABEL[row.type] || row.type || '—'}
+          <Typography variant="body2" noWrap>
+            {row.invoice_number || row.invoiceNumber || '—'}
           </Typography>
-        </TableCell>
-
-        <TableCell>
-          <Typography variant="body2" color="text.secondary" noWrap>
-            {row.companyName || row.invoiceNumber || '—'}
-          </Typography>
+          {row.invoice_date && (
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {format(new Date(row.invoice_date), 'dd/MM/yyyy', { locale: it })}
+            </Typography>
+          )}
         </TableCell>
 
         <TableCell>

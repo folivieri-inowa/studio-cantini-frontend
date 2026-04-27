@@ -140,7 +140,18 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
 
   const handleUploadReceipt = async (child, url) => {
     try {
-      await updateScadenziario(child.id, { attachment_url: url });
+      await updateScadenziario(child.id, {
+        subject:      child.subject,
+        description:  child.description || null,
+        date:         child.date,
+        amount:       child.amount,
+        status:       child.status,
+        payment_date: child.payment_date || null,
+        type:         child.type || 'acconto',
+        parent_id:    child.parent_id,
+        owner_id:     child.owner_id,
+        attachment_url: url,
+      });
       childrenMutate();
       setReceiptOpen(null);
       enqueueSnackbar('Ricevuta caricata', { variant: 'success' });

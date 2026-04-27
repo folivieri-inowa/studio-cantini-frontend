@@ -74,6 +74,7 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
       bank_name: scadenziarioItem?.bank_name || '',
       payment_terms_type: scadenziarioItem?.payment_terms?.type || '',
       attachment_url: scadenziarioItem?.attachment_url || '',
+      payment_receipt_url: scadenziarioItem?.payment_receipt_url || '',
     }),
     [scadenziarioItem]
   );
@@ -142,6 +143,7 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
         bank_name: data.bank_name || null,
         payment_terms: terms ? { type: terms.value, days: terms.days, end_of_month: terms.end_of_month } : null,
         attachment_url: data.attachment_url || null,
+        payment_receipt_url: data.payment_receipt_url || null,
       });
 
       enqueueSnackbar('Scadenza modificata con successo!');
@@ -337,6 +339,33 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
                 </Box>
               </>
             )}
+
+            {/* Contabile di pagamento — per tutte le scadenze */}
+            <Divider sx={{ borderStyle: 'dashed', my: 3 }} />
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Contabile di pagamento</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              Ricevuta o contabile del bonifico effettuato
+            </Typography>
+            {values.payment_receipt_url && (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                <Iconify icon="eva:file-text-fill" sx={{ color: 'success.main', width: 18, height: 18 }} />
+                <Typography variant="body2" sx={{ color: 'text.secondary', flex: 1 }}>Contabile allegata</Typography>
+                <Button size="small" variant="outlined" href={values.payment_receipt_url} target="_blank" startIcon={<Iconify icon="eva:external-link-fill" />}>
+                  Apri
+                </Button>
+              </Stack>
+            )}
+            <Controller
+              name="payment_receipt_url"
+              control={control}
+              render={({ field }) => (
+                <ScadenziarioAttachmentUpload
+                  ownerId={scadenziarioItem?.owner_id}
+                  value={null}
+                  onChange={(url) => { if (url) field.onChange(url); }}
+                />
+              )}
+            />
 
             {/* Piano di pagamento — solo per fatture */}
             {isFattura && id && (

@@ -121,7 +121,8 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
   const [newAmount, setNewAmount] = useState('');
   const [newNote, setNewNote]     = useState('');
   const [saving, setSaving]       = useState(false);
-  const [receiptOpen, setReceiptOpen] = useState(null); // id tranche con receipt panel aperto
+  const [receiptOpen, setReceiptOpen] = useState(null);
+  const [uploadedUrls, setUploadedUrls] = useState({});
 
   const total     = parseFloat(parentAmount || 0);
   const paid      = children.filter(c => c.status === 'completed').reduce((acc, c) => acc + parseFloat(c.amount || 0), 0);
@@ -152,8 +153,8 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
         owner_id:     child.owner_id,
         attachment_url: url,
       });
+      setUploadedUrls((prev) => ({ ...prev, [child.id]: url }));
       childrenMutate();
-      setReceiptOpen(null);
       enqueueSnackbar('Ricevuta caricata', { variant: 'success' });
     } catch {
       enqueueSnackbar('Errore salvataggio ricevuta', { variant: 'error' });
@@ -258,35 +259,40 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
                     </Stack>
                   </TableCell>
                 </TableRow>
-                {receiptOpen === child.id && (
-                  <TableRow key={`${child.id}-receipt`}>
-                    <TableCell colSpan={5} sx={{ pb: 2, pt: 0 }}>
-                      <Box sx={{ pt: 1 }}>
-                        {child.attachment_url ? (
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Iconify icon="eva:file-text-fill" sx={{ color: 'success.main' }} />
-                            <Typography variant="body2" sx={{ flex: 1 }}>Ricevuta allegata</Typography>
-                            <Button size="small" variant="outlined" href={child.attachment_url} target="_blank" startIcon={<Iconify icon="eva:external-link-fill" />}>
-                              Apri
-                            </Button>
-                            <Button size="small" color="warning" onClick={() => setReceiptOpen(child.id + '-replace')}>
-                              Sostituisci
-                            </Button>
-                          </Stack>
-                        ) : null}
-                        {(!child.attachment_url || receiptOpen === child.id + '-replace') && (
-                          <ScadenziarioAttachmentUpload
-                            ownerId={ownerId}
-                            value={null}
-                            onChange={(url) => {
-                              if (url) handleUploadReceipt(child, url);
-                            }}
-                          />
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                )}
+                {receiptOpen === child.id && (() => {
+                  const currentUrl = uploadedUrls[child.id] || child.attachment_url;
+                  return (
+                    <TableRow key={`${child.id}-receipt`}>
+                      <TableCell colSpan={5} sx={{ pb: 2, pt: 0 }}>
+                        <Box sx={{ pt: 1 }}>
+                          {currentUrl ? (
+                            <Stack spacing={1}>
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <Iconify icon="eva:file-text-fill" sx={{ color: 'success.main' }} />
+                                <Typography variant="body2" sx={{ flex: 1 }}>Ricevuta allegata</Typography>
+                                <Button size="small" variant="outlined" href={currentUrl} target="_blank" startIcon={<Iconify icon="eva:external-link-fill" />}>
+                                  Apri
+                                </Button>
+                              </Stack>
+                              <Typography variant="caption" color="text.disabled">Carica un nuovo file per sostituire</Typography>
+                              <ScadenziarioAttachmentUpload
+                                ownerId={ownerId}
+                                value={null}
+                                onChange={(url) => { if (url) handleUploadReceipt(child, url); }}
+                              />
+                            </Stack>
+                          ) : (
+                            <ScadenziarioAttachmentUpload
+                              ownerId={ownerId}
+                              value={null}
+                              onChange={(url) => { if (url) handleUploadReceipt(child, url); }}
+                            />
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })()}
               </>
             ))}
           </TableBody>

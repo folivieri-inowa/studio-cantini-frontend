@@ -80,31 +80,31 @@ export default function VehicleMaintenanceDialog({ open, onClose, vehicleId, edi
       <FormProvider methods={methods} onSubmit={onSubmit}>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="maintenance_type" label="Tipo *" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="title" label="Titolo *" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="maintenance_date" label="Data *" type="date" InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="mileage" label="Km" type="number" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="vendor" label="Fornitore" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="amount" label="Importo (€)" type="number" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="next_due_date" label="Prossima scadenza" type="date" InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="next_due_mileage" label="Prossimi km" type="number" />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="notes" label="Note" multiline rows={2} />
             </Grid>
           </Grid>

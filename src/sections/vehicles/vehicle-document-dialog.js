@@ -78,21 +78,21 @@ export default function VehicleDocumentDialog({ open, onClose, vehicleId, onSucc
       <FormProvider methods={methods} onSubmit={onSubmit}>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFSelect name="document_type" label="Tipo documento">
                 {DOC_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </RHFSelect>
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="title" label="Titolo" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="document_date" label="Data documento" type="date" InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="expiry_date" label="Scadenza" type="date" InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <Stack direction="row" alignItems="center" spacing={2}>
                 <Button component="label" variant="outlined" size="small">
                   {file ? file.name : 'Scegli file'}
@@ -101,7 +101,7 @@ export default function VehicleDocumentDialog({ open, onClose, vehicleId, onSucc
                 {file && <Button size="small" color="error" onClick={() => setFile(null)}>Rimuovi</Button>}
               </Stack>
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="notes" label="Note" multiline rows={2} />
             </Grid>
           </Grid>

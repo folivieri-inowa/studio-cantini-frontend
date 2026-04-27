@@ -303,3 +303,15 @@ export function useGetVehicleZtl(vehicleId) {
 export const createVehicleZtl = (ztl) => axios.post(`${BASE}/ztl/create`, { ztl }).then(r => r.data);
 export const updateVehicleZtl = (id, ztl) => axios.post(`${BASE}/ztl/update`, { id, ztl }).then(r => r.data);
 export const deleteVehicleZtl = (id) => axios.post(`${BASE}/ztl/delete`, { id }).then(r => r.data);
+
+// ─── CONTRAVVENZIONI ──────────────────────────────────────────────────────────
+
+export function useGetVehicleFines(vehicleId) {
+  const fetcher = () => axios.post(`${BASE}/fines/list`, { vehicleId }).then(r => r.data);
+  const { data, isLoading, mutate } = useSWR(vehicleId ? `vehicle-fines-${vehicleId}` : null, fetcher, { revalidateOnFocus: false });
+  return { fines: data?.data || [], finesLoading: isLoading, finesMutate: mutate };
+}
+
+export const createVehicleFine = (fine) => axios.post(`${BASE}/fines/create`, { fine }).then(r => r.data);
+export const updateVehicleFine = (id, fine) => axios.post(`${BASE}/fines/update`, { id, fine }).then(r => r.data);
+export const deleteVehicleFine = (id) => axios.post(`${BASE}/fines/delete`, { id }).then(r => r.data);

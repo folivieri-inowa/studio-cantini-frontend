@@ -67,24 +67,24 @@ export default function VehicleScadenzaDialog({ open, onClose, vehicleId, onSucc
       <FormProvider methods={methods} onSubmit={onSubmit}>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="subject" label="Soggetto *" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="date" label="Data scadenza *" type="date" InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="amount" label="Importo (€)" type="number" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFSelect name="type" label="Tipo">
                 {TYPE_OPTIONS.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </RHFSelect>
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="alert_days" label="Giorni anticipo avviso" type="number" />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="description" label="Descrizione" multiline rows={2} />
             </Grid>
           </Grid>

@@ -118,24 +118,24 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
             // Header della tabella - Checkbox, Data, Descrizione, Conto, Importo
             const startY = yPosition;
             const rowHeight = 8;
-            const checkboxSize = 4;
-            const colWidths = [8, 22, 95, 32, 30]; // Checkbox + colonne
-            const colPositions = [14, 22, 44, 139, 171];
+            const colWidths = [22, 80, 52, 30];
+            const colPositions = [14, 36, 116, 168];
 
             // Disegna sfondo header
             doc.rect(14, startY, 190, rowHeight, 'F');
 
-            // Testo header (con checkbox)
-            doc.text('☐', colPositions[0], startY + 6);
-            doc.text('Data', colPositions[1], startY + 6);
-            doc.text('Descrizione', colPositions[2], startY + 6);
-            doc.text('Conto', colPositions[3], startY + 6);
-            doc.text('Importo', colPositions[4], startY + 6);
+            // Testo header
+            doc.text('Data', colPositions[0], startY + 6);
+            doc.text('Descrizione', colPositions[1], startY + 6);
+            doc.text('Conto', colPositions[2], startY + 6);
+            doc.text('Importo', 204, startY + 6, { align: 'right' });
 
             yPosition = startY + rowHeight;
 
             // Raggruppa le transazioni per conto se richiesto
             const safeTransactions = Array.isArray(transactions) ? transactions : [];
+            const uniqueAccounts = [...new Set(safeTransactions.map(t => t.ownername))].length;
+            const showSubtotals = options.groupByAccount && uniqueAccounts > 1;
             const transactionsToProcess = options.groupByAccount
                 ? [...safeTransactions].sort((a, b) => {
                     const ownerA = a.ownername || '';
@@ -154,16 +154,16 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
                 // Se raggruppiamo per conto e cambia il conto, aggiungi separatore
                 if (options.groupByAccount && transaction.ownername !== currentAccount) {
                     // Se non è il primo gruppo, aggiungi subtotale del gruppo precedente
-                    if (currentAccount !== null && accountSubtotal !== 0) {
+                    if (showSubtotals && currentAccount !== null && accountSubtotal !== 0) {
                         yPosition += 3;
                         doc.setFont('helvetica', 'bold');
                         doc.setFontSize(9);
-                        doc.text(`Subtotale ${currentAccount}:`, 139, yPosition + 6);
+                        doc.text('Subtotale:', colPositions[2], yPosition + 6);
                         const subtotalFormatted = new Intl.NumberFormat('it-IT', {
                             style: 'currency',
                             currency: 'EUR'
                         }).format(accountSubtotal);
-                        doc.text(subtotalFormatted, 200, yPosition + 6, { align: 'right' });
+                        doc.text(subtotalFormatted, 204, yPosition + 6, { align: 'right' });
                         yPosition += 10;
                         accountSubtotal = 0;
                     }
@@ -204,30 +204,28 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
                     doc.rect(14, yPosition, 190, cellHeight, 'F');
                 }
 
-                // Checkbox vuota
-                doc.rect(colPositions[0], yPosition + 2, checkboxSize, checkboxSize);
-
                 // Data
                 const date = new Date(transaction.date).toLocaleDateString('it-IT');
-                doc.text(date, colPositions[1], yPosition + 6);
+                doc.text(date, colPositions[0], yPosition + 6);
 
                 // Descrizione con text wrapping
-                doc.text(descriptionLines, colPositions[2], yPosition + 5);
+                doc.text(descriptionLines, colPositions[1], yPosition + 5);
 
-                // Conto
+                // Conto (troncato se troppo lungo)
                 const owner = transaction.ownername || '-';
-                doc.text(owner, colPositions[3], yPosition + 6);
+                const ownerLines = doc.splitTextToSize(owner, colWidths[2] - 2);
+                doc.text(ownerLines[0], colPositions[2], yPosition + 6);
 
                 // Importo
                 const amount = new Intl.NumberFormat('it-IT', {
                     style: 'currency',
                     currency: 'EUR'
                 }).format(transaction.amount);
-                doc.text(amount, 200, yPosition + 6, { align: 'right' });
+                doc.text(amount, 204, yPosition + 6, { align: 'right' });
                 total += parseFloat(transaction.amount || 0);
 
                 // Accumula il subtotale del gruppo se stiamo raggruppando
-                if (options.groupByAccount) {
+                if (showSubtotals) {
                     accountSubtotal += parseFloat(transaction.amount || 0);
                 }
 
@@ -235,17 +233,17 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
             });
 
             // Aggiungi subtotale dell'ultimo gruppo se stiamo raggruppando
-            if (options.groupByAccount && currentAccount !== null && accountSubtotal !== 0) {
+            if (showSubtotals && currentAccount !== null && accountSubtotal !== 0) {
                 yPosition += 3;
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
-                doc.text(`Subtotale ${currentAccount}:`, 139, yPosition + 6);
+                doc.text('Subtotale:', colPositions[2], yPosition + 6);
                 const subtotalFormatted = new Intl.NumberFormat('it-IT', {
                     style: 'currency',
                     currency: 'EUR'
                 }).format(accountSubtotal);
-                doc.text(subtotalFormatted, 200, yPosition + 6, { align: 'right' });
-                yPosition += 7;
+                doc.text(subtotalFormatted, 204, yPosition + 6, { align: 'right' });
+                yPosition += 10;
             }
 
             // Linea separatrice prima del totale
@@ -262,22 +260,7 @@ export default function PrimaNotaPrintDialog({ transactions, open, onClose }) {
                 style: 'currency',
                 currency: 'EUR'
             }).format(total);
-            doc.text(totalFormatted, 200, yPosition, { align: 'right' });
-
-            // Footer su tutte le pagine
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i += 1) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(150);
-                doc.text(
-                    `Generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}`,
-                    105,
-                    285,
-                    { align: 'center' }
-                );
-            }
+            doc.text(totalFormatted, 204, yPosition, { align: 'right' });
 
             // Apri il PDF in una nuova finestra
             const pdfBlob = doc.output('blob');

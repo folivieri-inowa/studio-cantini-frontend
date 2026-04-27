@@ -150,11 +150,11 @@ export default function VehicleCreateForm() {
           {/* ── Step 1: Dati veicolo ── */}
           {activeStep === 0 && (
             <Grid container spacing={3}>
-              <Grid xs={12}>
+              <Grid size={12}>
                 <Typography variant="h6" gutterBottom>Dati veicolo</Typography>
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFTextField
                   name="plate"
                   label="Targa *"
@@ -162,52 +162,52 @@ export default function VehicleCreateForm() {
                 />
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFTextField name="make" label="Marca" />
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFTextField name="model" label="Modello" />
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFTextField name="vin" label="Telaio (VIN)" />
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFTextField name="registration_date" label="Data immatricolazione" type="date" InputLabelProps={{ shrink: true }} />
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFSelect name="fuel_type" label="Alimentazione">
                   <MenuItem value="">—</MenuItem>
                   {FUEL_OPTIONS.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
                 </RHFSelect>
               </Grid>
 
-              <Grid xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <RHFTextField name="kw" label="Potenza (kW)" type="number" />
               </Grid>
 
-              <Grid xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <RHFTextField name="engine_cc" label="Cilindrata (cc)" type="number" />
               </Grid>
 
-              <Grid xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <RHFTextField name="seats" label="Posti" type="number" />
               </Grid>
 
-              <Grid xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <RHFSelect name="status" label="Stato">
                   {STATUS_OPTIONS.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
                 </RHFSelect>
               </Grid>
 
-              <Grid xs={12}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <RHFTextField name="vehicle_usage" label="Uso veicolo" />
               </Grid>
 
-              <Grid xs={12}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <RHFTextField name="notes" label="Note" multiline rows={3} />
               </Grid>
             </Grid>
@@ -216,45 +216,45 @@ export default function VehicleCreateForm() {
           {/* ── Step 2: Titolarità / Disponibilità / Assegnazione ── */}
           {activeStep === 1 && (
             <Grid container spacing={3}>
-              <Grid xs={12}>
+              <Grid size={12}>
                 <Typography variant="h6" gutterBottom>Titolarità e disponibilità</Typography>
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFSelect name="owner_type" label="Tipo intestatario">
                   <MenuItem value="">—</MenuItem>
                   {OWNER_TYPE_OPTIONS.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
                 </RHFSelect>
               </Grid>
 
-              <Grid xs={12} md={8}>
+              <Grid size={{ xs: 12, md: 8 }}>
                 <RHFTextField name="owner_name" label="Intestatario" />
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFSelect name="availability_type" label="Disponibilità">
                   <MenuItem value="">—</MenuItem>
                   {AVAILABILITY_OPTIONS.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
                 </RHFSelect>
               </Grid>
 
-              <Grid xs={12}>
+              <Grid size={12}>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="h6" gutterBottom sx={{ mt: 1 }}>Assegnazione</Typography>
               </Grid>
 
-              <Grid xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <RHFSelect name="assignee_type" label="Tipo assegnatario">
                   <MenuItem value="">—</MenuItem>
                   {ASSIGNEE_TYPE_OPTIONS.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
                 </RHFSelect>
               </Grid>
 
-              <Grid xs={12} md={8}>
+              <Grid size={{ xs: 12, md: 8 }}>
                 <RHFTextField name="assignee_name" label="Assegnatario" />
               </Grid>
 
-              <Grid xs={12}>
+              <Grid size={12}>
                 <RHFTextField name="assignment_notes" label="Note assegnazione" multiline rows={2} />
               </Grid>
             </Grid>
@@ -269,6 +269,7 @@ export default function VehicleCreateForm() {
               </Typography>
 
               <Button
+                type="button"
                 component="label"
                 variant="outlined"
                 startIcon={<Iconify icon="eva:attach-fill" />}
@@ -328,6 +329,7 @@ export default function VehicleCreateForm() {
       {/* ── Navigazione wizard ── */}
       <Stack direction="row" justifyContent="space-between" sx={{ mt: 3 }}>
         <Button
+          type="button"
           variant="outlined"
           onClick={activeStep === 0 ? () => router.back() : handleBack}
           startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
@@ -337,6 +339,7 @@ export default function VehicleCreateForm() {
 
         {activeStep < STEPS.length - 1 ? (
           <Button
+            type="button"
             variant="contained"
             onClick={handleNext}
             endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}

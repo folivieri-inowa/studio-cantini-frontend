@@ -48,7 +48,7 @@ export function ScadenziarioListViewV2() {
 
   return (
     <>
-      <Container maxWidth={settings.themeStretch ? false : 'lg'}>
+      <Container maxWidth={settings.themeStretch ? false : 'xl'}>
         {/* Header */}
         <Stack
           direction={{ xs: 'column', sm: 'row' }}

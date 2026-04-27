@@ -6,6 +6,12 @@ import Skeleton from '@mui/material/Skeleton';
 import IconButton from '@mui/material/IconButton';
 import MenuItem from '@mui/material/MenuItem';
 import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
@@ -44,7 +50,7 @@ export default function VehicleTableRow({ row, loading, onViewRow, onMutate }) {
     );
   }
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     try {
       await deleteVehicle(row.id);
       enqueueSnackbar('Veicolo eliminato');
@@ -52,7 +58,12 @@ export default function VehicleTableRow({ row, loading, onViewRow, onMutate }) {
     } catch {
       enqueueSnackbar('Errore eliminazione veicolo', { variant: 'error' });
     }
+    confirm.onFalse();
+  };
+
+  const handleDeleteClick = () => {
     popover.onClose();
+    confirm.onTrue();
   };
 
   return (
@@ -97,11 +108,26 @@ export default function VehicleTableRow({ row, loading, onViewRow, onMutate }) {
           Apri
         </MenuItem>
 
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
           <Iconify icon="solar:trash-bin-trash-bold" />
           Elimina
         </MenuItem>
       </CustomPopover>
+
+      <Dialog open={confirm.value} onClose={confirm.onFalse} maxWidth="xs" fullWidth>
+        <DialogTitle>Elimina veicolo</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Sei sicuro di voler eliminare il veicolo <strong>{row.plate}</strong>? L&apos;operazione non è reversibile.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={confirm.onFalse}>Annulla</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Elimina
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

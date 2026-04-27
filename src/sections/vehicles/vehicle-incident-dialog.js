@@ -85,32 +85,32 @@ export default function VehicleIncidentDialog({ open, onClose, vehicleId, editIt
       <FormProvider methods={methods} onSubmit={onSubmit}>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFSelect name="incident_type" label="Tipo">
                 {INCIDENT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </RHFSelect>
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="incident_date" label="Data *" type="date" InputLabelProps={{ shrink: true }} />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="title" label="Titolo *" />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="description" label="Descrizione" multiline rows={2} />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="damage_amount" label="Danno stimato (€)" type="number" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFTextField name="insurance_claim_number" label="N. sinistro assicurativo" />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <RHFSelect name="status" label="Stato">
                 {INCIDENT_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
               </RHFSelect>
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
               <RHFTextField name="notes" label="Note" multiline rows={2} />
             </Grid>
           </Grid>

@@ -355,53 +355,55 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate, tr
 
       {/* Campi generici (fiscale, ricorrente, altro) */}
       {hasFixedDate && (
-        <Box
-          rowGap={3}
-          columnGap={2}
-          display="grid"
-          gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }}
-        >
-          <RHFTextField name="subject" label="Soggetto *" />
-          <RHFTextField name="description" label="Descrizione" />
-          <RHFTextField name="causale" label="Causale" />
+        <>
+          <Box
+            rowGap={3}
+            columnGap={2}
+            display="grid"
+            gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)' }}
+          >
+            <RHFTextField name="subject" label="Soggetto *" />
+            <RHFTextField name="description" label="Descrizione" />
+            <RHFTextField name="causale" label="Causale" />
+
+            <Controller
+              name="date"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <DatePicker
+                  label="Data scadenza *"
+                  value={field.value ? new Date(field.value) : null}
+                  onChange={field.onChange}
+                  slotProps={{
+                    textField: { fullWidth: true, error: !!error, helperText: error?.message },
+                  }}
+                />
+              )}
+            />
+
+            <RHFTextField name="amount" label="Importo (€) *" type="number"
+              inputProps={{ min: 0, step: 0.01 }} />
+
+            <RHFSelect name="status" label="Stato">
+              <MenuItem value="future">Da pagare</MenuItem>
+              <MenuItem value="upcoming">In scadenza</MenuItem>
+              <MenuItem value="overdue">Scaduto</MenuItem>
+              <MenuItem value="completed">Pagato</MenuItem>
+            </RHFSelect>
+          </Box>
 
           <Controller
-            name="date"
+            name="attachment_url"
             control={control}
-            render={({ field, fieldState: { error } }) => (
-              <DatePicker
-                label="Data scadenza *"
-                value={field.value ? new Date(field.value) : null}
+            render={({ field }) => (
+              <ScadenziarioAttachmentUpload
+                ownerId={ownerId}
+                value={field.value}
                 onChange={field.onChange}
-                slotProps={{
-                  textField: { fullWidth: true, error: !!error, helperText: error?.message },
-                }}
               />
             )}
           />
-
-          <RHFTextField name="amount" label="Importo (€) *" type="number"
-            inputProps={{ min: 0, step: 0.01 }} />
-
-          <RHFSelect name="status" label="Stato">
-            <MenuItem value="future">Da pagare</MenuItem>
-            <MenuItem value="upcoming">In scadenza</MenuItem>
-            <MenuItem value="overdue">Scaduto</MenuItem>
-            <MenuItem value="completed">Pagato</MenuItem>
-          </RHFSelect>
-        </Box>
-
-        <Controller
-          name="attachment_url"
-          control={control}
-          render={({ field }) => (
-            <ScadenziarioAttachmentUpload
-              ownerId={ownerId}
-              value={field.value}
-              onChange={field.onChange}
-            />
-          )}
-        />
+        </>
       )}
     </Stack>
   );

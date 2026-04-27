@@ -109,22 +109,24 @@ function ScadenziarioRow({ row, onDeleteRow, onEditRow, onViewRow, onPayRow }) {
           <Typography variant="body2" fontWeight="bold" noWrap>
             {row.company_name || row.companyName || row.subject || '—'}
           </Typography>
-          {row.description && (
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {row.description}
-            </Typography>
-          )}
         </TableCell>
 
         <TableCell>
-          <Typography variant="body2" noWrap>
-            {row.invoice_number || row.invoiceNumber || '—'}
-          </Typography>
-          {row.invoice_date && (
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {format(new Date(row.invoice_date), 'dd/MM/yyyy', { locale: it })}
-            </Typography>
-          )}
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {(row.invoice_number || row.invoiceNumber) && (
+              <Typography variant="body2" noWrap>
+                Fatt. n. {row.invoice_number || row.invoiceNumber}
+              </Typography>
+            )}
+            {row.invoice_date && (
+              <Typography variant="caption" color="text.secondary" noWrap>
+                del {format(new Date(row.invoice_date), 'dd/MM/yyyy', { locale: it })}
+              </Typography>
+            )}
+            {!row.invoice_number && !row.invoiceNumber && !row.invoice_date && (
+              <Typography variant="body2" color="text.disabled">—</Typography>
+            )}
+          </Stack>
         </TableCell>
 
         <TableCell>

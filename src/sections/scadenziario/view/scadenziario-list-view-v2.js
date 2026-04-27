@@ -32,6 +32,9 @@ export function ScadenziarioListViewV2() {
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedId, setSelectedId]   = useState(null);
 
+  const { scadenziario, scadenziarioLoading, scadenziarioMutate } =
+    useEnhancedGetScadenziario(ownerId ? { ownerId } : {});
+
   const [filters, setFilters] = useState({ text: '', status: [], type: [], dateFrom: null, dateTo: null });
 
   const filteredScadenziario = useMemo(() => {
@@ -64,9 +67,6 @@ export function ScadenziarioListViewV2() {
     }
     return result;
   }, [scadenziario, filters]);
-
-  const { scadenziario, scadenziarioLoading, scadenziarioMutate } =
-    useEnhancedGetScadenziario(ownerId ? { ownerId } : {});
 
   const handleCreated = useCallback(() => scadenziarioMutate(), [scadenziarioMutate]);
 

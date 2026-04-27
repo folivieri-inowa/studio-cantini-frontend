@@ -141,7 +141,7 @@ export default function ScadenziarioTableRow({
         </TableCell>
 
         <TableCell align="right">
-          <Stack alignItems="flex-end" spacing={0.3}>
+          <Stack alignItems="flex-end" spacing={0.5}>
             <Typography
               variant="subtitle2"
               sx={{
@@ -151,11 +151,25 @@ export default function ScadenziarioTableRow({
             >
               {amount ? parseFloat(amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }) : '€ 0,00'}
             </Typography>
-            {hasTranches && (
-              <Typography variant="caption" color="text.secondary">
-                pag. {parseFloat(paid_amount || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
-              </Typography>
-            )}
+            {hasTranches && (() => {
+              const paid = parseFloat(paid_amount || 0);
+              const total = parseFloat(amount || 0);
+              const remaining = total - paid;
+              const pct = total > 0 ? Math.min((paid / total) * 100, 100) : 0;
+              const isFullyPaid = remaining <= 0;
+              return (
+                <Stack alignItems="flex-end" spacing={0.3} sx={{ width: '100%' }}>
+                  <Box sx={{ width: 80, height: 4, borderRadius: 2, bgcolor: 'divider', overflow: 'hidden' }}>
+                    <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: isFullyPaid ? 'success.main' : 'warning.main', borderRadius: 2 }} />
+                  </Box>
+                  <Typography variant="caption" color={isFullyPaid ? 'success.main' : 'warning.main'} fontWeight="bold">
+                    {isFullyPaid
+                      ? 'Saldato'
+                      : `${remaining.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })} residuo`}
+                  </Typography>
+                </Stack>
+              );
+            })()}
           </Stack>
         </TableCell>
 

@@ -76,9 +76,9 @@ export async function updateScadenziario(id, scadenza) {
  * @param {string} status - Nuovo stato della scadenza
  * @returns {Promise<Object>} - Promise con i dati della scadenza aggiornata
  */
-export async function updatePaymentStatus(id, payment_date, status) {
+export async function updatePaymentStatus(id, payment_date, status, attachment_url) {
   try {
-    const response = await axios.post(`${BACKEND_URL}/update-payment`, { id, payment_date, status });
+    const response = await axios.post(`${BACKEND_URL}/update-payment`, { id, payment_date, status, attachment_url });
     return response.data;
   } catch (error) {
     console.error('Errore nell\'aggiornamento dello stato di pagamento:', error);

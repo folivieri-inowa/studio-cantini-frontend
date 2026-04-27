@@ -332,7 +332,7 @@ export default function ScadenziarioTableV2({
   onViewRow,
   onEditRow,
 }) {
-  const table = useTable();
+  const table = useTable({ defaultRowsPerPage: 50 });
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const { grouped, ungrouped } = useMemo(() => {

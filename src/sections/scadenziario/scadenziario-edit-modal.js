@@ -32,6 +32,7 @@ import FormProvider, {
 
 import ScadenziarioOcrUpload from './scadenziario-ocr-upload';
 import ScadenziarioAttachmentUpload from './scadenziario-attachment-upload';
+import ScadenziarioTranchesPanel from './scadenziario-tranches-panel';
 
 import { PAYMENT_TERMS_OPTIONS } from './utils/payment-terms';
 import { calculateScadenziarioStatus } from './scadenziario-utils';
@@ -334,6 +335,19 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
                     {values.attachment_url ? 'Carica un nuovo file per sostituire l\'allegato esistente' : 'Carica PDF o immagine (opzionale)'}
                   </Typography>
                 </Box>
+              </>
+            )}
+
+            {/* Piano di pagamento — solo per fatture */}
+            {isFattura && id && (
+              <>
+                <Divider sx={{ borderStyle: 'dashed', my: 3 }} />
+                <Typography variant="subtitle2" sx={{ mb: 2 }}>Piano di pagamento</Typography>
+                <ScadenziarioTranchesPanel
+                  parentId={id}
+                  parentAmount={values.amount}
+                  ownerId={scadenziarioItem?.owner_id}
+                />
               </>
             )}
 

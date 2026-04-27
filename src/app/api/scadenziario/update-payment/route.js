@@ -5,13 +5,13 @@ export async function POST(request) {
   const BACKEND = process.env.BACKEND_API_INTERNAL || 'http://localhost:9001';
   try {
     const body = await request.json();
-    const { id, payment_date, status } = body;
+    const { id, payment_date, status, attachment_url } = body;
     const headersList = await headers();
     const authorization = headersList.get('authorization') || '';
     const res = await fetch(`${BACKEND}/v1/scadenziario/update-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: authorization },
-      body: JSON.stringify({ id, payment_date, status }),
+      body: JSON.stringify({ id, payment_date, status, attachment_url }),
     });
     const data = await res.json();
     if (!res.ok) return NextResponse.json(data, { status: res.status });

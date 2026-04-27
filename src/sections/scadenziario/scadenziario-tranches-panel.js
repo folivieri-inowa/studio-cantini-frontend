@@ -27,6 +27,8 @@ import { useSnackbar } from 'src/components/snackbar';
 
 import { createTranche, updatePaymentStatus, useGetInvoiceChildren } from 'src/api/scadenziario-api';
 
+import ScadenziarioAttachmentUpload from './scadenziario-attachment-upload';
+
 // ----------------------------------------------------------------------
 
 const STATUS_COLOR = {
@@ -119,6 +121,7 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
   const [newAmount, setNewAmount] = useState('');
   const [newNote, setNewNote]     = useState('');
   const [saving, setSaving]       = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(null); // id tranche con receipt panel aperto
 
   const total     = parseFloat(parentAmount || 0);
   const paid      = children.filter(c => c.status === 'completed').reduce((acc, c) => acc + parseFloat(c.amount || 0), 0);
@@ -132,6 +135,17 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
       enqueueSnackbar('Acconto segnato come pagato', { variant: 'success' });
     } catch {
       enqueueSnackbar('Errore aggiornamento', { variant: 'error' });
+    }
+  };
+
+  const handleUploadReceipt = async (child, url) => {
+    try {
+      await updatePaymentStatus(child.id, child.payment_date || new Date().toISOString().substring(0, 10), child.status, url);
+      childrenMutate();
+      setReceiptOpen(null);
+      enqueueSnackbar('Ricevuta caricata', { variant: 'success' });
+    } catch {
+      enqueueSnackbar('Errore salvataggio ricevuta', { variant: 'error' });
     }
   };
 
@@ -178,45 +192,91 @@ export default function ScadenziarioTranchesPanel({ parentId, parentAmount, owne
               <TableCell>Descrizione</TableCell>
               <TableCell align="right">Importo</TableCell>
               <TableCell>Stato</TableCell>
-              <TableCell />
+              <TableCell align="right">Azioni</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {children.map((child) => (
-              <TableRow key={child.id} hover>
-                <TableCell>
-                  <Typography variant="body2">
-                    {child.date ? format(new Date(child.date), 'dd MMM yyyy', { locale: it }) : '-'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {child.description || child.subject || '—'}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {parseFloat(child.amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Label variant="soft" color={STATUS_COLOR[child.status] || 'default'}>
-                    {STATUS_LABEL[child.status] || child.status}
-                  </Label>
-                </TableCell>
-                <TableCell align="right">
-                  {child.status !== 'completed' && (
-                    <IconButton
-                      size="small"
-                      color="success"
-                      onClick={() => handleMarkPaid(child)}
-                      title="Segna come pagato"
-                    >
-                      <Iconify icon="eva:checkmark-circle-2-fill" width={18} />
-                    </IconButton>
-                  )}
-                </TableCell>
-              </TableRow>
+              <>
+                <TableRow key={child.id} hover>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {child.date ? format(new Date(child.date), 'dd MMM yyyy', { locale: it }) : '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {child.description || child.subject || '—'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      {parseFloat(child.amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Label variant="soft" color={STATUS_COLOR[child.status] || 'default'}>
+                        {STATUS_LABEL[child.status] || child.status}
+                      </Label>
+                      {child.attachment_url && (
+                        <Iconify icon="eva:file-text-fill" width={14} sx={{ color: 'success.main' }} title="Ricevuta allegata" />
+                      )}
+                    </Stack>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      {child.status !== 'completed' && (
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleMarkPaid(child)}
+                          title="Segna come pagato"
+                        >
+                          <Iconify icon="eva:checkmark-circle-2-fill" width={18} />
+                        </IconButton>
+                      )}
+                      <IconButton
+                        size="small"
+                        color={child.attachment_url ? 'success' : 'default'}
+                        onClick={() => setReceiptOpen(receiptOpen === child.id ? null : child.id)}
+                        title={child.attachment_url ? 'Visualizza/sostituisci ricevuta' : 'Allega ricevuta'}
+                      >
+                        <Iconify icon="eva:attach-2-fill" width={18} />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+                {receiptOpen === child.id && (
+                  <TableRow key={`${child.id}-receipt`}>
+                    <TableCell colSpan={5} sx={{ pb: 2, pt: 0 }}>
+                      <Box sx={{ pt: 1 }}>
+                        {child.attachment_url ? (
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Iconify icon="eva:file-text-fill" sx={{ color: 'success.main' }} />
+                            <Typography variant="body2" sx={{ flex: 1 }}>Ricevuta allegata</Typography>
+                            <Button size="small" variant="outlined" href={child.attachment_url} target="_blank" startIcon={<Iconify icon="eva:external-link-fill" />}>
+                              Apri
+                            </Button>
+                            <Button size="small" color="warning" onClick={() => setReceiptOpen(child.id + '-replace')}>
+                              Sostituisci
+                            </Button>
+                          </Stack>
+                        ) : null}
+                        {(!child.attachment_url || receiptOpen === child.id + '-replace') && (
+                          <ScadenziarioAttachmentUpload
+                            ownerId={ownerId}
+                            value={null}
+                            onChange={(url) => {
+                              if (url) handleUploadReceipt(child, url);
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </>
             ))}
           </TableBody>
         </Table>

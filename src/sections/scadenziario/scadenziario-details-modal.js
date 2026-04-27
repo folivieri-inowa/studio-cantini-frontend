@@ -250,11 +250,22 @@ export default function ScadenziarioDetailsModal({ id, open, onClose }) {
               )}
             </Stack>
 
-            {/* Allegato */}
+            {/* Allegato fattura */}
             {scadenziarioItem?.attachment_url && (
               <>
                 <Divider sx={{ borderStyle: 'dashed' }} />
                 <AttachmentPreview url={scadenziarioItem.attachment_url} />
+              </>
+            )}
+
+            {/* Contabile di pagamento */}
+            {scadenziarioItem?.payment_receipt_url && (
+              <>
+                <Divider sx={{ borderStyle: 'dashed' }} />
+                <Stack spacing={1.5}>
+                  <Typography variant="subtitle2">Contabile di pagamento</Typography>
+                  <AttachmentPreview url={scadenziarioItem.payment_receipt_url} />
+                </Stack>
               </>
             )}
 

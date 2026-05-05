@@ -9,18 +9,20 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
 
 import { createVehicleFine, updateVehicleFine } from 'src/api/vehicles';
 import { useSnackbar } from 'src/components/snackbar';
 
 const AUTHORITIES = ['Polizia Municipale', 'Polizia Stradale', 'Carabinieri', 'Guardia di Finanza', 'Altro'];
-const VIOLATION_TYPES = ['Eccesso di velocità', 'Divieto di sosta', 'Semaforo rosso', 'Uso del cellulare', 'Cintura di sicurezza', 'Sorpasso vietato', 'ZTL', 'Altro'];
+const VIOLATION_TYPES = ['Eccesso di velocità', 'Divieto di sosta', 'Mancato pagamento stallo', 'Semaforo rosso', 'Uso del cellulare', 'Cintura di sicurezza', 'Sorpasso vietato', 'ZTL', 'Altro'];
 const STATUS_OPTIONS = ['da_pagare', 'pagato', 'ricorsato', 'annullato'];
 const PAYMENT_METHODS = ['Banca/Bollettino', 'Online', 'Tabaccheria', 'Ufficio postale', 'Altro'];
 
 const EMPTY = {
   fine_date: '', violation_number: '', issuing_authority: '', violation_type: '',
-  amount: '', discount_amount: '', due_date: '', paid_date: '',
+  amount: '', discount_amount: '', paid_discounted: false, due_date: '', paid_date: '',
   payment_method: '', status: 'da_pagare', appeal_notes: '', notes: '',
 };
 
@@ -30,7 +32,7 @@ export default function VehicleFineDialog({ open, onClose, vehicleId, editItem, 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setForm(editItem ? { ...EMPTY, ...editItem, amount: editItem.amount ?? '', discount_amount: editItem.discount_amount ?? '' } : EMPTY);
+    setForm(editItem ? { ...EMPTY, ...editItem, amount: editItem.amount ?? '', discount_amount: editItem.discount_amount ?? '', paid_discounted: editItem.paid_discounted ?? false } : EMPTY);
   }, [editItem, open]);
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
@@ -80,6 +82,17 @@ export default function VehicleFineDialog({ open, onClose, vehicleId, editItem, 
             <TextField label="Importo (€)" type="number" value={form.amount} onChange={set('amount')} fullWidth />
             <TextField label="Importo scontato (€)" type="number" value={form.discount_amount} onChange={set('discount_amount')} helperText="Pagamento entro 5 gg" fullWidth />
           </Stack>
+          {form.discount_amount && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.paid_discounted}
+                  onChange={(e) => setForm((p) => ({ ...p, paid_discounted: e.target.checked }))}
+                />
+              }
+              label="Pagato con importo scontato"
+            />
+          )}
           <Stack direction="row" spacing={2}>
             <TextField label="Scadenza pagamento" type="date" value={form.due_date} onChange={set('due_date')} fullWidth InputLabelProps={{ shrink: true }} />
             <TextField label="Data pagamento" type="date" value={form.paid_date} onChange={set('paid_date')} fullWidth InputLabelProps={{ shrink: true }} />

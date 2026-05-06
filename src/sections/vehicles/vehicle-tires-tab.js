@@ -64,9 +64,9 @@ export default function VehicleTiresTab({ vehicleId }) {
             <TableHead>
               <TableRow>
                 <TableCell>Tipo</TableCell>
-                <TableCell>Asse</TableCell>
                 <TableCell>Marca / Modello</TableCell>
-                <TableCell>Misura</TableCell>
+                <TableCell>Mis. ant.</TableCell>
+                <TableCell>Mis. post.</TableCell>
                 <TableCell>Montaggio</TableCell>
                 <TableCell>Deposito</TableCell>
                 <TableCell>Condizione</TableCell>
@@ -83,9 +83,9 @@ export default function VehicleTiresTab({ vehicleId }) {
               {tires.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell>{item.tire_type}</TableCell>
-                  <TableCell>{item.axle || 'tutti'}</TableCell>
                   <TableCell>{[item.brand, item.model].filter(Boolean).join(' / ') || '—'}</TableCell>
-                  <TableCell>{item.size || '—'}</TableCell>
+                  <TableCell>{item.size_front || '—'}</TableCell>
+                  <TableCell>{item.size_rear || '—'}</TableCell>
                   <TableCell>{item.install_date || '—'}</TableCell>
                   <TableCell>{item.storage_location || '—'}</TableCell>
                   <TableCell>

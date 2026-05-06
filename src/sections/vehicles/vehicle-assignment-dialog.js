@@ -22,6 +22,7 @@ import { updateVehicle } from 'src/api/vehicles';
 // ----------------------------------------------------------------------
 
 const TIRE_TYPES = ['estivi', 'invernali', '4stagioni'];
+const AXLE_OPTIONS = ['tutti', 'anteriori', 'posteriori'];
 const CONDITION_OPTIONS = ['buono', 'usura', 'da_sostituire'];
 const ASSIGNEE_TYPES = ['dipendente', 'collaboratore', 'ufficio', 'altro'];
 const AVAILABILITY_OPTIONS = ['aziendale', 'uso_misto', 'personale'];
@@ -35,7 +36,7 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
   const methods = useForm({
     defaultValues:
       mode === 'tires'
-        ? { tire_type: 'estivi', brand: '', model: '', size: '', install_date: '', mileage_at_install: '', storage_location: '', condition: '', notes: '' }
+        ? { tire_type: 'estivi', brand: '', model: '', size: '', axle: 'tutti', install_date: '', mileage_at_install: '', storage_location: '', condition: '', notes: '' }
         : { assignee_type: '', assignee_name: '', assignment_notes: '', availability_type: '' },
   });
 
@@ -48,6 +49,7 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
         brand: editItem.brand || '',
         model: editItem.model || '',
         size: editItem.size || '',
+        axle: editItem.axle || 'tutti',
         install_date: editItem.install_date || '',
         mileage_at_install: editItem.mileage_at_install || '',
         storage_location: editItem.storage_location || '',
@@ -101,6 +103,11 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
                 <Grid size={{ xs: 12, md: 6 }}>
                   <RHFSelect name="tire_type" label="Tipo">
                     {TIRE_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                  </RHFSelect>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <RHFSelect name="axle" label="Asse">
+                    {AXLE_OPTIONS.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
                   </RHFSelect>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>

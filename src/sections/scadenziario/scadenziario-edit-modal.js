@@ -30,7 +30,6 @@ import FormProvider, {
   RHFTextField,
 } from 'src/components/hook-form';
 
-import ScadenziarioOcrUpload from './scadenziario-ocr-upload';
 import ScadenziarioAttachmentUpload from './scadenziario-attachment-upload';
 import ScadenziarioTranchesPanel from './scadenziario-tranches-panel';
 
@@ -113,6 +112,7 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
         bank_name: scadenziarioItem.bank_name || '',
         payment_terms_type: scadenziarioItem.payment_terms?.type || '',
         attachment_url: scadenziarioItem.attachment_url || '',
+        payment_receipt_url: scadenziarioItem.payment_receipt_url || '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -311,27 +311,16 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
 
                 {/* Allegato corrente + possibilità di sostituire */}
                 <Box sx={{ mt: 1 }}>
-                  {values.attachment_url && (
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                      <Iconify icon="eva:file-text-fill" sx={{ color: 'primary.main', width: 18, height: 18 }} />
-                      <Typography variant="body2" sx={{ color: 'text.secondary', flex: 1 }}>
-                        Allegato corrente
-                      </Typography>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        href={values.attachment_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        startIcon={<Iconify icon="eva:external-link-fill" />}
-                      >
-                        Apri
-                      </Button>
-                    </Stack>
-                  )}
-                  <ScadenziarioOcrUpload
-                    onExtracted={() => {}}
-                    onFileUploaded={(url) => setValue('attachment_url', url, { shouldDirty: true })}
+                  <Controller
+                    name="attachment_url"
+                    control={control}
+                    render={({ field }) => (
+                      <ScadenziarioAttachmentUpload
+                        ownerId={scadenziarioItem?.owner_id}
+                        value={field.value || null}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                   <Typography variant="caption" sx={{ color: 'text.disabled', mt: 0.5, display: 'block' }}>
                     {values.attachment_url ? 'Carica un nuovo file per sostituire l\'allegato esistente' : 'Carica PDF o immagine (opzionale)'}
@@ -361,7 +350,7 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
               render={({ field }) => (
                 <ScadenziarioAttachmentUpload
                   ownerId={scadenziarioItem?.owner_id}
-                  value={null}
+                  value={field.value || null}
                   onChange={(url) => { if (url) field.onChange(url); }}
                 />
               )}

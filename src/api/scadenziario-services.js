@@ -262,7 +262,8 @@ export async function uploadAttachment(file, ownerId) {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await axios.post(`${API_URLS.uploadAttachment}?owner_id=${ownerId}`, formData, {
+    const resolvedOwner = ownerId ?? 'general';
+    const response = await axios.post(`${API_URLS.uploadAttachment}?owner_id=${resolvedOwner}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;

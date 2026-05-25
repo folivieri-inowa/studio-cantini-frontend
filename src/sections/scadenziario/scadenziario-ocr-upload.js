@@ -11,7 +11,7 @@ import Iconify from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
-export default function ScadenziarioOcrUpload({ onExtracted, onFileUploaded }) {
+export default function ScadenziarioOcrUpload({ onExtracted, onFileUploaded, ownerId }) {
   const [loading, setLoading] = useState(false);
   const [filename, setFilename] = useState(null);
 
@@ -23,19 +23,23 @@ export default function ScadenziarioOcrUpload({ onExtracted, onFileUploaded }) {
       try {
         const { ocrExtract, uploadAttachment } = await import('../../api/scadenziario-services');
 
-        // OCR prima — popola i campi indipendentemente dall'upload
-        const ocrResult = await ocrExtract(file);
-        console.log('[OCR] Risultato grezzo:', ocrResult);
-        console.log('[OCR] Dati estratti:', ocrResult?.data);
-        if (ocrResult?.data) onExtracted?.(ocrResult.data);
-
-        // Upload in secondo piano — errore non blocca il form
-        uploadAttachment(file, 'temp')
+        // Upload allegato — non dipende da OCR, eseguito subito
+        uploadAttachment(file, ownerId ?? 'general')
           .then((uploadResult) => {
             console.log('[OCR] Upload allegato:', uploadResult?.data);
             if (uploadResult?.data?.url) onFileUploaded?.(uploadResult.data.url);
           })
           .catch((err) => console.error('[OCR] Errore upload allegato (non bloccante):', err));
+
+        // OCR — se fallisce non blocca il form
+        try {
+          const ocrResult = await ocrExtract(file);
+          console.log('[OCR] Risultato grezzo:', ocrResult);
+          console.log('[OCR] Dati estratti:', ocrResult?.data);
+          if (ocrResult?.data) onExtracted?.(ocrResult.data);
+        } catch (ocrErr) {
+          console.error('[OCR] Estrazione fallita (non bloccante):', ocrErr);
+        }
       } catch (err) {
         console.error('OCR error', err);
       } finally {

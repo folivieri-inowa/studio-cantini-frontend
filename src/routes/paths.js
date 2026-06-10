@@ -134,6 +134,12 @@ export const paths = {
       new: `${ROOTS.DASHBOARD}/vehicles/new`,
       details: (id) => `${ROOTS.DASHBOARD}/vehicles/${id}`,
     },
+    cash_flow: {
+      root: `${ROOTS.DASHBOARD}/cash-flow`,
+      new: `${ROOTS.DASHBOARD}/cash-flow/new`,
+      details: (id) => `${ROOTS.DASHBOARD}/cash-flow/${id}`,
+      edit: (id) => `${ROOTS.DASHBOARD}/cash-flow/${id}/edit`,
+    },
     archive: {
       root: `${ROOTS.DASHBOARD}/archive`,
       details: (id) => `${ROOTS.DASHBOARD}/archive/${id}`,

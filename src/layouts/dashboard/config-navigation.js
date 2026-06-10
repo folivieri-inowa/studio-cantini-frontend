@@ -96,6 +96,12 @@ export function useNavData() {
             icon: ICONS.booking,
             roles: ['admin', 'manager'],
           },
+          {
+            title: t('Gestione Contante'),
+            path: paths.dashboard.cash_flow.root,
+            icon: ICONS.banking,
+            roles: ['admin', 'manager'],
+          },
           ...(hasMultipleDbs ? [{
             title: t('Vista Consolidata'),
             path: paths.dashboard.consolidated.root,

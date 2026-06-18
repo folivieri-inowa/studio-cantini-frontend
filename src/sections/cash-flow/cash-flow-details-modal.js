@@ -153,6 +153,23 @@ export function CashFlowDetailsModal({
               <Typography variant="body2">{item.description}</Typography>
             </Box>
           )}
+          {item.transaction_id && (
+            <Box sx={{ bgcolor: 'info.lighter', p: 1.5, borderRadius: 1, border: '1px dashed', borderColor: 'info.main' }}>
+              <Typography variant="caption" color="info.dark" fontWeight="bold">
+                🔗 Collegato a Movimento Prima Nota
+              </Typography>
+              {item.transaction_date && (
+                <Typography variant="body2" color="text.secondary">
+                  Data: {item.transaction_date} — {formatCurrency(item.transaction_amount)}
+                </Typography>
+              )}
+              {item.transaction_description && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  "{item.transaction_description}"
+                </Typography>
+              )}
+            </Box>
+          )}
           <Stack direction="row" spacing={4}>
             <Box>
               <Typography variant="caption" color="text.secondary">Totale Speso</Typography>

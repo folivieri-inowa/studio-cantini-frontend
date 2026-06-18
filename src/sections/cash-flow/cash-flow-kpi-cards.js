@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Unstable_Grid2';
+import Grid from '@mui/material/Grid';
 
 import Iconify from 'src/components/iconify';
 
@@ -47,7 +47,7 @@ export function CashFlowKpiCards({ cashFlow = [] }) {
   return (
     <Grid container spacing={3}>
       {cards.map((card) => (
-        <Grid xs={12} sm={6} md={3} key={card.label}>
+        <Grid item xs={12} sm={6} md={3} key={card.label}>
           <Card>
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Stack

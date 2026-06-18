@@ -11,10 +11,12 @@ import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 
 import axios from 'src/utils/axios';
+import { useSettingsContext } from 'src/components/settings';
 
 // ----------------------------------------------------------------------
 
 export function CashFlowEditModal({ open, onClose, onSave, item }) {
+  const { db } = useSettingsContext();
   const [owners, setOwners] = useState([]);
   const [form, setForm] = useState({
     owner_id: '',
@@ -27,7 +29,7 @@ export function CashFlowEditModal({ open, onClose, onSave, item }) {
 
   useEffect(() => {
     if (open && item) {
-      axios.post('/api/owner/list', {}).then((res) => {
+      axios.get('/api/owner/list', { params: { db } }).then((res) => {
         setOwners(res.data?.data || []);
       }).catch(() => {});
       setForm({

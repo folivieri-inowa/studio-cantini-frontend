@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
 import PropTypes from 'prop-types';
 import {
@@ -121,23 +121,40 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
   const [showIncome, setShowIncome] = useState(true);
   const [showExpense, setShowExpense] = useState(true);
   const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
-  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
 
-  const toggleGroupCollapse = (groupId) => {
+  // Persist collapse state in localStorage, scoped by owner id
+  const collapseStorageKey = `categoryGroupCollapsed_${owner?.id ?? 'default'}`;
+  const [collapsedGroups, setCollapsedGroups] = useState(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem(collapseStorageKey);
+      if (stored) return new Set(JSON.parse(stored));
+    } catch { /* ignore corrupt data */ }
+    return new Set();
+  });
+
+  // Sync collapse state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(collapseStorageKey, JSON.stringify([...collapsedGroups]));
+    } catch { /* ignore quota errors */ }
+  }, [collapsedGroups, collapseStorageKey]);
+
+  const toggleGroupCollapse = useCallback((groupId) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev);
       if (next.has(groupId)) next.delete(groupId);
       else next.add(groupId);
       return next;
     });
-  };
+  }, []);
 
-  const expandAll = () => setCollapsedGroups(new Set());
-  const collapseAll = () => {
+  const expandAll = useCallback(() => setCollapsedGroups(new Set()), []);
+  const collapseAll = useCallback(() => {
     if (!groupedRows) return;
     const allIds = new Set(groupedRows.map(g => g.groupId));
     setCollapsedGroups(allIds);
-  };
+  }, [groupedRows]);
 
   // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
   useEffect(() => {

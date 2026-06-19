@@ -14,6 +14,7 @@ import {
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
+import IconButton from '@mui/material/IconButton';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import ListItemText from '@mui/material/ListItemText';
@@ -120,6 +121,16 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
   const [showIncome, setShowIncome] = useState(true);
   const [showExpense, setShowExpense] = useState(true);
   const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
+  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+
+  const toggleGroupCollapse = (groupId) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
 
   // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
   useEffect(() => {
@@ -469,21 +480,28 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
                       return (
                         <Fragment key={`group-${group.groupId}`}>
                           {/* Header di gruppo */}
-                          <TableRow sx={{ '& td': { borderBottom: 2, borderColor: 'primary.main', bgcolor: 'action.hover' } }}>
-                            <TableCell align="left">
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                {group.name}
-                              </Typography>
+                          <TableRow sx={{ '& td': { borderBottom: 2, borderColor: 'primary.main', bgcolor: 'action.hover' }, cursor: 'pointer' }}>
+                            <TableCell align="left" onClick={() => toggleGroupCollapse(group.groupId)}>
+                              <Stack direction="row" alignItems="center" spacing={0.5}>
+                                <IconButton size="small" sx={{ p: 0 }}>
+                                  <Typography variant="body2" sx={{ transform: collapsedGroups.has(group.groupId) ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                                    ▼
+                                  </Typography>
+                                </IconButton>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                  {group.name}
+                                </Typography>
+                              </Stack>
                             </TableCell>
                             {showIncome && allYearsSorted.map(year => (
-                              <TableCell key={`h-income-${year}`} align="right">
+                              <TableCell key={`h-income-${year}`} align="right" onClick={() => toggleGroupCollapse(group.groupId)}>
                                 <Typography variant="subtitle2">
                                   {formatCurrency(sub.income[year] ?? 0)}
                                 </Typography>
                               </TableCell>
                             ))}
                             {showExpense && allYearsSorted.map(year => (
-                              <TableCell key={`h-expense-${year}`} align="right">
+                              <TableCell key={`h-expense-${year}`} align="right" onClick={() => toggleGroupCollapse(group.groupId)}>
                                 <Typography variant="subtitle2">
                                   {formatCurrency(sub.expense[year] ?? 0)}
                                 </Typography>
@@ -491,90 +509,92 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
                             ))}
                           </TableRow>
 
-                          {/* Righe categorie del gruppo */}
-                          {group.rows.map(catRow => {
-                            // Costruisci una tabella row fittizia per usare le stesse celle
-                            // Usiamo direttamente il rendering per-cell
-                            const columnsForRender = table.getAllColumns();
-                            return (
-                              <TableRow key={`cat-${catRow.id}`} hover>
-                                {columnsForRender.map(col => {
-                                  if (col.id === 'name') {
-                                    return (
-                                      <TableCell key={col.id} align="left">
-                                        <Typography
-                                          variant="subtitle1"
-                                          noWrap
-                                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                                          onClick={() => {
-                                            const params = new URLSearchParams({
-                                              month: selectedMonth,
-                                              compareYears: compareYears.join(','),
-                                              showIncome: String(showIncome),
-                                              showExpense: String(showExpense),
-                                            });
-                                            router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
-                                          }}
-                                        >
-                                          {catRow.name}
-                                        </Typography>
-                                      </TableCell>
-                                    );
-                                  }
-                                  const incomeMatch = col.id.match(/^income_(\d+)$/);
-                                  const expenseMatch = col.id.match(/^expense_(\d+)$/);
-                                  const year = incomeMatch?.[1] || expenseMatch?.[1];
-                                  const isExpense = !!expenseMatch;
-                                  const isMain = Number(year) === mainYear;
+                          {/* Righe categorie del gruppo + footer — visibili solo se il gruppo è espanso */}
+                          {!collapsedGroups.has(group.groupId) && (
+                            <>
+                              {group.rows.map(catRow => {
+                                const columnsForRender = table.getAllColumns();
+                                return (
+                                  <TableRow key={`cat-${catRow.id}`} hover>
+                                    {columnsForRender.map(col => {
+                                      if (col.id === 'name') {
+                                        return (
+                                          <TableCell key={col.id} align="left">
+                                            <Typography
+                                              variant="subtitle1"
+                                              noWrap
+                                              sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                              onClick={() => {
+                                                const params = new URLSearchParams({
+                                                  month: selectedMonth,
+                                                  compareYears: compareYears.join(','),
+                                                  showIncome: String(showIncome),
+                                                  showExpense: String(showExpense),
+                                                });
+                                                router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
+                                              }}
+                                            >
+                                              {catRow.name}
+                                            </Typography>
+                                          </TableCell>
+                                        );
+                                      }
+                                      const incomeMatch = col.id.match(/^income_(\d+)$/);
+                                      const expenseMatch = col.id.match(/^expense_(\d+)$/);
+                                      const year = incomeMatch?.[1] || expenseMatch?.[1];
+                                      const isExpense = !!expenseMatch;
+                                      const isMain = Number(year) === mainYear;
 
-                                  if (isMain) {
-                                    return (
-                                      <TableCell key={col.id} align="right">
-                                        <Typography variant="body1">
-                                          {formatCurrency(isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0))}
-                                        </Typography>
-                                      </TableCell>
-                                    );
-                                  }
+                                      if (isMain) {
+                                        return (
+                                          <TableCell key={col.id} align="right">
+                                            <Typography variant="body1">
+                                              {formatCurrency(isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0))}
+                                            </Typography>
+                                          </TableCell>
+                                        );
+                                      }
 
-                                  return (
-                                    <TableCell key={col.id} align="right">
-                                      <DeltaCell
-                                        value={isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0)}
-                                        referenceValue={isExpense ? (catRow.expense[mainYear] ?? 0) : (catRow.income[mainYear] ?? 0)}
-                                        referenceYear={mainYear}
-                                        isExpense={isExpense}
-                                        month={selectedMonth}
-                                      />
-                                    </TableCell>
-                                  );
-                                })}
+                                      return (
+                                        <TableCell key={col.id} align="right">
+                                          <DeltaCell
+                                            value={isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0)}
+                                            referenceValue={isExpense ? (catRow.expense[mainYear] ?? 0) : (catRow.income[mainYear] ?? 0)}
+                                            referenceYear={mainYear}
+                                            isExpense={isExpense}
+                                            month={selectedMonth}
+                                          />
+                                        </TableCell>
+                                      );
+                                    })}
+                                  </TableRow>
+                                );
+                              })}
+
+                              {/* Footer di gruppo */}
+                              <TableRow sx={{ '& td': { borderTop: 2, borderColor: 'divider' } }}>
+                                <TableCell align="left">
+                                  <Typography variant="subtitle2">
+                                    Subtotal {group.name}
+                                  </Typography>
+                                </TableCell>
+                                {showIncome && allYearsSorted.map(year => (
+                                  <TableCell key={`f-income-${year}`} align="right">
+                                    <Typography variant="subtitle2">
+                                      {formatCurrency(sub.income[year] ?? 0)}
+                                    </Typography>
+                                  </TableCell>
+                                ))}
+                                {showExpense && allYearsSorted.map(year => (
+                                  <TableCell key={`f-expense-${year}`} align="right">
+                                    <Typography variant="subtitle2">
+                                      {formatCurrency(sub.expense[year] ?? 0)}
+                                    </Typography>
+                                  </TableCell>
+                                ))}
                               </TableRow>
-                            );
-                          })}
-
-                          {/* Footer di gruppo */}
-                          <TableRow sx={{ '& td': { borderTop: 2, borderColor: 'divider' } }}>
-                            <TableCell align="left">
-                              <Typography variant="subtitle2">
-                                Subtotal {group.name}
-                              </Typography>
-                            </TableCell>
-                            {showIncome && allYearsSorted.map(year => (
-                              <TableCell key={`f-income-${year}`} align="right">
-                                <Typography variant="subtitle2">
-                                  {formatCurrency(sub.income[year] ?? 0)}
-                                </Typography>
-                              </TableCell>
-                            ))}
-                            {showExpense && allYearsSorted.map(year => (
-                              <TableCell key={`f-expense-${year}`} align="right">
-                                <Typography variant="subtitle2">
-                                  {formatCurrency(sub.expense[year] ?? 0)}
-                                </Typography>
-                              </TableCell>
-                            ))}
-                          </TableRow>
+                            </>
+                          )}
                         </Fragment>
                       );
                     })}

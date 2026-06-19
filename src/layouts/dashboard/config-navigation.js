@@ -172,6 +172,12 @@ export function useNavData() {
               { title: t('nuovo'), path: paths.dashboard.owner.new },
             ],
           },
+          {
+            title: t('Gruppi'),
+            roles: ['admin', 'manager'],
+            path: paths.dashboard.groups.root,
+            icon: ICONS.label,
+          },
           /* {
             title: t('soggetti'),
             path: paths.dashboard.subject.root,

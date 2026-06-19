@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -19,7 +19,13 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 
+import axios from 'src/utils/axios';
+import { useSettingsContext } from 'src/components/settings';
 import Iconify from 'src/components/iconify';
 
 import { CashFlowExpenseForm } from './cash-flow-expense-form';
@@ -59,6 +65,46 @@ export function CashFlowDetailsModal({
   const [editingExpense, setEditingExpense] = useState(null);
   const [savingExpense, setSavingExpense] = useState(false);
   const [attachingExpenseId, setAttachingExpenseId] = useState(null);
+
+  // Transaction association — only in edit mode
+  const { db } = useSettingsContext();
+  const [associateTx, setAssociateTx] = useState(false);
+  const [txCategories, setTxCategories] = useState([]);
+  const [txSubjects, setTxSubjects] = useState([]);
+  const [txDetails, setTxDetails] = useState([]);
+  const [txMatching, setTxMatching] = useState([]);
+  const [txFilters, setTxFilters] = useState({ category: '', subject: '', detail: '' });
+  const [txSelected, setTxSelected] = useState(item?.transaction_id || '');
+  const [txLoading, setTxLoading] = useState(false);
+  const ownerId = item?.owner_id || '';
+
+  useEffect(() => { if (associateTx && db) { axios.get('/api/category/list', { params: { db } }).then(r => setTxCategories(r.data?.data || [])).catch(() => {}); } }, [associateTx, db]);
+  useEffect(() => { if (associateTx && txFilters.category && db) { axios.post('/api/subject/list', { db, categoryId: txFilters.category }).then(r => setTxSubjects(r.data?.data || [])).catch(() => {}); } else setTxSubjects([]); }, [associateTx, txFilters.category, db]);
+  useEffect(() => { if (associateTx && txFilters.subject && db) { axios.post('/api/detail/list', { db, subjectId: txFilters.subject }).then(r => setTxDetails(r.data?.data || [])).catch(() => {}); } else setTxDetails([]); }, [associateTx, txFilters.subject, db]);
+
+  useEffect(() => {
+    if (!associateTx || !ownerId || !db) { setTxMatching([]); return; }
+    setTxLoading(true);
+    axios.get('/api/prima-nota/list', { params: { db } }).then(r => {
+      let all = (r.data?.data || []).filter(tx => tx.ownerid === ownerId && parseFloat(tx.amount) < 0);
+      if (txFilters.category) all = all.filter(tx => tx.categoryid === txFilters.category);
+      if (txFilters.subject) all = all.filter(tx => tx.subjectid === txFilters.subject);
+      if (txFilters.detail) all = all.filter(tx => tx.detailid === txFilters.detail);
+      all.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setTxMatching(all.slice(0, 100));
+    }).catch(() => setTxMatching([])).finally(() => setTxLoading(false));
+  }, [associateTx, ownerId, txFilters.category, txFilters.subject, txFilters.detail, db]);
+
+  const handleAssociateSave = async () => {
+    await axios.post('/api/cash-flow/update', { id: item.id, transaction_id: txSelected || null });
+    onRefresh?.();
+  };
+
+  const formatTxLabel = (tx) => {
+    const d = tx.date?.split('T')[0] || '?';
+    const desc = (tx.description || '').substring(0, 40);
+    return `${d} — €${Math.abs(parseFloat(tx.amount || 0)).toFixed(2).replace('.', ',')} — ${desc}`;
+  };
 
   if (!item) return null;
 
@@ -183,6 +229,46 @@ export function CashFlowDetailsModal({
             </Box>
           </Stack>
         </Stack>
+
+          {/* Transaction association — only in edit mode */}
+          {!readOnly && (
+            <>
+              <FormControlLabel
+                control={<Switch checked={associateTx} onChange={(e) => setAssociateTx(e.target.checked)} />}
+                label={item.transaction_id && !associateTx ? 'Cambia associazione Prima Nota' : 'Associa a movimento di Prima Nota'}
+                sx={{ mb: 1 }}
+              />
+              {associateTx && (
+                <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                  <Stack spacing={2}>
+                    <TextField select label="Categoria" value={txFilters.category} onChange={(e) => setTxFilters(p => { const n = { ...p, category: e.target.value }; if (p.category !== n.category) { n.subject = ''; n.detail = ''; } return n; })} size="small">
+                      <MenuItem value="">Tutte</MenuItem>
+                      {txCategories.map(c => (<MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>))}
+                    </TextField>
+                    {txFilters.category && (
+                      <TextField select label="Soggetto" value={txFilters.subject} onChange={(e) => setTxFilters(p => { const n = { ...p, subject: e.target.value }; if (p.subject !== n.subject) n.detail = ''; return n; })} size="small">
+                        <MenuItem value="">Tutti</MenuItem>
+                        {txSubjects.map(s => (<MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>))}
+                      </TextField>
+                    )}
+                    {txFilters.subject && (
+                      <TextField select label="Dettaglio" value={txFilters.detail} onChange={(e) => setTxFilters(p => ({ ...p, detail: e.target.value }))} size="small">
+                        <MenuItem value="">Tutti</MenuItem>
+                        {txDetails.map(d => (<MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>))}
+                      </TextField>
+                    )}
+                    <TextField select label="Movimento" value={txSelected} onChange={(e) => setTxSelected(e.target.value)} size="small" disabled={txLoading || !txMatching.length}>
+                      <MenuItem value="">{item.transaction_id ? 'Nessuno (scollega)' : txLoading ? 'Caricamento...' : txMatching.length ? 'Seleziona...' : 'Nessun movimento trovato'}</MenuItem>
+                      {txMatching.map(tx => (<MenuItem key={tx.id} value={tx.id}>{formatTxLabel(tx)}</MenuItem>))}
+                    </TextField>
+                    <Button variant="contained" size="small" onClick={handleAssociateSave} disabled={txSelected === (item.transaction_id || '')}>
+                      Aggiorna collegamento
+                    </Button>
+                  </Stack>
+                </Paper>
+              )}
+            </>
+          )}
 
         <Divider sx={{ mb: 2 }} />
 

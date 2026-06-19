@@ -197,7 +197,8 @@ export function CashFlowListView() {
               const { default: axios } = await import('src/utils/axios');
               const res = await axios.post('/api/cash-flow/details', { id });
               setSelectedItem(res.data?.data || null);
-              setOpenEdit(true);
+              setViewMode('edit');
+              setOpenDetails(true);
             } catch { enqueueSnackbar('Errore nel caricamento', { variant: 'error' }); }
           }}
           onDelete={handleDelete}

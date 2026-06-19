@@ -216,7 +216,6 @@ export function CashFlowDetailsModal({
               <TableHead>
                 <TableRow>
                   <TableCell>Data</TableCell>
-                  <TableCell>Categoria</TableCell>
                   <TableCell align="right">Importo</TableCell>
                   <TableCell>Beneficiario</TableCell>
                   <TableCell>Descrizione</TableCell>
@@ -228,9 +227,6 @@ export function CashFlowDetailsModal({
                 {expenses.map((exp) => (
                   <TableRow key={exp.id}>
                     <TableCell>{exp.expense_date}</TableCell>
-                    <TableCell>
-                      <Chip label={exp.category || '-'} size="small" variant="outlined" />
-                    </TableCell>
                     <TableCell align="right">{formatCurrency(exp.amount)}</TableCell>
                     <TableCell>{exp.recipient || '-'}</TableCell>
                     <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

@@ -3,19 +3,8 @@
 import { useState } from 'react';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-
-const CATEGORIES = [
-  { value: 'carburante', label: 'Carburante' },
-  { value: 'cancelleria', label: 'Cancelleria' },
-  { value: 'vitto', label: 'Vitto' },
-  { value: 'trasporto', label: 'Trasporto' },
-  { value: 'utenze', label: 'Utenze' },
-  { value: 'manutenzione', label: 'Manutenzione' },
-  { value: 'altro', label: 'Altro' },
-];
 
 // ----------------------------------------------------------------------
 
@@ -23,7 +12,6 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
   const [form, setForm] = useState({
     expense_date: initial?.expense_date || new Date().toISOString().split('T')[0],
     amount: initial?.amount || '',
-    category: initial?.category || '',
     recipient: initial?.recipient || '',
     description: initial?.description || '',
   });
@@ -33,7 +21,7 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
   };
 
   const handleSave = () => {
-    if (!form.expense_date || !form.amount) return;
+    if (!form.expense_date || !form.amount || !form.recipient) return;
     onSave({
       ...form,
       amount: parseFloat(form.amount),
@@ -41,7 +29,7 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
     });
   };
 
-  const valid = form.expense_date && form.amount;
+  const valid = form.expense_date && form.amount && form.recipient;
 
   return (
     <Box sx={{ p: 2, bgcolor: 'background.neutral', borderRadius: 1 }}>
@@ -68,26 +56,15 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
             required
           />
           <TextField
-            select
-            label="Categoria"
-            value={form.category}
-            onChange={handleChange('category')}
-            size="small"
-            sx={{ width: 180 }}
-          >
-            {CATEGORIES.map((c) => (
-              <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
-            ))}
-          </TextField>
-        </Stack>
-        <Stack direction="row" spacing={2}>
-          <TextField
             label="Beneficiario / Fornitore"
             value={form.recipient}
             onChange={handleChange('recipient')}
             size="small"
-            fullWidth
+            sx={{ minWidth: 220 }}
+            required
           />
+        </Stack>
+        <Stack direction="row" spacing={2}>
           <TextField
             label="Descrizione"
             value={form.description}

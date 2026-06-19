@@ -62,8 +62,8 @@ export function CashFlowDetailsModal({
   if (!item) return null;
 
   const { expenses = [] } = item;
-  const totalSpent = expenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
   const isOpen = item.status === 'open';
+  const totalSpent = expenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
 
   const handleExpenseSave = useCallback(async (data) => {
     setSavingExpense(true);
@@ -177,16 +177,14 @@ export function CashFlowDetailsModal({
         {/* Expenses section */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Typography variant="subtitle1">Spese</Typography>
-          {
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Iconify icon="solar:add-circle-outline" />}
-              onClick={() => { setShowExpenseForm(true); setEditingExpense(null); }}
-            >
-              Nuova Spesa
-            </Button>
-          )}
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Iconify icon="solar:add-circle-outline" />}
+            onClick={() => { setShowExpenseForm(true); setEditingExpense(null); }}
+          >
+            Nuova Spesa
+          </Button>
         </Stack>
 
         {showExpenseForm && (
@@ -238,16 +236,15 @@ export function CashFlowDetailsModal({
                             <AttachmentIcon type={att.type} />
                           </IconButton>
                         ))}
-                        {
-                          <>
-                            <IconButton
-                              size="small"
-                              onClick={() => setAttachingExpenseId(attachingExpenseId === exp.id ? null : exp.id)}
-                              title="Allega file"
-                            >
-                              <Iconify icon="solar:paperclip-outline" width={16} />
-                            </IconButton>
-                            {attachingExpenseId === exp.id && (
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={() => setAttachingExpenseId(attachingExpenseId === exp.id ? null : exp.id)}
+                            title="Allega file"
+                          >
+                            <Iconify icon="solar:paperclip-outline" width={16} />
+                          </IconButton>
+                          {attachingExpenseId === exp.id && (
                               <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }}>
                                 <Button
                                   size="small"
@@ -286,10 +283,8 @@ export function CashFlowDetailsModal({
                               </Box>
                             )}
                           </>
-                        )}
                       </Stack>
                     </TableCell>
-                    {
                       <TableCell align="right">
                         <IconButton
                           size="small"
@@ -318,7 +313,6 @@ export function CashFlowDetailsModal({
                           </IconButton>
                         ))}
                       </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>

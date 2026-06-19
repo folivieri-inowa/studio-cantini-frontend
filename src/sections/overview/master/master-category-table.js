@@ -132,6 +132,13 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
     });
   };
 
+  const expandAll = () => setCollapsedGroups(new Set());
+  const collapseAll = () => {
+    if (!groupedRows) return;
+    const allIds = new Set(groupedRows.map(g => g.groupId));
+    setCollapsedGroups(allIds);
+  };
+
   // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
   useEffect(() => {
     const prev = mainYear - 1;
@@ -383,6 +390,20 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
         label={<Typography variant="body2">Uscite</Typography>}
         sx={{ mr: 0 }}
       />
+      {hasGroups && (
+        <>
+          <Tooltip title="Espandi tutti i gruppi">
+            <IconButton size="small" onClick={expandAll}>
+              <Typography variant="body2">▼</Typography>
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Collassa tutti i gruppi">
+            <IconButton size="small" onClick={collapseAll}>
+              <Typography variant="body2">▶</Typography>
+            </IconButton>
+          </Tooltip>
+        </>
+      )}
       {availableCompareYears.length > 0 && (
         <Select
           multiple

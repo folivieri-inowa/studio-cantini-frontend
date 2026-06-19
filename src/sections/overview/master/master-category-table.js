@@ -150,11 +150,6 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
   }, []);
 
   const expandAll = useCallback(() => setCollapsedGroups(new Set()), []);
-  const collapseAll = useCallback(() => {
-    if (!groupedRows) return;
-    const allIds = new Set(groupedRows.map(g => g.groupId));
-    setCollapsedGroups(allIds);
-  }, [groupedRows]);
 
   // Resetta compareYears quando cambia l'anno principale o gli anni disponibili
   useEffect(() => {
@@ -245,6 +240,12 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
   }, [tableData, groupedRows, groupedCategoryIds]);
 
   const hasGroups = groupedRows !== null && groupedRows.length > 0;
+
+  const collapseAll = useCallback(() => {
+    if (!groupedRows) return;
+    const allIds = new Set(groupedRows.map(g => g.groupId));
+    setCollapsedGroups(allIds);
+  }, [groupedRows]);
 
   const columns = useMemo(() => {
     const allYearsSorted = [...new Set([mainYear, ...compareYears])].sort((a, b) => b - a);

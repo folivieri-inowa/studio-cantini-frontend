@@ -172,8 +172,14 @@ export function CashFlowDetailsModal({
               <Typography variant="body2" color="warning.main">{formatCurrency(totalSpent)}</Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">Residuo</Typography>
+              <Typography variant="caption" color="text.secondary">Residuo prelievo</Typography>
               <Typography variant="body2" color="success.main">{formatCurrency(item.amount - totalSpent)}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Saldo globale</Typography>
+              <Typography variant="body2" color="info.main" fontWeight="bold">
+                {formatCurrency(item.global_remaining ?? 0)}
+              </Typography>
             </Box>
           </Stack>
         </Stack>

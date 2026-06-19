@@ -247,11 +247,16 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
             label="Associa a movimento di Prima Nota"
           />
 
-          {associateTx && form.owner_id && (
+          {associateTx && (
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Filtra movimenti
               </Typography>
+              {!form.owner_id ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Seleziona prima un Conto Corrente
+                </Typography>
+              ) : (
               <Stack spacing={2}>
                 <TextField
                   select
@@ -314,6 +319,7 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
                   ))}
                 </TextField>
               </Stack>
+              )}
             </Paper>
           )}
         </Stack>

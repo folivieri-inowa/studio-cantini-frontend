@@ -41,7 +41,6 @@ export function CashFlowTable({ cashFlow = [], onView, loading }) {
           <TableHead>
             <TableRow>
               <TableCell>Data</TableCell>
-              <TableCell>Dipendente</TableCell>
               <TableCell>Conto</TableCell>
               <TableCell align="right">Importo</TableCell>
               <TableCell align="right">Speso</TableCell>

@@ -139,10 +139,6 @@ export function CashFlowDetailsModal({
               <Typography variant="body2">{item.withdrawal_date}</Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">Dipendente</Typography>
-              <Typography variant="body2">{item.employee_name}</Typography>
-            </Box>
-            <Box>
               <Typography variant="caption" color="text.secondary">Importo</Typography>
               <Typography variant="body2" fontWeight="bold">{formatCurrency(item.amount)}</Typography>
             </Box>

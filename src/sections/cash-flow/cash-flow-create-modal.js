@@ -44,7 +44,6 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
     owner_id: '',
     withdrawal_date: new Date().toISOString().split('T')[0],
     amount: '',
-    employee_name: '',
     description: '',
   });
   const [saving, setSaving] = useState(false);
@@ -55,7 +54,6 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
       owner_id: '',
       withdrawal_date: new Date().toISOString().split('T')[0],
       amount: '',
-      employee_name: '',
       description: '',
     });
     setAssociateTx(false);
@@ -160,14 +158,13 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
   };
 
   const handleSave = async () => {
-    if (!form.owner_id || !form.withdrawal_date || !form.amount || !form.employee_name) return;
+    if (!form.owner_id || !form.withdrawal_date || !form.amount) return;
     setSaving(true);
     try {
       await onSave({
         owner_id: form.owner_id,
         withdrawal_date: form.withdrawal_date,
         amount: parseFloat(form.amount),
-        employee_name: form.employee_name,
         description: form.description || undefined,
         transaction_id: selectedTx || undefined,
       });
@@ -177,7 +174,7 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
     }
   };
 
-  const valid = form.owner_id && form.withdrawal_date && form.amount && form.employee_name;
+  const valid = form.owner_id && form.withdrawal_date && form.amount;
 
   const formatTxLabel = (tx) => {
     const date = tx.date?.split('T')[0] || '?';
@@ -218,13 +215,6 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
             value={form.amount}
             onChange={handleChange('amount')}
             inputProps={{ min: 0, step: 0.01 }}
-            required
-          />
-
-          <TextField
-            label="Nome Dipendente"
-            value={form.employee_name}
-            onChange={handleChange('employee_name')}
             required
           />
 

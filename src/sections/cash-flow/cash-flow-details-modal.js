@@ -62,9 +62,8 @@ export function CashFlowDetailsModal({
   if (!item) return null;
 
   const { expenses = [] } = item;
-  const isOpen = item.status === 'open';
   const totalSpent = expenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-  const residual = parseFloat(item.amount || 0) - totalSpent;
+  const isOpen = item.status === 'open';
 
   const handleExpenseSave = useCallback(async (data) => {
     setSavingExpense(true);
@@ -87,11 +86,6 @@ export function CashFlowDetailsModal({
     await onExpenseDelete(id);
     onRefresh?.();
   }, [onExpenseDelete, onRefresh]);
-
-  const handleClose = useCallback(async () => {
-    await onUpdateStatus(item.id, 'closed');
-    onRefresh?.();
-  }, [item?.id, onUpdateStatus, onRefresh]);
 
   const handleFileUpload = useCallback(async (expenseId, file, type) => {
     const formData = new FormData();
@@ -183,7 +177,7 @@ export function CashFlowDetailsModal({
         {/* Expenses section */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Typography variant="subtitle1">Spese</Typography>
-          {isOpen && (
+          {
             <Button
               size="small"
               variant="outlined"
@@ -220,7 +214,7 @@ export function CashFlowDetailsModal({
                   <TableCell>Beneficiario</TableCell>
                   <TableCell>Descrizione</TableCell>
                   <TableCell>Allegati</TableCell>
-                  {isOpen && <TableCell align="right" sx={{ width: 100 }}>Azioni</TableCell>}
+                  {<TableCell align="right" sx={{ width: 100 }}>Azioni</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -244,7 +238,7 @@ export function CashFlowDetailsModal({
                             <AttachmentIcon type={att.type} />
                           </IconButton>
                         ))}
-                        {isOpen && (
+                        {
                           <>
                             <IconButton
                               size="small"
@@ -295,7 +289,7 @@ export function CashFlowDetailsModal({
                         )}
                       </Stack>
                     </TableCell>
-                    {isOpen && (
+                    {
                       <TableCell align="right">
                         <IconButton
                           size="small"
@@ -333,18 +327,7 @@ export function CashFlowDetailsModal({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
-        <Box>
-          {isOpen && (
-            <Button
-              color="success"
-              variant="contained"
-              onClick={handleClose}
-            >
-              {residual > 0 ? `Chiudi Prelievo (residuo €${residual.toFixed(2).replace('.', ',')})` : 'Chiudi Prelievo'}
-            </Button>
-          )}
-        </Box>
+      <DialogActions sx={{ justifyContent: 'flex-end', px: 3, pb: 2 }}>
         <Button onClick={onClose} color="inherit">Chiudi</Button>
       </DialogActions>
     </Dialog>

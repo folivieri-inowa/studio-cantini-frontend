@@ -116,6 +116,11 @@ export function CashFlowDetailsModal({
             label={isOpen ? 'Aperto' : 'Chiuso'}
             color={isOpen ? 'warning' : 'success'}
             size="small"
+            onClick={async () => {
+              await onUpdateStatus(item.id, isOpen ? 'closed' : 'open');
+              onRefresh?.();
+            }}
+            sx={{ cursor: 'pointer' }}
           />
         </Stack>
       </DialogTitle>

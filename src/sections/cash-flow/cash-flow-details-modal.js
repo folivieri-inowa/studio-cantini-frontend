@@ -117,11 +117,11 @@ export function CashFlowDetailsModal({
             label={isOpen ? 'Aperto' : 'Chiuso'}
             color={isOpen ? 'warning' : 'success'}
             size="small"
-            onClick={readOnly ? undefined : async () => {
+            onClick={async () => {
               await onUpdateStatus(item.id, isOpen ? 'closed' : 'open');
               onRefresh?.();
             }}
-            sx={{ cursor: readOnly ? 'default' : 'pointer' }}
+            sx={{ cursor: 'pointer' }}
           />
         </Stack>
       </DialogTitle>

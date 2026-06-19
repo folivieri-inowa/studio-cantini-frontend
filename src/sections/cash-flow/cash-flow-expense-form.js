@@ -68,7 +68,14 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving, globalR
             sx={{ width: 150 }}
             required
             error={exceedsGlobal}
-            helperText={exceedsGlobal ? `Supera il saldo globale (disponibile: ${formatCurrency(globalRemaining)})` : ''}
+            helperText={
+              exceedsGlobal
+                ? `Supera il saldo disponibile di ${formatCurrency(globalRemaining)}`
+                : globalRemaining !== Infinity
+                  ? `Disponibile: ${formatCurrency(globalRemaining)}`
+                  : ''
+            }
+            FormHelperTextProps={exceedsGlobal ? {} : { sx: { color: 'success.main' } }}
           />
           <TextField
             label="Beneficiario / Fornitore"

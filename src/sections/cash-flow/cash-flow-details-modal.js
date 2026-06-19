@@ -208,6 +208,7 @@ export function CashFlowDetailsModal({
               onSave={handleExpenseSave}
               onCancel={() => { setShowExpenseForm(false); setEditingExpense(null); }}
               saving={savingExpense}
+              globalRemaining={item.global_remaining ?? 0}
             />
           </Box>
         )}

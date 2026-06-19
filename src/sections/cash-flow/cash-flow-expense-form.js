@@ -1,14 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // ----------------------------------------------------------------------
 
-export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
+function formatCurrency(val) {
+  return `€ ${(val || 0).toFixed(2).replace('.', ',')}`;
+}
+
+// ----------------------------------------------------------------------
+
+export function CashFlowExpenseForm({ initial, onSave, onCancel, saving, globalRemaining = Infinity }) {
   const [form, setForm] = useState({
     expense_date: initial?.expense_date || new Date().toISOString().split('T')[0],
     amount: initial?.amount || '',
@@ -16,12 +23,18 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
     description: initial?.description || '',
   });
 
+  // Net new spending = this expense amount minus original amount (if editing)
+  const originalAmount = parseFloat(initial?.amount || 0);
+  const netNewSpending = parseFloat(form.amount || 0) - originalAmount;
+  const exceedsGlobal = globalRemaining !== Infinity && netNewSpending > globalRemaining;
+
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const handleSave = () => {
     if (!form.expense_date || !form.amount || !form.recipient) return;
+    if (exceedsGlobal) return;
     onSave({
       ...form,
       amount: parseFloat(form.amount),
@@ -29,7 +42,7 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
     });
   };
 
-  const valid = form.expense_date && form.amount && form.recipient;
+  const valid = form.expense_date && form.amount && form.recipient && !exceedsGlobal;
 
   return (
     <Box sx={{ p: 2, bgcolor: 'background.neutral', borderRadius: 1 }}>
@@ -54,6 +67,8 @@ export function CashFlowExpenseForm({ initial, onSave, onCancel, saving }) {
             size="small"
             sx={{ width: 150 }}
             required
+            error={exceedsGlobal}
+            helperText={exceedsGlobal ? `Supera il saldo globale (disponibile: ${formatCurrency(globalRemaining)})` : ''}
           />
           <TextField
             label="Beneficiario / Fornitore"

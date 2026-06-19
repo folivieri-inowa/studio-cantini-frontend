@@ -31,7 +31,6 @@ import { CashFlowKpiCards } from '../cash-flow-kpi-cards';
 import { CashFlowTable } from '../cash-flow-table';
 import { CashFlowCreateModal } from '../cash-flow-create-modal';
 import { CashFlowDetailsModal } from '../cash-flow-details-modal';
-import { CashFlowEditModal } from '../cash-flow-edit-modal';
 
 // ----------------------------------------------------------------------
 
@@ -43,7 +42,7 @@ export function CashFlowListView() {
 
   const [openCreate, setOpenCreate] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
+  const [viewMode, setViewMode] = useState('view'); // 'view' | 'edit'
   const [selectedItem, setSelectedItem] = useState(null);
 
   // --- Navigation ---
@@ -52,6 +51,7 @@ export function CashFlowListView() {
       const { default: axios } = await import('src/utils/axios');
       const res = await axios.post('/api/cash-flow/details', { id });
       setSelectedItem(res.data?.data || null);
+      setViewMode('view');
       setOpenDetails(true);
     } catch (err) {
       enqueueSnackbar('Errore nel caricamento dei dettagli', { variant: 'error' });
@@ -190,7 +190,15 @@ export function CashFlowListView() {
           cashFlow={cashFlow}
           loading={cashFlowLoading}
           onView={handleView}
-          onEdit={(id) => { setSelectedItem(cashFlow.find(cf => cf.id === id)); setOpenEdit(true); }}
+          onEdit={async (id) => {
+            try {
+              const { default: axios } = await import('src/utils/axios');
+              const res = await axios.post('/api/cash-flow/details', { id });
+              setSelectedItem(res.data?.data || null);
+              setViewMode('edit');
+              setOpenDetails(true);
+            } catch { enqueueSnackbar('Errore nel caricamento', { variant: 'error' }); }
+          }}
           onDelete={handleDelete}
         />
       </Box>
@@ -203,26 +211,19 @@ export function CashFlowListView() {
       />
 
       {selectedItem && (
-        <>
-          <CashFlowDetailsModal
-            open={openDetails}
-            onClose={() => { setOpenDetails(false); setSelectedItem(null); }}
-            item={selectedItem}
-            onUpdateStatus={handleUpdateStatus}
-            onExpenseCreate={handleExpenseCreate}
-            onExpenseUpdate={handleExpenseUpdate}
-            onExpenseDelete={handleExpenseDelete}
-            onAttachmentUpload={handleAttachmentUpload}
-            onAttachmentDelete={handleAttachmentDelete}
-            onRefresh={handleRefreshDetails}
-          />
-          <CashFlowEditModal
-            open={openEdit}
-            onClose={() => { setOpenEdit(false); setSelectedItem(null); }}
-            onSave={handleEdit}
-            item={selectedItem}
-          />
-        </>
+        <CashFlowDetailsModal
+          open={openDetails}
+          onClose={() => { setOpenDetails(false); setSelectedItem(null); }}
+          item={selectedItem}
+          onUpdateStatus={handleUpdateStatus}
+          onExpenseCreate={handleExpenseCreate}
+          onExpenseUpdate={handleExpenseUpdate}
+          onExpenseDelete={handleExpenseDelete}
+          onAttachmentUpload={handleAttachmentUpload}
+          onAttachmentDelete={handleAttachmentDelete}
+          onRefresh={handleRefreshDetails}
+          readOnly={viewMode === 'view'}
+        />
       )}
     </Container>
   );

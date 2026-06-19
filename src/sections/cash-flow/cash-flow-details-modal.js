@@ -53,6 +53,7 @@ export function CashFlowDetailsModal({
   onAttachmentUpload,
   onAttachmentDelete,
   onRefresh,
+  readOnly = false,
 }) {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -116,11 +117,11 @@ export function CashFlowDetailsModal({
             label={isOpen ? 'Aperto' : 'Chiuso'}
             color={isOpen ? 'warning' : 'success'}
             size="small"
-            onClick={async () => {
+            onClick={readOnly ? undefined : async () => {
               await onUpdateStatus(item.id, isOpen ? 'closed' : 'open');
               onRefresh?.();
             }}
-            sx={{ cursor: 'pointer' }}
+            sx={{ cursor: readOnly ? 'default' : 'pointer' }}
           />
         </Stack>
       </DialogTitle>
@@ -182,14 +183,16 @@ export function CashFlowDetailsModal({
         {/* Expenses section */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Typography variant="subtitle1">Spese</Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<Iconify icon="solar:add-circle-outline" />}
-            onClick={() => { setShowExpenseForm(true); setEditingExpense(null); }}
-          >
-            Nuova Spesa
-          </Button>
+          {!readOnly && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Iconify icon="solar:add-circle-outline" />}
+              onClick={() => { setShowExpenseForm(true); setEditingExpense(null); }}
+            >
+              Nuova Spesa
+            </Button>
+          )}
         </Stack>
 
         {showExpenseForm && (
@@ -217,7 +220,7 @@ export function CashFlowDetailsModal({
                   <TableCell>Beneficiario</TableCell>
                   <TableCell>Descrizione</TableCell>
                   <TableCell>Allegati</TableCell>
-                  {<TableCell align="right" sx={{ width: 100 }}>Azioni</TableCell>}
+                  {!readOnly && <TableCell align="right" sx={{ width: 100 }}>Azioni</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -241,7 +244,7 @@ export function CashFlowDetailsModal({
                             <AttachmentIcon type={att.type} />
                           </IconButton>
                         ))}
-                        <>
+                        {!readOnly && (<>
                           <IconButton
                             size="small"
                             onClick={() => setAttachingExpenseId(attachingExpenseId === exp.id ? null : exp.id)}
@@ -287,9 +290,10 @@ export function CashFlowDetailsModal({
                                 </Button>
                               </Box>
                             )}
-                          </>
+                          </>)}
                       </Stack>
                     </TableCell>
+                      {!readOnly && (
                       <TableCell align="right">
                         <IconButton
                           size="small"
@@ -318,6 +322,7 @@ export function CashFlowDetailsModal({
                           </IconButton>
                         ))}
                       </TableCell>
+                      )}
                   </TableRow>
                 ))}
               </TableBody>

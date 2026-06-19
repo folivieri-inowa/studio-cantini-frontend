@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 
 import PropTypes from 'prop-types';
 import {
@@ -94,7 +94,7 @@ DeltaCell.propTypes = {
 
 // ----------------------------------------------------------------------
 
-export default function MasterCategoryTable({ data, mainYear, owner, selectedMonth: selectedMonthProp, onMonthChange, onCompareYearsChange }) {
+export default function MasterCategoryTable({ data, mainYear, owner, selectedMonth: selectedMonthProp, onMonthChange, onCompareYearsChange, groups }) {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -169,6 +169,47 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
 
     return Object.values(categories).filter(cat => cat.name);
   }, [data, owner, mainYear, compareYears, selectedMonth]);
+
+  // Raggruppamento: costruisce la struttura groupedData con header/child/footer
+  const { groupedRows, groupedCategoryIds, groupSubtotals } = useMemo(() => {
+    if (!groups || groups.length === 0 || tableData.length === 0) {
+      return { groupedRows: null, groupedCategoryIds: new Set(), groupSubtotals: {} };
+    }
+
+    const catIdsInGroups = new Set();
+    const rows = [];
+    const subtotals = {};
+
+    groups.forEach(group => {
+      // Trova le categorie del gruppo che hanno dati nella tabella
+      const groupCatIds = new Set((group.items || []).map(item => item.category_id));
+      const groupRows = tableData.filter(row => groupCatIds.has(row.id));
+
+      if (groupRows.length === 0) return; // salta gruppi vuoti
+
+      groupRows.forEach(r => catIdsInGroups.add(r.id));
+
+      // Calcola subtotali per ogni colonna numerica
+      const allYearsSorted = [...new Set([mainYear, ...compareYears])].sort((a, b) => b - a);
+      const sub = { income: {}, expense: {} };
+      allYearsSorted.forEach(year => {
+        sub.income[year] = groupRows.reduce((sum, r) => sum + (r.income[year] ?? 0), 0);
+        sub.expense[year] = groupRows.reduce((sum, r) => sum + (r.expense[year] ?? 0), 0);
+      });
+
+      subtotals[group.id] = sub;
+      rows.push({ type: 'group', groupId: group.id, name: group.name, rows: groupRows });
+    });
+
+    return { groupedRows: rows, groupedCategoryIds: catIdsInGroups, groupSubtotals: subtotals };
+  }, [groups, tableData, mainYear, compareYears]);
+
+  const orphanRows = useMemo(() => {
+    if (!groupedRows) return null;
+    return tableData.filter(row => !groupedCategoryIds.has(row.id));
+  }, [tableData, groupedRows, groupedCategoryIds]);
+
+  const hasGroups = groupedRows !== null && groupedRows.length > 0;
 
   const columns = useMemo(() => {
     const allYearsSorted = [...new Set([mainYear, ...compareYears])].sort((a, b) => b - a);
@@ -289,6 +330,7 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableSorting: !hasGroups,
   });
 
   const hasData = tableData.length > 0;
@@ -418,18 +460,211 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
                 ))}
               </TableHead>
               <TableBody>
-                {table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id} hover>
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell
-                        key={cell.id}
-                        align={cell.column.id === 'name' ? 'left' : 'right'}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {hasGroups ? (
+                  <>
+                    {groupedRows.map(group => {
+                      const sub = groupSubtotals[group.groupId];
+                      const allYearsSorted = [...new Set([mainYear, ...compareYears])].sort((a, b) => b - a);
+
+                      return (
+                        <Fragment key={`group-${group.groupId}`}>
+                          {/* Header di gruppo */}
+                          <TableRow sx={{ '& td': { borderBottom: 2, borderColor: 'primary.main', bgcolor: 'action.hover' } }}>
+                            <TableCell align="left">
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                {group.name}
+                              </Typography>
+                            </TableCell>
+                            {showIncome && allYearsSorted.map(year => (
+                              <TableCell key={`h-income-${year}`} align="right">
+                                <Typography variant="subtitle2">
+                                  {formatCurrency(sub.income[year] ?? 0)}
+                                </Typography>
+                              </TableCell>
+                            ))}
+                            {showExpense && allYearsSorted.map(year => (
+                              <TableCell key={`h-expense-${year}`} align="right">
+                                <Typography variant="subtitle2">
+                                  {formatCurrency(sub.expense[year] ?? 0)}
+                                </Typography>
+                              </TableCell>
+                            ))}
+                          </TableRow>
+
+                          {/* Righe categorie del gruppo */}
+                          {group.rows.map(catRow => {
+                            // Costruisci una tabella row fittizia per usare le stesse celle
+                            // Usiamo direttamente il rendering per-cell
+                            const columnsForRender = table.getAllColumns();
+                            return (
+                              <TableRow key={`cat-${catRow.id}`} hover>
+                                {columnsForRender.map(col => {
+                                  if (col.id === 'name') {
+                                    return (
+                                      <TableCell key={col.id} align="left">
+                                        <Typography
+                                          variant="subtitle1"
+                                          noWrap
+                                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                          onClick={() => {
+                                            const params = new URLSearchParams({
+                                              month: selectedMonth,
+                                              compareYears: compareYears.join(','),
+                                              showIncome: String(showIncome),
+                                              showExpense: String(showExpense),
+                                            });
+                                            router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
+                                          }}
+                                        >
+                                          {catRow.name}
+                                        </Typography>
+                                      </TableCell>
+                                    );
+                                  }
+                                  const incomeMatch = col.id.match(/^income_(\d+)$/);
+                                  const expenseMatch = col.id.match(/^expense_(\d+)$/);
+                                  const year = incomeMatch?.[1] || expenseMatch?.[1];
+                                  const isExpense = !!expenseMatch;
+                                  const isMain = Number(year) === mainYear;
+
+                                  if (isMain) {
+                                    return (
+                                      <TableCell key={col.id} align="right">
+                                        <Typography variant="body1">
+                                          {formatCurrency(isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0))}
+                                        </Typography>
+                                      </TableCell>
+                                    );
+                                  }
+
+                                  return (
+                                    <TableCell key={col.id} align="right">
+                                      <DeltaCell
+                                        value={isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0)}
+                                        referenceValue={isExpense ? (catRow.expense[mainYear] ?? 0) : (catRow.income[mainYear] ?? 0)}
+                                        referenceYear={mainYear}
+                                        isExpense={isExpense}
+                                        month={selectedMonth}
+                                      />
+                                    </TableCell>
+                                  );
+                                })}
+                              </TableRow>
+                            );
+                          })}
+
+                          {/* Footer di gruppo */}
+                          <TableRow sx={{ '& td': { borderTop: 2, borderColor: 'divider' } }}>
+                            <TableCell align="left">
+                              <Typography variant="subtitle2">
+                                Subtotal {group.name}
+                              </Typography>
+                            </TableCell>
+                            {showIncome && allYearsSorted.map(year => (
+                              <TableCell key={`f-income-${year}`} align="right">
+                                <Typography variant="subtitle2">
+                                  {formatCurrency(sub.income[year] ?? 0)}
+                                </Typography>
+                              </TableCell>
+                            ))}
+                            {showExpense && allYearsSorted.map(year => (
+                              <TableCell key={`f-expense-${year}`} align="right">
+                                <Typography variant="subtitle2">
+                                  {formatCurrency(sub.expense[year] ?? 0)}
+                                </Typography>
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        </Fragment>
+                      );
+                    })}
+
+                    {/* Separatore prima delle categorie senza gruppo */}
+                    {orphanRows.length > 0 && (
+                      <TableRow>
+                        <TableCell colSpan={table.getAllColumns().length} sx={{ border: 'none', py: 1 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Categorie senza gruppo
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {/* Categorie senza gruppo */}
+                    {orphanRows.map(catRow => {
+                      const columnsForRender = table.getAllColumns();
+                      return (
+                        <TableRow key={`orphan-${catRow.id}`} hover>
+                          {columnsForRender.map(col => {
+                            if (col.id === 'name') {
+                              return (
+                                <TableCell key={col.id} align="left">
+                                  <Typography
+                                    variant="subtitle1"
+                                    noWrap
+                                    sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                    onClick={() => {
+                                      const params = new URLSearchParams({
+                                        month: selectedMonth,
+                                        compareYears: compareYears.join(','),
+                                        showIncome: String(showIncome),
+                                        showExpense: String(showExpense),
+                                      });
+                                      router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
+                                    }}
+                                  >
+                                    {catRow.name}
+                                  </Typography>
+                                </TableCell>
+                              );
+                            }
+                            const incomeMatch = col.id.match(/^income_(\d+)$/);
+                            const expenseMatch = col.id.match(/^expense_(\d+)$/);
+                            const year = incomeMatch?.[1] || expenseMatch?.[1];
+                            const isExpense = !!expenseMatch;
+                            const isMain = Number(year) === mainYear;
+
+                            if (isMain) {
+                              return (
+                                <TableCell key={col.id} align="right">
+                                  <Typography variant="body1">
+                                    {formatCurrency(isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0))}
+                                  </Typography>
+                                </TableCell>
+                              );
+                            }
+
+                            return (
+                              <TableCell key={col.id} align="right">
+                                <DeltaCell
+                                  value={isExpense ? (catRow.expense[year] ?? 0) : (catRow.income[year] ?? 0)}
+                                  referenceValue={isExpense ? (catRow.expense[mainYear] ?? 0) : (catRow.income[mainYear] ?? 0)}
+                                  referenceYear={mainYear}
+                                  isExpense={isExpense}
+                                  month={selectedMonth}
+                                />
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      );
+                    })}
+                  </>
+                ) : (
+                  // Rendering originale senza gruppi
+                  table.getRowModel().rows.map(row => (
+                    <TableRow key={row.id} hover>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell
+                          key={cell.id}
+                          align={cell.column.id === 'name' ? 'left' : 'right'}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
               <TableFooter>
                 <TableRow sx={{ '& td': { borderTop: 2, borderColor: 'divider' } }}>
@@ -492,4 +727,5 @@ MasterCategoryTable.propTypes = {
   selectedMonth: PropTypes.number,
   onMonthChange: PropTypes.func,
   onCompareYearsChange: PropTypes.func,
+  groups: PropTypes.array,
 };

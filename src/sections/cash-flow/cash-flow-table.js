@@ -15,7 +15,7 @@ import { CashFlowTableRow } from './cash-flow-table-row';
 
 // ----------------------------------------------------------------------
 
-export function CashFlowTable({ cashFlow = [], onView, loading }) {
+export function CashFlowTable({ cashFlow = [], onView, onEdit, onDelete, loading }) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
@@ -51,7 +51,7 @@ export function CashFlowTable({ cashFlow = [], onView, loading }) {
           </TableHead>
           <TableBody>
             {paginated.map((row) => (
-              <CashFlowTableRow key={row.id} row={row} onView={onView} />
+              <CashFlowTableRow key={row.id} row={row} onView={onView} onEdit={onEdit} onDelete={onDelete} />
             ))}
           </TableBody>
         </Table>

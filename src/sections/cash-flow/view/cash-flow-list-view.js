@@ -80,6 +80,18 @@ export function CashFlowListView() {
     }
   }, [enqueueSnackbar, cashFlowMutate]);
 
+  // --- Delete ---
+  const handleDelete = useCallback(async (id) => {
+    if (!window.confirm('Eliminare questo prelievo? Verranno rimosse anche tutte le spese collegate.')) return;
+    try {
+      await deleteCashFlow(id);
+      enqueueSnackbar('Prelievo eliminato', { variant: 'success' });
+      cashFlowMutate();
+    } catch (err) {
+      enqueueSnackbar(err?.message || 'Errore nell\'eliminazione', { variant: 'error' });
+    }
+  }, [enqueueSnackbar, cashFlowMutate]);
+
   // --- Status ---
   const handleUpdateStatus = useCallback(async (id, status) => {
     try {
@@ -178,6 +190,8 @@ export function CashFlowListView() {
           cashFlow={cashFlow}
           loading={cashFlowLoading}
           onView={handleView}
+          onEdit={(id) => { setSelectedItem(cashFlow.find(cf => cf.id === id)); setOpenEdit(true); }}
+          onDelete={handleDelete}
         />
       </Box>
 
@@ -189,18 +203,26 @@ export function CashFlowListView() {
       />
 
       {selectedItem && (
-        <CashFlowDetailsModal
-          open={openDetails}
-          onClose={() => { setOpenDetails(false); setSelectedItem(null); }}
-          item={selectedItem}
-          onUpdateStatus={handleUpdateStatus}
-          onExpenseCreate={handleExpenseCreate}
-          onExpenseUpdate={handleExpenseUpdate}
-          onExpenseDelete={handleExpenseDelete}
-          onAttachmentUpload={handleAttachmentUpload}
-          onAttachmentDelete={handleAttachmentDelete}
-          onRefresh={handleRefreshDetails}
-        />
+        <>
+          <CashFlowDetailsModal
+            open={openDetails}
+            onClose={() => { setOpenDetails(false); setSelectedItem(null); }}
+            item={selectedItem}
+            onUpdateStatus={handleUpdateStatus}
+            onExpenseCreate={handleExpenseCreate}
+            onExpenseUpdate={handleExpenseUpdate}
+            onExpenseDelete={handleExpenseDelete}
+            onAttachmentUpload={handleAttachmentUpload}
+            onAttachmentDelete={handleAttachmentDelete}
+            onRefresh={handleRefreshDetails}
+          />
+          <CashFlowEditModal
+            open={openEdit}
+            onClose={() => { setOpenEdit(false); setSelectedItem(null); }}
+            onSave={handleEdit}
+            item={selectedItem}
+          />
+        </>
       )}
     </Container>
   );

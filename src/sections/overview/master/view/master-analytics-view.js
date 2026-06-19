@@ -15,6 +15,7 @@ import { useAuthContext } from '../../../../auth/hooks';
 import { useBoolean } from '../../../../hooks/use-boolean';
 import axios, { endpoints } from '../../../../utils/axios';
 import { useSettingsContext } from '../../../../components/settings';
+import { useGetGroups } from '../../../../api/groups';
 import BankingWidgetSummary from '../../banking/banking-widget-summary';
 import CategoryChartToggle from '../../category/category-chart-toggle';
 import MasterCategoryTable from '../master-category-table';
@@ -53,7 +54,8 @@ export default function MasterAnalyticsView() {
   const [data, setData] = useState([]);
   const settings = useSettingsContext();
   const { user } = useAuthContext();
-  
+  const { groups } = useGetGroups(settings.db);
+
   // Ordina alfabeticamente i conti correnti e filtra l'eventuale 'all-accounts' dal backend
   const sortedData = useMemo(() => 
     data ? data.slice()
@@ -945,6 +947,7 @@ export default function MasterAnalyticsView() {
               selectedMonth={selectedMonth}
               onMonthChange={handleMonthChange}
               onCompareYearsChange={setCompareYears}
+              groups={groups}
             />
           </Grid>
           {(() => {

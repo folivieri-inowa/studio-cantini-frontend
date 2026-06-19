@@ -97,7 +97,7 @@ export function useNavData() {
             roles: ['admin', 'manager'],
           },
           {
-            title: t('Gestione Contante'),
+            title: t('Gestione Prelievi'),
             path: paths.dashboard.cash_flow.root,
             icon: ICONS.banking,
             roles: ['admin', 'manager'],

@@ -61,7 +61,7 @@ export function CashFlowDetailsView() {
         heading="Dettaglio Prelievo"
         links={[
           { name: 'Report', href: paths.dashboard.root },
-          { name: 'Gestione Contante', href: paths.dashboard.cash_flow.root },
+          { name: 'Gestione Prelievi', href: paths.dashboard.cash_flow.root },
           { name: 'Dettaglio' },
         ]}
         sx={{ mb: { xs: 3, md: 5 } }}

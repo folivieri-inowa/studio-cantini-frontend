@@ -37,7 +37,7 @@ export function CashFlowEditView() {
         heading="Modifica Prelievo"
         links={[
           { name: 'Report', href: paths.dashboard.root },
-          { name: 'Gestione Contante', href: paths.dashboard.cash_flow.root },
+          { name: 'Gestione Prelievi', href: paths.dashboard.cash_flow.root },
           { name: 'Modifica' },
         ]}
         sx={{ mb: { xs: 3, md: 5 } }}

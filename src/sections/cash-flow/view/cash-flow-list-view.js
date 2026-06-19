@@ -166,10 +166,10 @@ export function CashFlowListView() {
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>
       <CustomBreadcrumbs
-        heading="Gestione Contante"
+        heading="Gestione Prelievi"
         links={[
           { name: 'Report', href: paths.dashboard.root },
-          { name: 'Gestione Contante' },
+          { name: 'Gestione Prelievi' },
         ]}
         action={
           <Button

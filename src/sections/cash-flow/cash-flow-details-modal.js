@@ -64,7 +64,7 @@ export function CashFlowDetailsModal({
   const { expenses = [] } = item;
   const isOpen = item.status === 'open';
   const totalSpent = expenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-  const canClose = isOpen && totalSpent >= parseFloat(item.amount || 0);
+  const residual = parseFloat(item.amount || 0) - totalSpent;
 
   const handleExpenseSave = useCallback(async (data) => {
     setSavingExpense(true);
@@ -340,10 +340,8 @@ export function CashFlowDetailsModal({
               color="success"
               variant="contained"
               onClick={handleClose}
-              disabled={!canClose}
-              title={!canClose ? 'Aggiungi spese fino a coprire l\'importo totale' : 'Chiudi prelievo'}
             >
-              {canClose ? 'Chiudi Prelievo' : 'Spese insufficienti'}
+              {residual > 0 ? `Chiudi Prelievo (residuo €${residual.toFixed(2).replace('.', ',')})` : 'Chiudi Prelievo'}
             </Button>
           )}
         </Box>

@@ -140,6 +140,9 @@ export const paths = {
       details: (id) => `${ROOTS.DASHBOARD}/cash-flow/${id}`,
       edit: (id) => `${ROOTS.DASHBOARD}/cash-flow/${id}/edit`,
     },
+    groups: {
+      root: `${ROOTS.DASHBOARD}/gruppi`,
+    },
     archive: {
       root: `${ROOTS.DASHBOARD}/archive`,
       details: (id) => `${ROOTS.DASHBOARD}/archive/${id}`,

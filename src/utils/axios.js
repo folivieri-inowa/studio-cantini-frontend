@@ -82,6 +82,14 @@ export const endpoints = {
     categoriesSubjects: '/api/report/categories-subjects',
     groupAggregation: '/api/report/group-aggregation',
   },
+  // Gruppi categorie
+  groups: {
+    list: '/api/groups',
+    details: (id) => `/api/groups/${id}`,
+    create: '/api/groups',
+    edit: (id) => `/api/groups/${id}`,
+    delete: (id) => `/api/groups/${id}`,
+  },
   // ----------------------------------------------------------------------
   chat: '/api/chat',
   kanban: '/api/kanban',

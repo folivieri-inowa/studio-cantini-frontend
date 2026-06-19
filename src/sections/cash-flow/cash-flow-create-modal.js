@@ -80,7 +80,7 @@ export function CashFlowCreateModal({ open, onClose, onSave }) {
   // Load categories
   useEffect(() => {
     if (!associateTx || !db) return;
-    axios.post('/api/category/list', { db }).then((res) => {
+    axios.get('/api/category/list', { params: { db } }).then((res) => {
       setCategories(res.data?.data || []);
     }).catch(() => {});
   }, [associateTx, db]);

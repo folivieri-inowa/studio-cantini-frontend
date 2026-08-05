@@ -254,22 +254,24 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
         id: 'name',
         header: 'Categoria',
         cell: info => (
-          <Typography
-            variant="subtitle1"
-            noWrap
-            sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-            onClick={() => {
-              const params = new URLSearchParams({
-                month: selectedMonth,
-                compareYears: compareYears.join(','),
-                showIncome: String(showIncome),
-                showExpense: String(showExpense),
-              });
-              router.push(`${paths.dashboard.master.category.details({ id: info.row.original.id })}?${params.toString()}`);
-            }}
-          >
-            {info.getValue()}
-          </Typography>
+          <Tooltip title={info.getValue()} placement="top" arrow>
+            <Typography
+              variant="subtitle1"
+              noWrap
+              sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => {
+                const params = new URLSearchParams({
+                  month: selectedMonth,
+                  compareYears: compareYears.join(','),
+                  showIncome: String(showIncome),
+                  showExpense: String(showExpense),
+                });
+                router.push(`${paths.dashboard.master.category.details({ id: info.row.original.id })}?${params.toString()}`);
+              }}
+            >
+              {info.getValue()}
+            </Typography>
+          </Tooltip>
         ),
       }),
     ];
@@ -559,22 +561,24 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
                                       if (col.id === 'name') {
                                         return (
                                           <TableCell key={col.id} align="left">
-                                            <Typography
-                                              variant="subtitle1"
-                                              noWrap
-                                              sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                                              onClick={() => {
-                                                const params = new URLSearchParams({
-                                                  month: selectedMonth,
-                                                  compareYears: compareYears.join(','),
-                                                  showIncome: String(showIncome),
-                                                  showExpense: String(showExpense),
-                                                });
-                                                router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
-                                              }}
-                                            >
-                                              {catRow.name}
-                                            </Typography>
+                                            <Tooltip title={catRow.name} placement="top" arrow>
+                                              <Typography
+                                                variant="subtitle1"
+                                                noWrap
+                                                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                                onClick={() => {
+                                                  const params = new URLSearchParams({
+                                                    month: selectedMonth,
+                                                    compareYears: compareYears.join(','),
+                                                    showIncome: String(showIncome),
+                                                    showExpense: String(showExpense),
+                                                  });
+                                                  router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
+                                                }}
+                                              >
+                                                {catRow.name}
+                                              </Typography>
+                                            </Tooltip>
                                           </TableCell>
                                         );
                                       }
@@ -658,22 +662,24 @@ export default function MasterCategoryTable({ data, mainYear, owner, selectedMon
                             if (col.id === 'name') {
                               return (
                                 <TableCell key={col.id} align="left">
-                                  <Typography
-                                    variant="subtitle1"
-                                    noWrap
-                                    sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                                    onClick={() => {
-                                      const params = new URLSearchParams({
-                                        month: selectedMonth,
-                                        compareYears: compareYears.join(','),
-                                        showIncome: String(showIncome),
-                                        showExpense: String(showExpense),
-                                      });
-                                      router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
-                                    }}
-                                  >
-                                    {catRow.name}
-                                  </Typography>
+                                  <Tooltip title={catRow.name} placement="top" arrow>
+                                    <Typography
+                                      variant="subtitle1"
+                                      noWrap
+                                      sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                      onClick={() => {
+                                        const params = new URLSearchParams({
+                                          month: selectedMonth,
+                                          compareYears: compareYears.join(','),
+                                          showIncome: String(showIncome),
+                                          showExpense: String(showExpense),
+                                        });
+                                        router.push(`${paths.dashboard.master.category.details({ id: catRow.id })}?${params.toString()}`);
+                                      }}
+                                    >
+                                      {catRow.name}
+                                    </Typography>
+                                  </Tooltip>
                                 </TableCell>
                               );
                             }

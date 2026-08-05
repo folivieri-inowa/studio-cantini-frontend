@@ -6,6 +6,7 @@ import Link from '@mui/material/Link';
 import Table from '@mui/material/Table';
 import Alert from '@mui/material/Alert';
 import TableRow from '@mui/material/TableRow';
+import Tooltip from '@mui/material/Tooltip';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import CardHeader from '@mui/material/CardHeader';
@@ -88,15 +89,17 @@ function MasterTransactionRow({ row, onViewRow }) {
       <TableCell sx={{ display: 'none' }}>{row.id}</TableCell>
 
       <TableCell>
-        <Link
-          noWrap
-          color="inherit"
-          variant="subtitle2"
-          onClick={onViewRow}
-          sx={{ cursor: 'pointer' }}
-        >
-          {row.category}
-        </Link>
+        <Tooltip title={row.category} placement="top" arrow>
+          <Link
+            noWrap
+            color="inherit"
+            variant="subtitle2"
+            onClick={onViewRow}
+            sx={{ cursor: 'pointer' }}
+          >
+            {row.category}
+          </Link>
+        </Tooltip>
       </TableCell>
 
       <TableCell align="right">{formatCurrencyWithZero(row.income)}</TableCell>

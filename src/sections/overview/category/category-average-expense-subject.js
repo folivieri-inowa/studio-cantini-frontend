@@ -201,15 +201,17 @@ function CategoryAverageExpenseSubjectRow({ categoryId, row, onViewRow }) {
                         <TableCell sx={{ width: '5%' }}/>
                         {value.detailsId ? (
                           <TableCell sx={{ color: 'blue', width: '50%' }}>
-                            <Link
-                              noWrap
-                              color="inherit"
-                              variant="subtitle2"
-                              onClick={() => onViewRow({ details: value.id, subject: row.id, category: categoryId, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year})}
-                              sx={{ cursor: 'pointer' }}
-                            >
-                              {capitalizeCase(value.title)}
-                            </Link>
+                            <Tooltip title={capitalizeCase(value.title)} placement="top" arrow>
+                              <Link
+                                noWrap
+                                color="inherit"
+                                variant="subtitle2"
+                                onClick={() => onViewRow({ details: value.id, subject: row.id, category: categoryId, db: settings.db, owner: settings.owner ? settings.owner.id : 'all-accounts', year: settings.year})}
+                                sx={{ cursor: 'pointer' }}
+                              >
+                                {capitalizeCase(value.title)}
+                              </Link>
+                            </Tooltip>
                           </TableCell>
                         ) : (
                           <TableCell sx={{ width: '50%' }}>{capitalizeCase(value.title)}</TableCell>

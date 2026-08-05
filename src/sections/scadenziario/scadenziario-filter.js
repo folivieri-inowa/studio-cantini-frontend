@@ -63,14 +63,16 @@ export function applyFilter({ inputData, comparator, filters }) {
   }
 
   if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     result = result.filter(
       (item) => {
         try {
-          if (!item.date) return false;
-          const itemDate = new Date(item.date);
-          return !isNaN(itemDate) && 
-                 itemDate >= new Date(startDate) && 
-                 itemDate <= new Date(endDate);
+          const itemDate = item.date ? new Date(item.date) : null;
+          const payDate = item.payment_date || item.paymentDate;
+          const itemPayDate = payDate ? new Date(payDate) : null;
+          const inRange = (d) => d && !isNaN(d) && d >= start && d <= end;
+          return inRange(itemDate) || inRange(itemPayDate);
         } catch (error) {
           console.error('Errore durante il filtro per data:', error);
           return false;

@@ -213,22 +213,24 @@ function CategoryDetailsSubjectRow({ row, categoryId, onViewRow, onViewDetails, 
                         <TableCell sx={{ width: '5%' }}/>
                         <TableCell sx={{ width: '50%' }}>
                           {value.detailsId ? (
-                            <Link
-                              noWrap
-                              color="inherit"
-                              variant="subtitle2"
-                              onClick={() => onViewRow && onViewRow({ 
-                                details: value.id, 
-                                subject: row.id, 
-                                category: categoryId,
-                                db: settings?.db,
-                                owner: settings?.owner ? settings.owner.id : 'all-accounts',
-                                year: settings?.year
-                              })}
-                              sx={{ cursor: 'pointer', color: 'blue' }}
-                            >
-                              {capitalizeCase(value.title || 'N/A')}
-                            </Link>
+                            <Tooltip title={capitalizeCase(value.title || 'N/A')} placement="top" arrow>
+                              <Link
+                                noWrap
+                                color="inherit"
+                                variant="subtitle2"
+                                onClick={() => onViewRow && onViewRow({
+                                  details: value.id,
+                                  subject: row.id,
+                                  category: categoryId,
+                                  db: settings?.db,
+                                  owner: settings?.owner ? settings.owner.id : 'all-accounts',
+                                  year: settings?.year
+                                })}
+                                sx={{ cursor: 'pointer', color: 'blue' }}
+                              >
+                                {capitalizeCase(value.title || 'N/A')}
+                              </Link>
+                            </Tooltip>
                           ) : (
                             capitalizeCase(value.title || 'N/A')
                           )}

@@ -351,7 +351,7 @@ export default function ScadenziarioEditModal({ id, open, onClose, onEdited }) {
                 <ScadenziarioAttachmentUpload
                   ownerId={scadenziarioItem?.owner_id}
                   value={field.value || null}
-                  onChange={(url) => { if (url) field.onChange(url); }}
+                  onChange={field.onChange}
                 />
               )}
             />

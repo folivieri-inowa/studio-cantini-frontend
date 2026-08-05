@@ -39,7 +39,20 @@ export function ScadenziarioListViewV2() {
   const { scadenziario, scadenziarioLoading, scadenziarioMutate } =
     useEnhancedGetScadenziario(ownerId ? { ownerId } : {});
 
-  const [filters, setFilters] = useState({ text: '', status: [], type: [], dateFrom: null, dateTo: null });
+  const FILTERS_KEY = 'scadenziario_v2_filters';
+
+  const [filters, setFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FILTERS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { text: '', status: [], type: [], dateFrom: null, dateTo: null };
+  });
+
+  const handleFiltersChange = useCallback((next) => {
+    setFilters(next);
+    try { localStorage.setItem(FILTERS_KEY, JSON.stringify(next)); } catch {}
+  }, []);
 
   const filteredScadenziario = useMemo(() => {
     let result = scadenziario;
@@ -59,15 +72,17 @@ export function ScadenziarioListViewV2() {
     if (filters.type?.length) {
       result = result.filter((s) => filters.type.includes(s.type));
     }
-    if (filters.dateFrom) {
-      const from = new Date(filters.dateFrom);
-      from.setHours(0, 0, 0, 0);
-      result = result.filter((s) => s.date && new Date(s.date) >= from);
-    }
-    if (filters.dateTo) {
-      const to = new Date(filters.dateTo);
-      to.setHours(23, 59, 59, 999);
-      result = result.filter((s) => s.date && new Date(s.date) <= to);
+    if (filters.dateFrom || filters.dateTo) {
+      const from = filters.dateFrom ? new Date(filters.dateFrom) : null;
+      const to = filters.dateTo ? new Date(filters.dateTo) : null;
+      if (from) from.setHours(0, 0, 0, 0);
+      if (to) to.setHours(23, 59, 59, 999);
+      const inRange = (d) => {
+        if (!d) return false;
+        const dt = new Date(d);
+        return (!from || dt >= from) && (!to || dt <= to);
+      };
+      result = result.filter((s) => inRange(s.date) || inRange(s.payment_date) || inRange(s.paymentDate));
     }
     return result;
   }, [scadenziario, filters]);
@@ -141,7 +156,7 @@ export function ScadenziarioListViewV2() {
           <ScadenziarioSuppliersView scadenze={scadenziario} />
         ) : (
           <>
-            <ScadenziarioFiltersToolbar filters={filters} onFiltersChange={setFilters} />
+            <ScadenziarioFiltersToolbar filters={filters} onFiltersChange={handleFiltersChange} />
             <ScadenziarioTableV2
               scadenze={filteredScadenziario}
               loading={scadenziarioLoading}

@@ -171,9 +171,11 @@ export default function CategorySubjectTable({
         header: 'Soggetto',
         size: 180,
         cell: info => (
-          <Typography variant="subtitle1" noWrap>
-            {capitalizeCase(info.getValue())}
-          </Typography>
+          <Tooltip title={capitalizeCase(info.getValue())} placement="top" arrow>
+            <Typography variant="subtitle1" noWrap>
+              {capitalizeCase(info.getValue())}
+            </Typography>
+          </Tooltip>
         ),
       }),
     ];

@@ -71,12 +71,30 @@ const STATUS_OPTIONS = [
   { value: 'future', label: 'Da pagare', color: 'info' },
 ];
 
+const FILTERS_STORAGE_KEY = 'scadenziario_filters';
+
 const defaultFilters = {
   searchQuery: '',
   startDate: null,
   endDate: null,
   status: [],
 };
+
+function loadFilters() {
+  try {
+    const saved = localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!saved) return defaultFilters;
+    const parsed = JSON.parse(saved);
+    return {
+      ...defaultFilters,
+      ...parsed,
+      startDate: parsed.startDate ? new Date(parsed.startDate) : null,
+      endDate: parsed.endDate ? new Date(parsed.endDate) : null,
+    };
+  } catch {
+    return defaultFilters;
+  }
+}
 
 // ----------------------------------------------------------------------
 
@@ -89,14 +107,14 @@ export function ScadenziarioListView() {
   const settings = useSettingsContext();
 
   const confirm = useBoolean();
-  
+
   // Stati per gestire le modali
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
-  const [filters, setFilters] = useState(defaultFilters);
+  const [filters, setFilters] = useState(loadFilters);
 
   // Recupero dati dall'API con il servizio migliorato
   const { scadenziario: scadenze, scadenziarioLoading: scadenzeLoading, scadenziarioMutate } = useEnhancedGetScadenziario();
@@ -147,10 +165,13 @@ export function ScadenziarioListView() {
   const handleFilters = useCallback(
     (name, value) => {
       table.onResetPage();
-      setFilters((prevState) => ({
-        ...prevState,
-        [name]: value,
-      }));
+      setFilters((prevState) => {
+        const next = { ...prevState, [name]: value };
+        try {
+          localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
     },
     [table]
   );
@@ -201,6 +222,7 @@ export function ScadenziarioListView() {
 
   const handleResetFilters = useCallback(() => {
     setFilters(defaultFilters);
+    try { localStorage.removeItem(FILTERS_STORAGE_KEY); } catch {}
   }, []);
 
   const handleViewRow = useCallback(

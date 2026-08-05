@@ -198,7 +198,7 @@ function ScadenziarioFormStep1({ control, watch, setValue, calculatedDueDate, tr
       {/* Campi per fattura */}
       {isFattura && (
         <Stack spacing={3}>
-          <ScadenziarioOcrUpload onExtracted={handleOcrExtracted} onFileUploaded={handleFileUploaded} ownerId={ownerId} />
+          <ScadenziarioOcrUpload onExtracted={handleOcrExtracted} onFileUploaded={handleFileUploaded} />
 
           <Box
             rowGap={3}

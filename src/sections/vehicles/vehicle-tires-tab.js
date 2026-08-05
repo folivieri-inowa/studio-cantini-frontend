@@ -41,9 +41,6 @@ export default function VehicleTiresTab({ vehicleId }) {
     }
   }, [tiresMutate, enqueueSnackbar]);
 
-  const handleEdit = useCallback((item) => { setEditItem(item); setOpenDialog(true); }, []);
-  const handleClose = useCallback(() => { setOpenDialog(false); setEditItem(null); }, []);
-
   return (
     <Card>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2 }}>
@@ -65,8 +62,7 @@ export default function VehicleTiresTab({ vehicleId }) {
               <TableRow>
                 <TableCell>Tipo</TableCell>
                 <TableCell>Marca / Modello</TableCell>
-                <TableCell>Mis. ant.</TableCell>
-                <TableCell>Mis. post.</TableCell>
+                <TableCell>Misura</TableCell>
                 <TableCell>Montaggio</TableCell>
                 <TableCell>Deposito</TableCell>
                 <TableCell>Condizione</TableCell>
@@ -78,14 +74,13 @@ export default function VehicleTiresTab({ vehicleId }) {
                 <TableRow><TableCell colSpan={7} align="center">Caricamento...</TableCell></TableRow>
               )}
               {!tiresLoading && tires.length === 0 && (
-                <TableRow><TableCell colSpan={8} align="center" sx={{ color: 'text.disabled' }}>Nessun record pneumatici</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} align="center" sx={{ color: 'text.disabled' }}>Nessun record pneumatici</TableCell></TableRow>
               )}
               {tires.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell>{item.tire_type}</TableCell>
                   <TableCell>{[item.brand, item.model].filter(Boolean).join(' / ') || '—'}</TableCell>
-                  <TableCell>{item.size_front || '—'}</TableCell>
-                  <TableCell>{item.size_rear || '—'}</TableCell>
+                  <TableCell>{item.size || '—'}</TableCell>
                   <TableCell>{item.install_date || '—'}</TableCell>
                   <TableCell>{item.storage_location || '—'}</TableCell>
                   <TableCell>
@@ -94,14 +89,9 @@ export default function VehicleTiresTab({ vehicleId }) {
                     ) : '—'}
                   </TableCell>
                   <TableCell align="right">
-                    <Stack direction="row" justifyContent="flex-end">
-                      <IconButton size="small" onClick={() => handleEdit(item)}>
-                        <Iconify icon="solar:pen-bold" />
-                      </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(item.id)}>
-                        <Iconify icon="solar:trash-bin-trash-bold" />
-                      </IconButton>
-                    </Stack>
+                    <IconButton size="small" color="error" onClick={() => handleDelete(item.id)}>
+                      <Iconify icon="solar:trash-bin-trash-bold" />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -110,13 +100,14 @@ export default function VehicleTiresTab({ vehicleId }) {
         </TableContainer>
       </Scrollbar>
 
+      {/* Reuse assignment dialog or a dedicated tire dialog — using assignment dialog as placeholder */}
       <VehicleAssignmentDialog
         open={openDialog}
-        onClose={handleClose}
+        onClose={() => setOpenDialog(false)}
         vehicleId={vehicleId}
         mode="tires"
         editItem={editItem}
-        onSuccess={() => { handleClose(); tiresMutate(); }}
+        onSuccess={() => { setOpenDialog(false); tiresMutate(); }}
       />
     </Card>
   );

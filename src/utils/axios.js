@@ -82,14 +82,6 @@ export const endpoints = {
     categoriesSubjects: '/api/report/categories-subjects',
     groupAggregation: '/api/report/group-aggregation',
   },
-  // Gruppi categorie
-  groups: {
-    list: '/api/groups',
-    details: (id) => `/api/groups/${id}`,
-    create: '/api/groups',
-    edit: (id) => `/api/groups/${id}`,
-    delete: (id) => `/api/groups/${id}`,
-  },
   // ----------------------------------------------------------------------
   chat: '/api/chat',
   kanban: '/api/kanban',
@@ -131,19 +123,5 @@ export const endpoints = {
       session: (id) => `/api/archive/chat/sessions/${id}`,
       messages: (id) => `/api/archive/chat/sessions/${id}/messages`,
     },
-  },
-
-  cash_flow: {
-    list: '/api/cash-flow/list',
-    details: '/api/cash-flow/details',
-    create: '/api/cash-flow/create',
-    update: '/api/cash-flow/update',
-    delete: '/api/cash-flow/delete',
-    updateStatus: '/api/cash-flow/update-status',
-    expenseCreate: '/api/cash-flow/expense/create',
-    expenseUpdate: '/api/cash-flow/expense/update',
-    expenseDelete: '/api/cash-flow/expense/delete',
-    expenseUploadAttachment: '/api/cash-flow/expense/upload-attachment',
-    expenseDeleteAttachment: '/api/cash-flow/expense/delete-attachment',
   },
 };

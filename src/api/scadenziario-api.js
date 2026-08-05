@@ -212,9 +212,8 @@ export async function getInvoiceChildren(parentId) {
 export async function uploadScadenziarioAttachment(file, ownerId) {
   const formData = new FormData();
   formData.append('file', file);
-  const resolvedOwner = ownerId ?? 'general';
   const response = await axios.post(
-    `${BACKEND_URL}/upload-attachment?owner_id=${resolvedOwner}`,
+    `${BACKEND_URL}/upload-attachment?owner_id=${ownerId || 'unknown'}`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } }
   );

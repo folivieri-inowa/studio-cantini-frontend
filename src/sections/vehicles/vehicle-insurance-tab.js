@@ -147,11 +147,7 @@ export default function VehicleInsuranceTab({ vehicleId }) {
                     <TableCell>{f.violation_number || '—'}</TableCell>
                     <TableCell>{f.issuing_authority || '—'}</TableCell>
                     <TableCell>{f.violation_type || '—'}</TableCell>
-                    <TableCell>
-                      {f.paid_discounted && f.discount_amount != null
-                        ? `€ ${Number(f.discount_amount).toLocaleString('it-IT')} (sc.)`
-                        : `€ ${Number(f.amount).toLocaleString('it-IT')}`}
-                    </TableCell>
+                    <TableCell>€ {Number(f.amount).toLocaleString('it-IT')}</TableCell>
                     <TableCell>{f.due_date || '—'}</TableCell>
                     <TableCell><Chip size="small" label={f.status} color={FINE_STATUS_COLORS[f.status] || 'default'} variant="soft" /></TableCell>
                     <TableCell align="right">

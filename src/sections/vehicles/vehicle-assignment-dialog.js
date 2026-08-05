@@ -35,7 +35,7 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
   const methods = useForm({
     defaultValues:
       mode === 'tires'
-        ? { tire_type: 'estivi', brand: '', model: '', size_front: '', size_rear: '', install_date: '', mileage_at_install: '', storage_location: '', condition: '', notes: '' }
+        ? { tire_type: 'estivi', brand: '', model: '', size: '', install_date: '', mileage_at_install: '', storage_location: '', condition: '', notes: '' }
         : { assignee_type: '', assignee_name: '', assignment_notes: '', availability_type: '' },
   });
 
@@ -47,8 +47,7 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
         tire_type: editItem.tire_type || 'estivi',
         brand: editItem.brand || '',
         model: editItem.model || '',
-        size_front: editItem.size_front || '',
-        size_rear: editItem.size_rear || '',
+        size: editItem.size || '',
         install_date: editItem.install_date || '',
         mileage_at_install: editItem.mileage_at_install || '',
         storage_location: editItem.storage_location || '',
@@ -105,16 +104,13 @@ export default function VehicleAssignmentDialog({ open, onClose, vehicleId, vehi
                   </RHFSelect>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
+                  <RHFTextField name="size" label="Misura (es. 205/55R16)" />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="brand" label="Marca" />
                 </Grid>
-                <Grid size={12}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="model" label="Modello" />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFTextField name="size_front" label="Misura anteriori (es. 245/35R20)" />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <RHFTextField name="size_rear" label="Misura posteriori (es. 275/30R20)" />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <RHFTextField name="install_date" label="Data montaggio" type="date" InputLabelProps={{ shrink: true }} />
